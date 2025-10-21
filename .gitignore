@@ -105,6 +105,3 @@ temp/
 # Docker
 .dockerignore
 docker-compose.override.yml
-
-# CI/CD
-.github/workflows/
