@@ -1,5 +1,5 @@
 // API клиент для работы с бэкендом
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.test-shem.ru/api/v1'
 
 interface ApiResponse<T> {
   success: boolean
@@ -118,14 +118,20 @@ class ApiClient {
   async login(login: string, password: string, remember: boolean = false) {
     const response = await this.request<{
       user: any
-      token: string
-    }>('/auth/login', {
+      accessToken: string
+      refreshToken: string
+    }>('/v1/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ login, password, remember }),
+      body: JSON.stringify({ 
+        login, 
+        password, 
+        role: 'MASTER' // Master фронтенд всегда использует роль MASTER
+      }),
     })
 
-    if (response.success && response.data?.token) {
-      this.setToken(response.data.token, remember)
+    // Новый формат ответа: { success, message, data: { user, accessToken, refreshToken } }
+    if (response.success && response.data?.accessToken) {
+      this.setToken(response.data.accessToken, remember)
     }
 
     return response
@@ -135,7 +141,7 @@ class ApiClient {
     try {
       // Отправляем запрос на сервер для инвалидации токена (если есть токен)
       if (this.token) {
-        await this.request('/auth/logout', {
+        await this.request('/v1/auth/logout', {
           method: 'POST',
         })
       }
@@ -162,7 +168,7 @@ class ApiClient {
     if (params?.city) searchParams.append('city', params.city)
 
     const query = searchParams.toString()
-    return this.request<any[]>(`/orders${query ? `?${query}` : ''}`)
+    return this.request<any>(`/orders${query ? `?${query}` : ''}`)
   }
 
   async getOrderById(id: string) {
