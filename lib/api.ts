@@ -215,26 +215,29 @@ class ApiClient {
     return this.request<any>('/orders/profile/master')
   }
 
-  // Мастера
+  // Мастера (Users Service)
   async getMasters() {
-    return this.request<any[]>('/masters')
+    const response = await this.request<any>('/masters')
+    return response.data || []
   }
 
   async getMasterById(id: string) {
-    return this.request<any>(`/masters/${id}`)
+    const response = await this.request<any>(`/masters/${id}`)
+    return response.data
   }
 
-  // Касса
+  // Касса (Cash Service)
   async getCashRecords(params?: {
     page?: number
     limit?: number
+    status?: string
   }) {
     const searchParams = new URLSearchParams()
-    if (params?.page) searchParams.append('page', params.page.toString())
-    if (params?.limit) searchParams.append('limit', params.limit.toString())
+    if (params?.status) searchParams.append('status', params.status)
 
     const query = searchParams.toString()
-    return this.request<any[]>(`/cash${query ? `?${query}` : ''}`)
+    const response = await this.request<any>(`/cash${query ? `?${query}` : ''}`)
+    return response.data || []
   }
 
   // Пользователи
@@ -242,7 +245,7 @@ class ApiClient {
     return this.request<any[]>('/users')
   }
 
-  // Сдача на проверку
+  // Сдача на проверку (Cash Service - Handover)
   async getMasterCashSubmissions(params?: {
     status?: string
     page?: number
@@ -250,42 +253,43 @@ class ApiClient {
   }) {
     const searchParams = new URLSearchParams()
     if (params?.status) searchParams.append('status', params.status)
-    if (params?.page) searchParams.append('page', params.page.toString())
-    if (params?.limit) searchParams.append('limit', params.limit.toString())
 
     const query = searchParams.toString()
-    return this.request<any[]>(`/cash-submissions/master${query ? `?${query}` : ''}`)
+    const response = await this.request<any>(`/handover${query ? `?${query}` : ''}`)
+    return response.data || []
   }
 
-  async submitCashForReview(orderId: string, amount: number, receiptDoc?: File) {
-    const formData = new FormData()
-    formData.append('amount', amount.toString())
-    if (receiptDoc) {
-      formData.append('receiptDoc', receiptDoc)
-    }
-
-    return fetch(`${this.baseURL}/cash-submissions/orders/${orderId}/submit`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.token}`,
-      },
-      body: formData,
-    }).then(response => response.json())
-  }
-
-  // Создание записи в таблице cash
-  async createCashEntry(data: {
-    name: string
-    amount: number
-    city: string
-    note: string
-    paymentPurpose: string
-    nameCreate: string
-  }) {
+  async submitCashForReview(orderId: number, amount: number, type: string, receiptDoc?: string) {
     return this.request('/cash', {
+      method: 'POST',
+      body: JSON.stringify({
+        orderId,
+        amount,
+        type, // 'расход', 'предоплата', 'чистый'
+        receiptDoc,
+      }),
+    })
+  }
+
+  // Создать handover (сдачу мастера)
+  async createHandover(data: {
+    period: 'daily' | 'weekly' | 'monthly'
+    periodStart: string
+    periodEnd: string
+    totalAmount: number
+    totalOrders: number
+    note?: string
+  }) {
+    return this.request('/handover', {
       method: 'POST',
       body: JSON.stringify(data),
     })
+  }
+
+  // Получить баланс мастера
+  async getMasterBalance(masterId: number) {
+    const response = await this.request<any>(`/cash/balance/${masterId}`)
+    return response.data
   }
 
   // Авито API
