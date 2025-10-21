@@ -23,6 +23,12 @@ RUN npm ci
 # Копируем исходный код
 COPY . .
 
+# Build arguments для переменных окружения
+ARG NEXT_PUBLIC_API_URL
+
+# Устанавливаем как ENV для использования в сборке
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 # Собираем приложение
 RUN npm run build
 
