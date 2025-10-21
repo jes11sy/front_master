@@ -12,10 +12,23 @@ const nextConfig = {
   },
   
   reactStrictMode: true,
-  swcMinify: true,
+  
+  // Оптимизация изображений
+  images: {
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 60,
+  },
+  
+  // Оптимизация пакетов
   experimental: {
-    appDir: false
-  }
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-slot', '@radix-ui/react-label', '@radix-ui/react-checkbox', '@radix-ui/react-select'],
+  },
+  
+  // Отключаем x-powered-by заголовок
+  poweredByHeader: false,
+  
+  // Compression
+  compress: true,
 }
 
 module.exports = nextConfig
