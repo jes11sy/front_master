@@ -120,7 +120,7 @@ class ApiClient {
       user: any
       accessToken: string
       refreshToken: string
-    }>('/v1/auth/login', {
+    }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ 
         login, 
@@ -141,7 +141,7 @@ class ApiClient {
     try {
       // Отправляем запрос на сервер для инвалидации токена (если есть токен)
       if (this.token) {
-        await this.request('/v1/auth/logout', {
+        await this.request('/auth/logout', {
           method: 'POST',
         })
       }
