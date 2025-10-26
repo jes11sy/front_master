@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import AuthGuard from "@/components/auth-guard"
 import { apiClient } from '@/lib/api'
 import { logger } from '@/lib/logger'
-import { Navigation } from '@/components/navigation'
+import { SidebarNavigation } from '@/components/sidebar-navigation'
 
 // Импортируем оптимизированный CustomSelect
 import CustomSelect from '@/components/optimized/CustomSelect'
@@ -48,6 +48,7 @@ function OrdersContent() {
   const [masterFilter, setMasterFilter] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [openSelect, setOpenSelect] = useState<string | null>(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   // Состояние для данных
   const [orders, setOrders] = useState<Order[]>([])
@@ -107,6 +108,18 @@ function OrdersContent() {
       loadOrders()
     }
   }, [currentPage, statusFilter, cityFilter, masterFilter, itemsPerPage])
+
+  // Закрываем навигацию при изменении размера экрана на десктоп
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setSidebarOpen(false)
+      }
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   // Обработчики фильтров
   const handleSearchChange = (value: string) => {
@@ -195,9 +208,26 @@ function OrdersContent() {
   }
 
   return (
-    <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
-      <Navigation />
-      <div className="container mx-auto px-2 sm:px-4 py-8 pt-20">
+    <div className="min-h-screen flex" style={{backgroundColor: '#114643'}}>
+      <SidebarNavigation isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      {/* Оверлей для мобильной версии */}
+      {sidebarOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      <div className="flex-1 ml-64 p-8 max-md:ml-0 max-md:p-4">
+        {/* Кнопка для открытия навигации на мобильных */}
+        <button
+          className="md:hidden fixed top-4 left-4 z-40 p-2 bg-white rounded-lg shadow-lg border border-teal-200 text-gray-700 hover:text-teal-600 hover:bg-teal-50 transition-colors duration-200"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        
         <div className="max-w-none mx-auto">
           <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in" style={{borderColor: '#114643'}}>
             
