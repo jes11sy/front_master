@@ -1585,6 +1585,7 @@ const OrderDetail: NextPage = () => {
           </div>
         </div>
       </div>
+    </div>
   )
 }
 
