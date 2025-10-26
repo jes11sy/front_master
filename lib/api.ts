@@ -125,7 +125,7 @@ class ApiClient {
       body: JSON.stringify({ 
         login, 
         password, 
-        role: 'MASTER' // Master фронтенд всегда использует роль MASTER
+        role: 'master' // Master фронтенд всегда использует роль master
       }),
     })
 
