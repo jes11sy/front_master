@@ -388,7 +388,7 @@ const OrderDetail: NextPage = () => {
         // Получаем первый (и единственный) image_id из ответа
         const imageId = Object.keys(response.data)[0]
         
-        if (imageId) {
+        if (imageId && order.avitoChatId) {
           // Отправляем сообщение с изображением
           const messageResponse = await apiClient.sendAvitoImageMessage(
             order.avitoName,
@@ -493,7 +493,7 @@ const OrderDetail: NextPage = () => {
             }
             
             console.log('Записываем в cash:', cashData)
-            await apiClient.createCashEntry(cashData)
+            // await apiClient.createCashEntry(cashData)
             console.log('Приход успешно записан в таблицу cash')
           } catch (cashError) {
             console.error('Ошибка при записи в таблицу cash:', cashError)
@@ -1582,170 +1582,8 @@ const OrderDetail: NextPage = () => {
             </div>
           </div>
         </div>
-        
-      {/* Модальное окно чата Авито */}
-      {showChatModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-lg w-full max-w-4xl h-[80vh] flex flex-col">
-            {/* Заголовок модального окна */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-700">
-              <div className="flex items-center space-x-3">
-                <MessageSquare className="h-5 w-5 text-blue-400" />
-                <div>
-                  <h3 className="text-lg font-semibold text-white">Чат Авито</h3>
-                </div>
-              </div>
-              <Button
-                onClick={() => setShowChatModal(false)}
-                size="sm"
-                className="bg-green-600 hover:bg-green-700 text-white border-0"
-              >
-                ✕
-              </Button>
-            </div>
-
-            {/* Информация о чате */}
-            {avitoChat && (
-              <div className="p-4 border-b border-gray-700 bg-gray-700/30">
-                <div className="flex items-center space-x-4">
-                  {avitoChat.users && avitoChat.users.length > 0 && (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                        <span className="text-white text-sm font-medium">
-                          {avitoChat.users[0].name?.charAt(0) || '?'}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="text-white font-medium">
-                          {avitoChat.users[0].name || 'Неизвестный пользователь'}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  {avitoChat.context?.value && (
-                    <div className="ml-auto text-right">
-                      <p className="text-white font-medium text-sm">
-                        {avitoChat.context.value.title}
-                      </p>
-                      {avitoChat.context.value.price_string && (
-                        <p className="text-green-400 text-sm">
-                          {avitoChat.context.value.price_string}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Сообщения чата */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {avitoMessages.length > 0 ? (
-                avitoMessages.map((message, index) => (
-                  <div
-                    key={message.id || index}
-                    className={`flex ${message.direction === 'out' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-[70%] p-3 rounded-lg ${
-                        message.direction === 'out'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-700 text-white'
-                      }`}
-                    >
-                      <div className="text-sm">
-                        {message.content?.text && (
-                          <p className="whitespace-pre-wrap">{message.content.text}</p>
-                        )}
-                        {message.content?.image && (
-                          <div className="mt-2">
-                            <img
-                              src={message.content.image.sizes?.['640x480'] || message.content.image.sizes?.['140x105']}
-                              alt="Изображение"
-                              className="max-w-full h-auto rounded cursor-pointer hover:opacity-80 transition-opacity"
-                              onClick={() => {
-                                const imageUrl = message.content.image.sizes?.['1280x960'] || 
-                                               message.content.image.sizes?.['640x480'] || 
-                                               message.content.image.sizes?.['140x105']
-                                if (imageUrl) {
-                                  window.open(imageUrl, '_blank')
-                                }
-                              }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-xs opacity-70 mt-1">
-                        {new Date(message.created * 1000).toLocaleString('ru-RU')}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center text-gray-400 py-8">
-                  <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Сообщения не найдены</p>
-                </div>
-              )}
-            </div>
-
-            {/* Поле ввода сообщения */}
-            <div className="p-4 border-t border-gray-700">
-              <div className="flex space-x-3">
-                <Input
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Введите сообщение..."
-                  className="flex-1 bg-gray-700 border-gray-600 text-white placeholder-gray-600 focus:border-green-500"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault()
-                      handleSendMessage()
-                    }
-                  }}
-                  disabled={isSendingMessage || isUploadingImage}
-                />
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                  id="image-upload"
-                  disabled={isUploadingImage}
-                />
-                <label
-                  htmlFor="image-upload"
-                  className={`inline-flex items-center justify-center px-4 py-2 rounded-lg cursor-pointer transition-colors ${
-                    isUploadingImage
-                      ? 'bg-gray-600 cursor-not-allowed'
-                      : 'bg-blue-600 hover:bg-blue-700'
-                  } text-white`}
-                >
-                  {isUploadingImage ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  )}
-                </label>
-                <Button
-                  onClick={handleSendMessage}
-                  disabled={!newMessage.trim() || isSendingMessage || isUploadingImage}
-                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-6"
-                >
-                  {isSendingMessage ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <MessageSquare className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
-
-          </div>
-        </div>
       )}
+        </div>
       </div>
     </div>
   )
