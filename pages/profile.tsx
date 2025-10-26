@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { User, Mail, Phone, MapPin, Edit3, Save, X, Upload, FileImage, Loader2, AlertCircle } from 'lucide-react'
-import Navigation from '@/components/navigation'
+import { Navigation } from '@/components/navigation'
 import apiClient from '@/lib/api'
 import { useRouter } from 'next/router'
 

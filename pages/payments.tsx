@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Eye, Search, Filter, ChevronDown, ChevronUp, Upload, CheckCircle, XCircle, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
-import Navigation from '@/components/navigation'
+import { Navigation } from '@/components/navigation'
 import { apiClient } from '@/lib/api'
 
 interface Order {

@@ -160,12 +160,16 @@ class ApiClient {
     limit?: number
     status?: string
     city?: string
+    search?: string
+    master?: string
   }) {
     const searchParams = new URLSearchParams()
     if (params?.page) searchParams.append('page', params.page.toString())
     if (params?.limit) searchParams.append('limit', params.limit.toString())
     if (params?.status) searchParams.append('status', params.status)
     if (params?.city) searchParams.append('city', params.city)
+    if (params?.search) searchParams.append('search', params.search)
+    if (params?.master) searchParams.append('master', params.master)
 
     const query = searchParams.toString()
     return this.request<any>(`/orders${query ? `?${query}` : ''}`)

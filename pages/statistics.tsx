@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { CheckCircle, XCircle, DollarSign, Calculator, Wallet, Calendar, Filter, ChevronDown, ChevronUp, Loader2, AlertCircle } from 'lucide-react'
-import Navigation from '@/components/navigation'
+import { Navigation } from '@/components/navigation'
 import apiClient from '@/lib/api'
 import { useRouter } from 'next/router'
 

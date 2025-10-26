@@ -3,7 +3,7 @@ import { NextPage } from 'next'
 import Head from 'next/head'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import Navigation from '@/components/navigation'
+import { Navigation } from '@/components/navigation'
 
 const Schedule: NextPage = () => {
   const [currentWeek, setCurrentWeek] = useState(new Date())
