@@ -28,6 +28,7 @@ interface Order {
   typeEquipment: string
   problem: string
   note: string | null
+  createDate: string
   operator?: {
     id: number
     name: string
@@ -63,8 +64,8 @@ const Orders: NextPage = () => {
         console.log('Ответ API:', response)
         
         if (response.success && response.data) {
-          console.log('Заказы загружены:', response.data.length, 'заказов')
-          setOrders(response.data)
+          console.log('Заказы загружены:', response.data.orders?.length || 0, 'заказов')
+          setOrders(response.data.orders || [])
         } else {
           console.error('Ошибка загрузки заказов:', response.error)
           setError(response.error || 'Ошибка загрузки заказов')
