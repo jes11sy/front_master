@@ -3,8 +3,6 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { useRouter } from 'next/router'
-import apiClient from '@/lib/api'
 
 const navigationItems = [
   { name: 'Заказы', href: '/orders' },
@@ -22,36 +20,10 @@ const navigationItems = [
 
 export function Navigation() {
   const pathname = usePathname()
-  const router = useRouter()
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [expandedDropdown, setExpandedDropdown] = useState<string | null>(null)
-
-  const handleLogout = async () => {
-    try {
-      // Очищаем токены и данные авторизации
-      await apiClient.logout()
-      
-      // Перенаправляем на страницу логина
-      router.push('/login')
-    } catch (error) {
-      console.error('Ошибка при выходе из системы:', error)
-      // Даже если произошла ошибка, очищаем локальные данные и перенаправляем
-      apiClient.clearToken()
-      router.push('/login')
-    }
-  }
-
-  const handleDropdownClick = (href: string) => {
-    if (href === '/logout') {
-      handleLogout()
-    } else {
-      router.push(href)
-    }
-    setMobileMenuOpen(false)
-    setExpandedDropdown(null)
-  }
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 shadow-lg backdrop-blur-lg border-b bg-white" style={{borderColor: '#14b8a6'}}>

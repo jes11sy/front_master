@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { CheckCircle, XCircle, DollarSign, Calculator, Wallet, Calendar, Filter, ChevronDown, ChevronUp, Loader2, AlertCircle } from 'lucide-react'
-import { Navigation } from '@/components/navigation'
 import apiClient from '@/lib/api'
 import { useRouter } from 'next/router'
 
@@ -138,8 +137,7 @@ const Statistics: NextPage = () => {
       </Head>
       
       <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-green-900">
-        <Navigation />
-        <div className="max-w-7xl mx-auto p-6 pt-24 space-y-6">
+        <div className="max-w-7xl mx-auto p-6 pt-4 md:pt-6 space-y-6">
           {/* Date Filter */}
           <Card className="bg-black/80 backdrop-blur-sm border-gray-800">
             <CardHeader className="pb-3">

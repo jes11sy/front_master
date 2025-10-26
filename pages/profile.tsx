@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { User, Mail, Phone, MapPin, Edit3, Save, X, Upload, FileImage, Loader2, AlertCircle } from 'lucide-react'
-import { Navigation } from '@/components/navigation'
 import apiClient from '@/lib/api'
 import { useRouter } from 'next/router'
 
@@ -108,8 +107,7 @@ const Profile: NextPage = () => {
       </Head>
       
       <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-green-900">
-        <Navigation />
-        <div className="max-w-4xl mx-auto p-4 md:p-6 pt-20 md:pt-24 space-y-6">
+        <div className="max-w-4xl mx-auto p-4 md:p-6 pt-4 md:pt-6 space-y-6">
 
           {/* Profile Card */}
           <Card className="bg-black/80 backdrop-blur-sm border-gray-800">

@@ -3,138 +3,276 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { useRouter } from 'next/router'
-import apiClient from '@/lib/api'
 
 const navigationItems = [
-  { name: 'Заказы', href: '/orders', icon: '📋' },
-  { name: 'Статистика', href: '/statistics', icon: '📊' },
-  { name: 'Платежи', href: '/payments', icon: '💰' },
+  { name: 'Заказы', href: '/orders' },
+  { name: 'Статистика', href: '/statistics' },
+  { name: 'Платежи', href: '/payments' },
   { 
     name: 'Профиль', 
-    icon: '👤',
     dropdown: [
       { name: 'Настройки профиля', href: '/profile' },
-      { name: 'График работы', href: '/schedule' },
-      { name: 'Выйти', href: '/logout' }
+      { name: 'График работы', href: '/schedule' }
     ]
   },
 ]
 
-interface SidebarNavigationProps {
-  isOpen?: boolean
-  onClose?: () => void
-}
-
-export function SidebarNavigation({ isOpen = false, onClose }: SidebarNavigationProps) {
+export function SidebarNavigation() {
   const pathname = usePathname()
-  const router = useRouter()
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null)
-  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [expandedDropdown, setExpandedDropdown] = useState<string | null>(null)
-  const [isCollapsed, setIsCollapsed] = useState(false)
-
-  const handleLogout = async () => {
-    try {
-      await apiClient.logout()
-      router.push('/login')
-    } catch (error) {
-      console.error('Ошибка при выходе из системы:', error)
-      apiClient.clearToken()
-      router.push('/login')
-    }
-  }
-
-  const handleDropdownClick = (href: string) => {
-    if (href === '/logout') {
-      handleLogout()
-    } else {
-      router.push(href)
-    }
-    setExpandedDropdown(null)
-    onClose && onClose()
-  }
 
   return (
-    <div className={`fixed left-0 top-0 h-full bg-white shadow-lg border-r transition-all duration-300 z-50 ${
-      isCollapsed ? 'w-16' : 'w-64'
-    } max-md:w-64 max-md:transform ${isOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'}`} style={{borderColor: '#14b8a6'}}>
-      {/* Логотип */}
-      <div className="p-4 border-b" style={{borderColor: '#14b8a6'}}>
-        <div className="flex items-center justify-between">
-          {!isCollapsed && (
-            <Link href="/orders" className="flex items-center space-x-3 text-xl font-bold text-gray-800 hover:text-teal-600 transition-colors duration-200">
-              <div className="w-8 h-8 flex items-center justify-center">
-                <img 
-                  src="/images/logo.png?v=4" 
-                  alt="Новые Схемы" 
-                  className="w-full h-full object-contain"
-                />
-              </div>
-              <span>Новые Схемы</span>
-            </Link>
-          )}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-2 text-gray-600 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors duration-200"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-              </svg>
-            </button>
-            {onClose && (
-              <button
-                onClick={onClose}
-                className="md:hidden p-2 text-gray-600 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors duration-200"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
-          </div>
+    <>
+      {/* Мобильная навигация сверху */}
+      <nav 
+        className="md:hidden fixed top-0 left-0 right-0 z-50 shadow-lg backdrop-blur-lg border-b"
+        style={{
+          backgroundColor: 'white',
+          borderColor: '#14b8a6',
+          borderBottomWidth: '2px'
+        }}
+      >
+        <div className="flex items-center justify-between px-4 py-4">
+          <Link 
+            href="/orders" 
+            className="text-lg font-bold transition-colors duration-200"
+            style={{
+              color: '#374151',
+              textDecoration: 'none'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#14b8a6'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#374151'
+            }}
+          >
+            Новые Схемы
+          </Link>
+          
+          <button
+            className="p-2 rounded-lg transition-all duration-200"
+            style={{
+              color: '#374151'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#14b8a6'
+              e.currentTarget.style.backgroundColor = '#f0fdfa'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#374151'
+              e.currentTarget.style.backgroundColor = 'transparent'
+            }}
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            <svg className="h-6 w-6 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {mobileMenuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
         </div>
-      </div>
 
-      {/* Навигационные элементы */}
-      <nav className="p-4 space-y-2">
-        {navigationItems.map((item) => (
-          <div key={item.name}>
-            {item.href ? (
-              <Link
-                href={item.href}
-                className={`flex items-center px-3 py-3 text-sm font-medium transition-colors duration-200 rounded-lg ${
-                  pathname === item.href
-                    ? 'text-white bg-gradient-to-r from-teal-600 to-emerald-600 border border-teal-500/30 shadow-md'
-                    : 'text-gray-700 hover:text-teal-600 hover:bg-teal-50'
-                }`}
-                title={isCollapsed ? item.name : undefined}
-                onClick={() => onClose && onClose()}
+        {/* Мобильное меню */}
+        {mobileMenuOpen && (
+          <div 
+            className="border-t bg-white"
+            style={{
+              borderColor: '#14b8a6',
+              borderTopWidth: '2px'
+            }}
+          >
+            <div className="px-4 py-4 space-y-1">
+              {navigationItems.map((item) => (
+                <div key={item.name}>
+                  {item.href ? (
+                    <Link
+                      href={item.href}
+                      className="flex items-center w-full px-4 py-3 text-sm font-medium transition-all duration-200 rounded-lg"
+                      style={{
+                        color: pathname === item.href ? 'white' : '#374151',
+                        backgroundColor: pathname === item.href ? '#14b8a6' : 'transparent',
+                        textDecoration: 'none',
+                        boxShadow: pathname === item.href ? '0 2px 4px rgba(20, 184, 166, 0.3)' : 'none'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (pathname !== item.href) {
+                          e.currentTarget.style.color = '#14b8a6'
+                          e.currentTarget.style.backgroundColor = '#f0fdfa'
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (pathname !== item.href) {
+                          e.currentTarget.style.color = '#374151'
+                          e.currentTarget.style.backgroundColor = 'transparent'
+                        }
+                      }}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <span className="flex-1 text-left">{item.name}</span>
+                      {item.dropdown && (
+                        <svg className="ml-2 h-4 w-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </Link>
+                  ) : (
+                    <div>
+                      <button
+                        className="flex items-center w-full px-4 py-3 text-sm font-medium transition-all duration-200 rounded-lg"
+                        style={{
+                          color: expandedDropdown === item.name ? 'white' : '#374151',
+                          backgroundColor: expandedDropdown === item.name ? '#14b8a6' : 'transparent',
+                          textDecoration: 'none',
+                          boxShadow: expandedDropdown === item.name ? '0 2px 4px rgba(20, 184, 166, 0.3)' : 'none'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (expandedDropdown !== item.name) {
+                            e.currentTarget.style.color = '#14b8a6'
+                            e.currentTarget.style.backgroundColor = '#f0fdfa'
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (expandedDropdown !== item.name) {
+                            e.currentTarget.style.color = '#374151'
+                            e.currentTarget.style.backgroundColor = 'transparent'
+                          }
+                        }}
+                        onClick={() => setExpandedDropdown(expandedDropdown === item.name ? null : item.name)}
+                      >
+                        <span className="flex-1 text-left">{item.name}</span>
+                        {item.dropdown && (
+                          <svg 
+                            className={`h-4 w-4 transition-transform duration-300 ${
+                              expandedDropdown === item.name ? 'rotate-180' : ''
+                            }`} 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        )}
+                      </button>
+                      
+                      {/* Выпадающий список для мобильных */}
+                      {item.dropdown && expandedDropdown === item.name && (
+                        <div className="space-y-1 mt-2">
+                          {item.dropdown.map((dropdownItem) => (
+                            <Link
+                              key={dropdownItem.name}
+                              href={dropdownItem.href}
+                              className="flex items-center w-full px-4 py-2 text-sm transition-all duration-150 rounded-lg"
+                              style={{
+                                color: pathname === dropdownItem.href ? 'white' : '#6b7280',
+                                backgroundColor: pathname === dropdownItem.href ? '#14b8a6' : 'transparent',
+                                textDecoration: 'none',
+                                boxShadow: pathname === dropdownItem.href ? '0 1px 2px rgba(20, 184, 166, 0.3)' : 'none'
+                              }}
+                              onMouseEnter={(e) => {
+                                if (pathname !== dropdownItem.href) {
+                                  e.currentTarget.style.color = '#14b8a6'
+                                  e.currentTarget.style.backgroundColor = '#f0fdfa'
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (pathname !== dropdownItem.href) {
+                                  e.currentTarget.style.color = '#6b7280'
+                                  e.currentTarget.style.backgroundColor = 'transparent'
+                                }
+                              }}
+                              onClick={() => setMobileMenuOpen(false)}
+                            >
+                              <span className="flex-1 text-left">{dropdownItem.name}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </nav>
+
+      {/* Десктопная боковая навигация */}
+      <nav 
+        className="hidden md:block fixed top-0 left-0 h-full w-64 z-50 shadow-lg backdrop-blur-lg border-r"
+        style={{
+          backgroundColor: 'white',
+          borderColor: '#14b8a6',
+          borderRightWidth: '2px'
+        }}
+      >
+        <div className="flex flex-col h-full">
+        {/* Логотип */}
+        <div className="p-6 border-b" style={{borderColor: '#e5e7eb'}}>
+          <Link 
+            href="/orders" 
+            className="text-xl font-bold transition-colors duration-200 block"
+            style={{
+              color: '#374151',
+              textDecoration: 'none'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#14b8a6'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#374151'
+            }}
+          >
+            Новые Схемы
+          </Link>
+        </div>
+
+        {/* Навигационные элементы */}
+        <div className="flex-1 px-4 py-6">
+          <div className="space-y-2">
+            {navigationItems.map((item) => (
+              <div
+                key={item.name}
+                className="relative"
               >
-                <span className="text-lg mr-3">{item.icon}</span>
-                {!isCollapsed && <span>{item.name}</span>}
-              </Link>
-            ) : (
-              <div>
-                <button
-                  className={`w-full flex items-center px-3 py-3 text-sm font-medium transition-colors duration-200 rounded-lg ${
-                    expandedDropdown === item.name
-                      ? 'text-white bg-gradient-to-r from-teal-600 to-emerald-600 border border-teal-500/30 shadow-md'
-                      : 'text-gray-700 hover:text-teal-600 hover:bg-teal-50'
-                  }`}
-                  onClick={() => setExpandedDropdown(expandedDropdown === item.name ? null : item.name)}
-                  title={isCollapsed ? item.name : undefined}
-                >
-                  <span className="text-lg mr-3">{item.icon}</span>
-                  {!isCollapsed && (
-                    <>
+                {item.href ? (
+                  <Link
+                    href={item.href}
+                    className="flex items-center w-full px-4 py-3 text-sm font-medium transition-all duration-200 rounded-lg hover:bg-teal-50 hover:text-teal-600"
+                    style={{
+                      color: pathname === item.href ? 'white' : '#374151',
+                      backgroundColor: pathname === item.href ? '#14b8a6' : 'transparent',
+                      textDecoration: 'none',
+                      boxShadow: pathname === item.href ? '0 2px 4px rgba(20, 184, 166, 0.3)' : 'none'
+                    }}
+                  >
+                    <span className="flex-1 text-left">{item.name}</span>
+                    {item.dropdown && (
+                      <svg className="ml-2 h-4 w-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </Link>
+                ) : (
+                  <>
+                    <button
+                      className="flex items-center w-full px-4 py-3 text-sm font-medium transition-all duration-200 cursor-pointer rounded-lg hover:bg-teal-50 hover:text-teal-600"
+                      style={{
+                        color: expandedDropdown === item.name ? 'white' : '#374151',
+                        backgroundColor: expandedDropdown === item.name ? '#14b8a6' : 'transparent',
+                        textDecoration: 'none'
+                      }}
+                      onClick={() => {
+                        setExpandedDropdown(expandedDropdown === item.name ? null : item.name)
+                      }}
+                    >
                       <span className="flex-1 text-left">{item.name}</span>
                       {item.dropdown && (
                         <svg 
-                          className={`h-4 w-4 transition-transform duration-300 ${
-                            expandedDropdown === item.name ? 'rotate-180' : ''
-                          }`} 
+                          className={`ml-2 h-4 w-4 transition-transform duration-200 ${expandedDropdown === item.name ? 'rotate-180' : ''}`} 
                           fill="none" 
                           stroke="currentColor" 
                           viewBox="0 0 24 24"
@@ -142,37 +280,65 @@ export function SidebarNavigation({ isOpen = false, onClose }: SidebarNavigation
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                       )}
-                    </>
-                  )}
-                </button>
-                
-                {/* Выпадающий список */}
-                {item.dropdown && expandedDropdown === item.name && !isCollapsed && (
-                  <div className="pl-4 mt-2 space-y-1">
-                    {item.dropdown.map((dropdownItem) => (
-                      <button
-                        key={dropdownItem.name}
-                        onClick={() => handleDropdownClick(dropdownItem.href)}
-                        className={`block w-full text-left px-3 py-2 text-sm transition-colors duration-150 rounded-lg ${
-                          pathname === dropdownItem.href
-                            ? 'text-white bg-gradient-to-r from-teal-600 to-emerald-600 border border-teal-500 shadow-sm'
-                            : dropdownItem.href === '/logout'
-                            ? 'text-red-600 hover:bg-red-50 hover:text-red-700'
-                            : 'text-gray-600 hover:text-teal-700 hover:bg-teal-50'
-                        }`}
-                      >
-                        {dropdownItem.name}
-                      </button>
-                    ))}
-                  </div>
+                    </button>
+                    
+                    {/* Выпадающий список для десктопа (снизу) */}
+                    {item.dropdown && expandedDropdown === item.name && (
+                      <div className="space-y-1 mt-2">
+                        {item.dropdown.map((dropdownItem) => (
+                          <Link
+                            key={dropdownItem.name}
+                            href={dropdownItem.href}
+                            className="flex items-center w-full px-4 py-2 text-sm transition-all duration-150 rounded-lg"
+                            style={{
+                              color: pathname === dropdownItem.href ? 'white' : '#6b7280',
+                              backgroundColor: pathname === dropdownItem.href ? '#14b8a6' : 'transparent',
+                              textDecoration: 'none',
+                              boxShadow: pathname === dropdownItem.href ? '0 1px 2px rgba(20, 184, 166, 0.3)' : 'none'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (pathname !== dropdownItem.href) {
+                                e.currentTarget.style.color = '#14b8a6'
+                                e.currentTarget.style.backgroundColor = '#f0fdfa'
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (pathname !== dropdownItem.href) {
+                                e.currentTarget.style.color = '#6b7280'
+                                e.currentTarget.style.backgroundColor = 'transparent'
+                              }
+                            }}
+                          >
+                            <span className="flex-1 text-left">{dropdownItem.name}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
-            )}
+            ))}
           </div>
-        ))}
-      </nav>
-    </div>
+        </div>
+
+        {/* Кнопка выхода для десктопа */}
+        <div className="px-4 py-4 border-t" style={{borderColor: '#e5e7eb'}}>
+          <Link
+            href="/logout"
+            className="flex items-center w-full px-4 py-3 text-sm font-medium transition-all duration-200 rounded-lg hover:bg-red-50 hover:text-red-600"
+            style={{
+              color: '#374151',
+              textDecoration: 'none'
+            }}
+          >
+            <svg className="mr-3 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Выйти
+          </Link>
+        </div>
+      </div>
+    </nav>
+    </>
   )
 }
-
-export default SidebarNavigation
