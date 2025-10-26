@@ -796,7 +796,7 @@ const OrderDetail: NextPage = () => {
         <Head>
           <title>Загрузка заказа...</title>
         </Head>
-        <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-green-900">
+        <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
           <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
             <div className="flex items-center space-x-2">
               <Loader2 className="h-6 w-6 animate-spin text-green-500" />
@@ -814,7 +814,7 @@ const OrderDetail: NextPage = () => {
         <Head>
           <title>Ошибка загрузки заказа</title>
         </Head>
-        <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-green-900">
+        <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
           <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
             <div className="text-center">
               <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
@@ -838,7 +838,7 @@ const OrderDetail: NextPage = () => {
         <Head>
           <title>Заказ не найден</title>
         </Head>
-        <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-green-900">
+        <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
           <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
             <div className="text-center">
               <div className="text-white text-xl mb-4">Заказ не найден</div>
@@ -857,44 +857,47 @@ const OrderDetail: NextPage = () => {
       <Head>
         <title>Заказ №{order.id}</title>
       </Head>
-      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-green-900">
+      <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
         
-        <div className="container mx-auto px-4 pt-4 md:pt-6 pb-24">
-          {/* Заголовок */}
-          <div className="mb-8">
-            <div className="text-center">
-              <h1 className="text-4xl font-bold text-white mb-4">
-                Заказ №{order.id}
-              </h1>
-            </div>
-          </div>
+        <div className="container mx-auto px-2 sm:px-4 py-8 pt-4 md:pt-8">
+          <div className="max-w-none mx-auto">
+            <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in" style={{borderColor: '#114643'}}>
+              
+              {/* Заголовок */}
+              <div className="mb-8">
+                <div className="text-center">
+                  <h1 className="text-4xl font-bold text-gray-800 mb-4">
+                    Заказ №{order.id}
+                  </h1>
+                </div>
+              </div>
 
-          {/* Вкладки */}
-          <Card className="bg-gray-800/30 border-gray-700/50 backdrop-blur-sm shadow-xl">
-            <div className="border-b border-gray-700">
-              <nav className="flex space-x-2 sm:space-x-4 lg:space-x-8 px-2 sm:px-4 lg:px-6 overflow-x-auto">
-                <button
-                  onClick={() => setActiveTab('info')}
-                  className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
-                    activeTab === 'info'
-                      ? 'border-green-500 text-green-400'
-                      : 'border-transparent text-gray-400 hover:text-white hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center space-x-1 sm:space-x-2">
-                    <User className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span className="hidden sm:inline">Информация по заказу</span>
-                    <span className="sm:hidden">Информация</span>
-                  </div>
-                </button>
+              {/* Вкладки */}
+              <Card className="bg-white border-gray-200 shadow-lg">
+                <div className="border-b border-gray-200">
+                  <nav className="flex space-x-2 sm:space-x-4 lg:space-x-8 px-2 sm:px-4 lg:px-6 overflow-x-auto">
+                    <button
+                      onClick={() => setActiveTab('info')}
+                      className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
+                        activeTab === 'info'
+                          ? 'border-teal-500 text-teal-600'
+                          : 'border-transparent text-gray-600 hover:text-teal-600 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-1 sm:space-x-2">
+                        <User className="h-3 w-3 sm:h-4 sm:w-4" />
+                        <span className="hidden sm:inline">Информация по заказу</span>
+                        <span className="sm:hidden">Информация</span>
+                      </div>
+                    </button>
                 {(order.statusOrder === 'В работе' && showCloseButton) || (order.statusOrder !== 'Ожидает' && order.statusOrder !== 'Принял' && order.statusOrder !== 'В пути' && order.statusOrder !== 'В работе') && (
                   <button
                     onClick={() => setActiveTab('documents')}
-                    className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
-                      activeTab === 'documents'
-                        ? 'border-blue-500 text-blue-400'
-                        : 'border-transparent text-gray-400 hover:text-white hover:border-gray-300'
-                    }`}
+                      className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
+                        activeTab === 'documents'
+                          ? 'border-teal-500 text-teal-600'
+                          : 'border-transparent text-gray-600 hover:text-teal-600 hover:border-gray-300'
+                      }`}
                   >
                     <div className="flex items-center space-x-1 sm:space-x-2">
                       <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -907,8 +910,8 @@ const OrderDetail: NextPage = () => {
                     onClick={() => setActiveTab('communications')}
                     className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
                       activeTab === 'communications'
-                        ? 'border-purple-500 text-purple-400'
-                        : 'border-transparent text-gray-400 hover:text-white hover:border-gray-300'
+                        ? 'border-teal-500 text-teal-600'
+                        : 'border-transparent text-gray-600 hover:text-teal-600 hover:border-gray-300'
                     }`}
                   >
                     <div className="flex items-center space-x-1 sm:space-x-2">
@@ -928,36 +931,36 @@ const OrderDetail: NextPage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Основная информация */}
                     <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-white mb-4">Основная информация</h3>
+                      <h3 className="text-lg font-semibold text-gray-800 mb-4">Основная информация</h3>
                       <div className="space-y-3">
                         <div className="flex items-center space-x-3">
                           <div className="text-lg">🏢</div>
                           <div>
-                            <p className="text-sm text-gray-400">РК</p>
-                            <p className="text-white font-medium">{order.rk}</p>
+                            <p className="text-sm text-gray-600">РК</p>
+                            <p className="text-gray-800 font-medium">{order.rk}</p>
                           </div>
                         </div>
                         
                         <div className="flex items-center space-x-3">
                           <div className="text-lg">🏙️</div>
                           <div>
-                            <p className="text-sm text-gray-400">Город</p>
-                            <p className="text-white font-medium">{order.city}</p>
+                            <p className="text-sm text-gray-600">Город</p>
+                            <p className="text-gray-800 font-medium">{order.city}</p>
                           </div>
                         </div>
                         
                         <div className="flex items-center space-x-3">
                           <div className="text-lg">👨‍🔧</div>
                           <div>
-                            <p className="text-sm text-gray-400">Имя аккаунта</p>
-                            <p className="text-white font-medium">{order.avitoName || order.rk}</p>
+                            <p className="text-sm text-gray-600">Имя аккаунта</p>
+                            <p className="text-gray-800 font-medium">{order.avitoName || order.rk}</p>
                           </div>
                         </div>
                         
                         <div className="flex items-center space-x-3">
                           <div className="text-lg">📝</div>
                           <div>
-                            <p className="text-sm text-gray-400">Тип заказа</p>
+                            <p className="text-sm text-gray-600">Тип заказа</p>
                             <div className="mt-1">{getOrderTypeBadge(order.typeOrder)}</div>
                           </div>
                         </div>
@@ -965,7 +968,7 @@ const OrderDetail: NextPage = () => {
                         <div className="flex items-center space-x-3">
                           <div className="text-lg">📊</div>
                           <div>
-                            <p className="text-sm text-gray-400">Статус</p>
+                            <p className="text-sm text-gray-600">Статус</p>
                             <div className="mt-1">{getStatusBadge(order.statusOrder)}</div>
                           </div>
                         </div>
@@ -979,24 +982,24 @@ const OrderDetail: NextPage = () => {
                         <div className="flex items-center space-x-3">
                           <div className="text-lg">👤</div>
                           <div>
-                            <p className="text-sm text-gray-400">Имя клиента</p>
-                            <p className="text-white font-medium">{order.clientName}</p>
+                            <p className="text-sm text-gray-600">Имя клиента</p>
+                            <p className="text-gray-800 font-medium">{order.clientName}</p>
                           </div>
                         </div>
                         
                         <div className="flex items-center space-x-3">
-                          <Phone className="h-4 w-4 text-gray-400" />
+                          <Phone className="h-4 w-4 text-gray-600" />
                           <div>
-                            <p className="text-sm text-gray-400">Телефон</p>
-                            <p className="text-white font-medium">{order.phone}</p>
+                            <p className="text-sm text-gray-600">Телефон</p>
+                            <p className="text-gray-800 font-medium">{order.phone}</p>
                           </div>
                         </div>
                         
                         <div className="flex items-start space-x-3">
-                          <MapPin className="h-4 w-4 text-gray-400 mt-1" />
+                          <MapPin className="h-4 w-4 text-gray-600 mt-1" />
                           <div className="flex-1">
-                            <p className="text-sm text-gray-400">Адрес</p>
-                            <p className="text-white font-medium">{order.address}</p>
+                            <p className="text-sm text-gray-600">Адрес</p>
+                            <p className="text-gray-800 font-medium">{order.address}</p>
                           </div>
                         </div>
                       </div>
@@ -1010,16 +1013,16 @@ const OrderDetail: NextPage = () => {
                       <div className="flex items-center space-x-3">
                         <div className="text-lg">🔧</div>
                         <div>
-                          <p className="text-sm text-gray-400">Направление</p>
-                          <p className="text-white font-medium">{order.typeEquipment}</p>
+                          <p className="text-sm text-gray-600">Направление</p>
+                          <p className="text-gray-800 font-medium">{order.typeEquipment}</p>
                         </div>
                       </div>
                       
                       <div className="flex items-center space-x-3">
-                        <Calendar className="h-4 w-4 text-gray-400" />
+                        <Calendar className="h-4 w-4 text-gray-600" />
                         <div>
-                          <p className="text-sm text-gray-400">Дата встречи</p>
-                          <p className="text-white font-medium">{new Date(order.dateMeeting).toLocaleDateString('ru-RU', {
+                          <p className="text-sm text-gray-600">Дата встречи</p>
+                          <p className="text-gray-800 font-medium">{new Date(order.dateMeeting).toLocaleDateString('ru-RU', {
                             day: '2-digit',
                             month: '2-digit',
                             year: 'numeric',
@@ -1033,10 +1036,10 @@ const OrderDetail: NextPage = () => {
                     
                     <div className="mt-4">
                       <div className="flex items-start space-x-3">
-                        <AlertTriangle className="h-4 w-4 text-gray-400 mt-1" />
+                        <AlertTriangle className="h-4 w-4 text-gray-600 mt-1" />
                         <div className="flex-1">
-                          <p className="text-sm text-gray-400">Проблема</p>
-                          <p className="text-white font-medium">{order.problem}</p>
+                          <p className="text-sm text-gray-600">Проблема</p>
+                          <p className="text-gray-800 font-medium">{order.problem}</p>
                         </div>
                       </div>
                     </div>
@@ -1046,7 +1049,7 @@ const OrderDetail: NextPage = () => {
                         <div className="flex items-start space-x-3">
                           <div className="text-lg">📝</div>
                           <div className="flex-1">
-                            <p className="text-sm text-gray-400">Примечания</p>
+                            <p className="text-sm text-gray-600">Примечания</p>
                             <p className="text-white font-medium whitespace-pre-line text-sm">{order.note}</p>
                           </div>
                         </div>
@@ -1091,7 +1094,7 @@ const OrderDetail: NextPage = () => {
                               onChange={(e) => setPrepayment(e.target.value)}
                               className="bg-gray-700/50 border-gray-600 text-white placeholder-gray-400 pr-8"
                             />
-                            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">₽</span>
+                            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 text-sm">₽</span>
                           </div>
                         </div>
                         
@@ -1137,7 +1140,7 @@ const OrderDetail: NextPage = () => {
                             disabled={isCompleted || order.statusOrder === 'Готово'}
                             className={`bg-gray-700/50 border-gray-600 text-white placeholder-gray-400 pr-8 ${(isCompleted || order.statusOrder === 'Готово') ? 'opacity-50 cursor-not-allowed' : ''}`}
                           />
-                          <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">₽</span>
+                          <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 text-sm">₽</span>
                         </div>
                       </div>
                       
@@ -1153,7 +1156,7 @@ const OrderDetail: NextPage = () => {
                             disabled={isCompleted || order.statusOrder === 'Готово'}
                             className={`bg-gray-700/50 border-gray-600 text-white placeholder-gray-400 pr-8 ${(isCompleted || order.statusOrder === 'Готово') ? 'opacity-50 cursor-not-allowed' : ''}`}
                           />
-                          <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">₽</span>
+                          <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 text-sm">₽</span>
                         </div>
                       </div>
                     </div>
@@ -1209,7 +1212,7 @@ const OrderDetail: NextPage = () => {
                               </Button>
                             )}
                           </div>
-                          <div className="text-sm text-gray-400">
+                          <div className="text-sm text-gray-600">
                             {order.bsoDoc ? (
                               <span className="text-green-400">📎 {order.bsoDoc}</span>
                             ) : (
@@ -1235,7 +1238,7 @@ const OrderDetail: NextPage = () => {
                               </Button>
                             )}
                           </div>
-                          <div className="text-sm text-gray-400">
+                          <div className="text-sm text-gray-600">
                             {order.expenditureDoc ? (
                               <span className="text-green-400">📎 {order.expenditureDoc}</span>
                             ) : (
@@ -1267,7 +1270,7 @@ const OrderDetail: NextPage = () => {
                                   {call.status === 'incoming' ? 'Входящий' : 'Исходящий'} звонок
                                 </span>
                               </div>
-                              <span className="text-xs sm:text-sm text-gray-400">
+                              <span className="text-xs sm:text-sm text-gray-600">
                                 {new Date(call.dateCreate).toLocaleString('ru-RU')}
                               </span>
                             </div>
@@ -1298,7 +1301,7 @@ const OrderDetail: NextPage = () => {
                         ))
                       ) : (
                         <div className="p-4 bg-gray-700/30 rounded-lg text-center">
-                          <p className="text-gray-400">Записи звонков не найдены</p>
+                          <p className="text-gray-600">Записи звонков не найдены</p>
                         </div>
                       )}
                     </div>
@@ -1329,8 +1332,8 @@ const OrderDetail: NextPage = () => {
                     ) : (
                       <div className="p-4 bg-gray-700/30 rounded-lg text-center">
                         <div className="flex items-center justify-center space-x-2 mb-2">
-                          <MessageSquare className="h-5 w-5 text-gray-400" />
-                          <span className="text-gray-400 font-medium">Чат Авито не настроен</span>
+                          <MessageSquare className="h-5 w-5 text-gray-600" />
+                          <span className="text-gray-600 font-medium">Чат Авито не настроен</span>
                         </div>
                         <p className="text-gray-500 text-sm">
                           У этого заказа не указан ID чата Авито или имя аккаунта
@@ -1474,7 +1477,7 @@ const OrderDetail: NextPage = () => {
                               </div>
                               <div className="flex-1">
                                 <p className="text-white font-medium">Голосовое сообщение</p>
-                                <p className="text-gray-400 text-xs">ID: {message.content.voice.voice_id}</p>
+                                <p className="text-gray-600 text-xs">ID: {message.content.voice.voice_id}</p>
                               </div>
                               <button className="text-green-400 hover:text-green-300">
                                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -1494,7 +1497,7 @@ const OrderDetail: NextPage = () => {
                               </div>
                               <div className="flex-1">
                                 <p className="text-white font-medium">Звонок</p>
-                                <p className="text-gray-400 text-xs">
+                                <p className="text-gray-600 text-xs">
                                   {message.content.call.status === 'missed' ? 'Пропущенный' : 'Завершенный'}
                                 </p>
                               </div>
@@ -1517,7 +1520,7 @@ const OrderDetail: NextPage = () => {
                   </div>
                 ))
               ) : (
-                <div className="text-center text-gray-400 py-8">
+                <div className="text-center text-gray-600 py-8">
                   <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>Сообщения не найдены</p>
                 </div>
@@ -1578,10 +1581,10 @@ const OrderDetail: NextPage = () => {
               </div>
             </div>
 
+            </div>
           </div>
         </div>
-      )}
-    </div>
+      </div>
   )
 }
 
