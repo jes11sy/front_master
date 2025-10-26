@@ -2,7 +2,7 @@ import { NextPage } from 'next'
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
 import Head from 'next/head'
-import { Navigation } from '@/components/navigation'
+import { SidebarNavigation } from '@/components/sidebar-navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
@@ -77,6 +77,7 @@ const OrderDetail: NextPage = () => {
   const [isCompleted, setIsCompleted] = useState(false)
   const [cleanAmount, setCleanAmount] = useState('')
   const [masterChange, setMasterChange] = useState('')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   
   // Состояния для полей модерна
   const [prepayment, setPrepayment] = useState('')
@@ -558,20 +559,32 @@ const OrderDetail: NextPage = () => {
     }
   }, [totalAmount, expenseAmount])
 
+  // Закрываем навигацию при изменении размера экрана на десктоп
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setSidebarOpen(false)
+      }
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, string> = {
-      'Ожидает': 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-      'Принял': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-      'В пути': 'bg-purple-500/20 text-purple-300 border-purple-500/30',
-      'В работе': 'bg-orange-500/20 text-orange-300 border-orange-500/30',
-      'Готово': 'bg-green-500/20 text-green-300 border-green-500/30',
-      'Отказ': 'bg-red-500/20 text-red-300 border-red-500/30',
-      'Модерн': 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
-      'Незаказ': 'bg-gray-500/20 text-gray-300 border-gray-500/30'
+      'Ожидает': 'bg-yellow-500/20 text-yellow-700 border-yellow-500/30',
+      'Принял': 'bg-blue-500/20 text-blue-700 border-blue-500/30',
+      'В пути': 'bg-purple-500/20 text-purple-700 border-purple-500/30',
+      'В работе': 'bg-orange-500/20 text-orange-700 border-orange-500/30',
+      'Готово': 'bg-green-500/20 text-green-700 border-green-500/30',
+      'Отказ': 'bg-red-500/20 text-red-700 border-red-500/30',
+      'Модерн': 'bg-cyan-500/20 text-cyan-700 border-cyan-500/30',
+      'Незаказ': 'bg-gray-500/20 text-gray-700 border-gray-500/30'
     }
 
     return (
-      <Badge className={variants[status] || 'bg-gray-500/20 text-gray-300 border-gray-500/30'}>
+      <Badge className={variants[status] || 'bg-gray-500/20 text-gray-700 border-gray-500/30'}>
         {status}
       </Badge>
     )
@@ -579,13 +592,13 @@ const OrderDetail: NextPage = () => {
 
   const getOrderTypeBadge = (orderType: string) => {
     const variants: Record<string, string> = {
-      'Впервые': 'bg-green-500/20 text-green-300 border-green-500/30',
-      'Повтор': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-      'Гарантия': 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+      'Впервые': 'bg-green-500/20 text-green-700 border-green-500/30',
+      'Повтор': 'bg-blue-500/20 text-blue-700 border-blue-500/30',
+      'Гарантия': 'bg-purple-500/20 text-purple-700 border-purple-500/30'
     }
 
     return (
-      <Badge className={variants[orderType] || 'bg-gray-500/20 text-gray-300 border-gray-500/30'}>
+      <Badge className={variants[orderType] || 'bg-gray-500/20 text-gray-700 border-gray-500/30'}>
         {orderType}
       </Badge>
     )
@@ -605,7 +618,7 @@ const OrderDetail: NextPage = () => {
             <Button 
               onClick={handleAcceptOrder}
               disabled={isUpdating}
-              className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-4 text-base rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 border-0"
+              className="flex-1 bg-teal-600 hover:bg-teal-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-4 text-base rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 border-0"
             >
               <div className="flex items-center justify-center space-x-2">
                 {isUpdating ? (
@@ -797,12 +810,31 @@ const OrderDetail: NextPage = () => {
         <Head>
           <title>Загрузка заказа...</title>
         </Head>
-        <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-green-900">
-          <Navigation />
-          <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
-            <div className="flex items-center space-x-2">
-              <Loader2 className="h-6 w-6 animate-spin text-green-500" />
-              <div className="text-white text-lg">Загрузка заказа...</div>
+        <div className="min-h-screen flex" style={{backgroundColor: '#114643'}}>
+          <SidebarNavigation isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+          {/* Оверлей для мобильной версии */}
+          {sidebarOpen && (
+            <div 
+              className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
+          <div className="flex-1 ml-64 p-8 max-md:ml-0 max-md:p-4">
+            {/* Кнопка для открытия навигации на мобильных */}
+            <button
+              className="md:hidden fixed top-4 left-4 z-40 p-2 bg-white rounded-lg shadow-lg border border-teal-200 text-gray-700 hover:text-teal-600 hover:bg-teal-50 transition-colors duration-200"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            
+            <div className="flex items-center justify-center min-h-screen">
+              <div className="flex items-center space-x-2">
+                <Loader2 className="h-6 w-6 animate-spin text-teal-500" />
+                <div className="text-white text-lg">Загрузка заказа...</div>
+              </div>
             </div>
           </div>
         </div>
@@ -816,18 +848,37 @@ const OrderDetail: NextPage = () => {
         <Head>
           <title>Ошибка загрузки заказа</title>
         </Head>
-        <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-green-900">
-          <Navigation />
-          <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
-            <div className="text-center">
-              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <div className="text-red-300 text-lg mb-4">{error}</div>
-              <Button 
-                onClick={() => router.push('/orders')}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                Вернуться к списку заказов
-              </Button>
+        <div className="min-h-screen flex" style={{backgroundColor: '#114643'}}>
+          <SidebarNavigation isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+          {/* Оверлей для мобильной версии */}
+          {sidebarOpen && (
+            <div 
+              className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
+          <div className="flex-1 ml-64 p-8 max-md:ml-0 max-md:p-4">
+            {/* Кнопка для открытия навигации на мобильных */}
+            <button
+              className="md:hidden fixed top-4 left-4 z-40 p-2 bg-white rounded-lg shadow-lg border border-teal-200 text-gray-700 hover:text-teal-600 hover:bg-teal-50 transition-colors duration-200"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            
+            <div className="flex items-center justify-center min-h-screen">
+              <div className="text-center">
+                <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                <div className="text-red-300 text-lg mb-4">{error}</div>
+                <Button 
+                  onClick={() => router.push('/orders')}
+                  className="bg-teal-600 hover:bg-teal-700 text-white"
+                >
+                  Вернуться к списку заказов
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -841,14 +892,33 @@ const OrderDetail: NextPage = () => {
         <Head>
           <title>Заказ не найден</title>
         </Head>
-        <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-green-900">
-          <Navigation />
-          <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
-            <div className="text-center">
-              <div className="text-white text-xl mb-4">Заказ не найден</div>
-              <Button onClick={() => router.push('/orders')} className="bg-green-600 hover:bg-green-700">
-                Вернуться к заказам
-              </Button>
+        <div className="min-h-screen flex" style={{backgroundColor: '#114643'}}>
+          <SidebarNavigation isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+          {/* Оверлей для мобильной версии */}
+          {sidebarOpen && (
+            <div 
+              className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
+          <div className="flex-1 ml-64 p-8 max-md:ml-0 max-md:p-4">
+            {/* Кнопка для открытия навигации на мобильных */}
+            <button
+              className="md:hidden fixed top-4 left-4 z-40 p-2 bg-white rounded-lg shadow-lg border border-teal-200 text-gray-700 hover:text-teal-600 hover:bg-teal-50 transition-colors duration-200"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            
+            <div className="flex items-center justify-center min-h-screen">
+              <div className="text-center">
+                <div className="text-white text-xl mb-4">Заказ не найден</div>
+                <Button onClick={() => router.push('/orders')} className="bg-teal-600 hover:bg-teal-700">
+                  Вернуться к заказам
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -861,29 +931,47 @@ const OrderDetail: NextPage = () => {
       <Head>
         <title>Заказ №{order.id}</title>
       </Head>
-      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-green-900">
-        <Navigation />
-        
-        <div className="container mx-auto px-4 pt-24 pb-24">
-          {/* Заголовок */}
-          <div className="mb-8">
-            <div className="text-center">
-              <h1 className="text-4xl font-bold text-white mb-4">
-                Заказ №{order.id}
-              </h1>
+      <div className="min-h-screen flex" style={{backgroundColor: '#114643'}}>
+        <SidebarNavigation isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        {/* Оверлей для мобильной версии */}
+        {sidebarOpen && (
+          <div 
+            className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+        <div className="flex-1 ml-64 p-8 max-md:ml-0 max-md:p-4">
+          {/* Кнопка для открытия навигации на мобильных */}
+          <button
+            className="md:hidden fixed top-4 left-4 z-40 p-2 bg-white rounded-lg shadow-lg border border-teal-200 text-gray-700 hover:text-teal-600 hover:bg-teal-50 transition-colors duration-200"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          
+          <div className="max-w-none mx-auto">
+            {/* Заголовок */}
+            <div className="mb-8">
+              <div className="text-center">
+                <h1 className="text-4xl font-bold text-white mb-4">
+                  Заказ №{order.id}
+                </h1>
+              </div>
             </div>
-          </div>
 
-          {/* Вкладки */}
-          <Card className="bg-gray-800/30 border-gray-700/50 backdrop-blur-sm shadow-xl">
-            <div className="border-b border-gray-700">
+            {/* Основная карточка */}
+            <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in" style={{borderColor: '#114643'}}>
+            {/* Вкладки */}
+            <div className="border-b border-gray-200 mb-6">
               <nav className="flex space-x-2 sm:space-x-4 lg:space-x-8 px-2 sm:px-4 lg:px-6 overflow-x-auto">
                 <button
                   onClick={() => setActiveTab('info')}
                   className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
                     activeTab === 'info'
-                      ? 'border-green-500 text-green-400'
-                      : 'border-transparent text-gray-400 hover:text-white hover:border-gray-300'
+                      ? 'border-teal-500 text-teal-600'
+                      : 'border-transparent text-gray-600 hover:text-teal-600 hover:border-gray-300'
                   }`}
                 >
                   <div className="flex items-center space-x-1 sm:space-x-2">
@@ -897,8 +985,8 @@ const OrderDetail: NextPage = () => {
                     onClick={() => setActiveTab('documents')}
                     className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
                       activeTab === 'documents'
-                        ? 'border-blue-500 text-blue-400'
-                        : 'border-transparent text-gray-400 hover:text-white hover:border-gray-300'
+                        ? 'border-teal-500 text-teal-600'
+                        : 'border-transparent text-gray-600 hover:text-teal-600 hover:border-gray-300'
                     }`}
                   >
                     <div className="flex items-center space-x-1 sm:space-x-2">
@@ -912,8 +1000,8 @@ const OrderDetail: NextPage = () => {
                     onClick={() => setActiveTab('communications')}
                     className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
                       activeTab === 'communications'
-                        ? 'border-purple-500 text-purple-400'
-                        : 'border-transparent text-gray-400 hover:text-white hover:border-gray-300'
+                        ? 'border-teal-500 text-teal-600'
+                        : 'border-transparent text-gray-600 hover:text-teal-600 hover:border-gray-300'
                     }`}
                   >
                     <div className="flex items-center space-x-1 sm:space-x-2">
@@ -926,43 +1014,43 @@ const OrderDetail: NextPage = () => {
               </nav>
             </div>
 
-            <CardContent className="p-6">
+            <div className="p-6">
               {/* Вкладка: Информация по заказу */}
               {activeTab === 'info' && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Основная информация */}
                     <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-white mb-4">Основная информация</h3>
+                      <h3 className="text-lg font-semibold text-gray-800 mb-4">Основная информация</h3>
                       <div className="space-y-3">
                         <div className="flex items-center space-x-3">
                           <div className="text-lg">🏢</div>
                           <div>
-                            <p className="text-sm text-gray-400">РК</p>
-                            <p className="text-white font-medium">{order.rk}</p>
+                            <p className="text-sm text-gray-600">РК</p>
+                            <p className="text-gray-800 font-medium">{order.rk}</p>
                           </div>
                         </div>
                         
                         <div className="flex items-center space-x-3">
                           <div className="text-lg">🏙️</div>
                           <div>
-                            <p className="text-sm text-gray-400">Город</p>
-                            <p className="text-white font-medium">{order.city}</p>
+                            <p className="text-sm text-gray-600">Город</p>
+                            <p className="text-gray-800 font-medium">{order.city}</p>
                           </div>
                         </div>
                         
                         <div className="flex items-center space-x-3">
                           <div className="text-lg">👨‍🔧</div>
                           <div>
-                            <p className="text-sm text-gray-400">Имя аккаунта</p>
-                            <p className="text-white font-medium">{order.avitoName || order.rk}</p>
+                            <p className="text-sm text-gray-600">Имя аккаунта</p>
+                            <p className="text-gray-800 font-medium">{order.avitoName || order.rk}</p>
                           </div>
                         </div>
                         
                         <div className="flex items-center space-x-3">
                           <div className="text-lg">📝</div>
                           <div>
-                            <p className="text-sm text-gray-400">Тип заказа</p>
+                            <p className="text-sm text-gray-600">Тип заказа</p>
                             <div className="mt-1">{getOrderTypeBadge(order.typeOrder)}</div>
                           </div>
                         </div>
@@ -970,7 +1058,7 @@ const OrderDetail: NextPage = () => {
                         <div className="flex items-center space-x-3">
                           <div className="text-lg">📊</div>
                           <div>
-                            <p className="text-sm text-gray-400">Статус</p>
+                            <p className="text-sm text-gray-600">Статус</p>
                             <div className="mt-1">{getStatusBadge(order.statusOrder)}</div>
                           </div>
                         </div>
@@ -979,29 +1067,29 @@ const OrderDetail: NextPage = () => {
 
                     {/* Информация о клиенте */}
                     <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-white mb-4">Информация о клиенте</h3>
+                      <h3 className="text-lg font-semibold text-gray-800 mb-4">Информация о клиенте</h3>
                       <div className="space-y-3">
                         <div className="flex items-center space-x-3">
                           <div className="text-lg">👤</div>
                           <div>
-                            <p className="text-sm text-gray-400">Имя клиента</p>
-                            <p className="text-white font-medium">{order.clientName}</p>
+                            <p className="text-sm text-gray-600">Имя клиента</p>
+                            <p className="text-gray-800 font-medium">{order.clientName}</p>
                           </div>
                         </div>
                         
                         <div className="flex items-center space-x-3">
-                          <Phone className="h-4 w-4 text-gray-400" />
+                          <Phone className="h-4 w-4 text-gray-600" />
                           <div>
-                            <p className="text-sm text-gray-400">Телефон</p>
-                            <p className="text-white font-medium">{order.phone}</p>
+                            <p className="text-sm text-gray-600">Телефон</p>
+                            <p className="text-gray-800 font-medium">{order.phone}</p>
                           </div>
                         </div>
                         
                         <div className="flex items-start space-x-3">
-                          <MapPin className="h-4 w-4 text-gray-400 mt-1" />
+                          <MapPin className="h-4 w-4 text-gray-600 mt-1" />
                           <div className="flex-1">
-                            <p className="text-sm text-gray-400">Адрес</p>
-                            <p className="text-white font-medium">{order.address}</p>
+                            <p className="text-sm text-gray-600">Адрес</p>
+                            <p className="text-gray-800 font-medium">{order.address}</p>
                           </div>
                         </div>
                       </div>
@@ -1009,22 +1097,22 @@ const OrderDetail: NextPage = () => {
                   </div>
 
                   {/* Техническая информация */}
-                  <div className="pt-6 border-t border-gray-700">
-                    <h3 className="text-lg font-semibold text-white mb-4">Техническая информация</h3>
+                  <div className="pt-6 border-t border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Техническая информация</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="flex items-center space-x-3">
                         <div className="text-lg">🔧</div>
                         <div>
-                          <p className="text-sm text-gray-400">Направление</p>
-                          <p className="text-white font-medium">{order.typeEquipment}</p>
+                          <p className="text-sm text-gray-600">Направление</p>
+                          <p className="text-gray-800 font-medium">{order.typeEquipment}</p>
                         </div>
                       </div>
                       
                       <div className="flex items-center space-x-3">
-                        <Calendar className="h-4 w-4 text-gray-400" />
+                        <Calendar className="h-4 w-4 text-gray-600" />
                         <div>
-                          <p className="text-sm text-gray-400">Дата встречи</p>
-                          <p className="text-white font-medium">{new Date(order.dateMeeting).toLocaleDateString('ru-RU', {
+                          <p className="text-sm text-gray-600">Дата встречи</p>
+                          <p className="text-gray-800 font-medium">{new Date(order.dateMeeting).toLocaleDateString('ru-RU', {
                             day: '2-digit',
                             month: '2-digit',
                             year: 'numeric',
@@ -1038,10 +1126,10 @@ const OrderDetail: NextPage = () => {
                     
                     <div className="mt-4">
                       <div className="flex items-start space-x-3">
-                        <AlertTriangle className="h-4 w-4 text-gray-400 mt-1" />
+                        <AlertTriangle className="h-4 w-4 text-gray-600 mt-1" />
                         <div className="flex-1">
-                          <p className="text-sm text-gray-400">Проблема</p>
-                          <p className="text-white font-medium">{order.problem}</p>
+                          <p className="text-sm text-gray-600">Проблема</p>
+                          <p className="text-gray-800 font-medium">{order.problem}</p>
                         </div>
                       </div>
                     </div>
@@ -1051,8 +1139,8 @@ const OrderDetail: NextPage = () => {
                         <div className="flex items-start space-x-3">
                           <div className="text-lg">📝</div>
                           <div className="flex-1">
-                            <p className="text-sm text-gray-400">Примечания</p>
-                            <p className="text-white font-medium whitespace-pre-line text-sm">{order.note}</p>
+                            <p className="text-sm text-gray-600">Примечания</p>
+                            <p className="text-gray-800 font-medium whitespace-pre-line text-sm">{order.note}</p>
                           </div>
                         </div>
                       </div>
