@@ -94,14 +94,14 @@ const OrderDetail: NextPage = () => {
   // Функция для загрузки звонков
   const fetchCalls = async (callId: string) => {
     try {
-      console.log('🔍 Загружаем звонки для callId:', callId)
+      console.log('Загружаем звонки для callId:', callId)
       const response = await apiClient.getCallsByOrderId(callId)
-      console.log('📞 Ответ API:', response)
+      console.log('Ответ API:', response)
       if (response.success && response.data) {
-        console.log('📞 Устанавливаем звонки:', response.data)
+        console.log('Устанавливаем звонки:', response.data)
         setCalls(response.data)
       } else {
-        console.log('❌ Нет данных в ответе')
+        console.log('Нет данных в ответе')
       }
     } catch (error) {
       console.error('Ошибка загрузки звонков:', error)
@@ -126,11 +126,11 @@ const OrderDetail: NextPage = () => {
           setExpenseAmount(expense)
           
           // Загружаем звонки если есть callId
-          console.log('📋 callId заказа:', response.data.callId)
+          console.log('callId заказа:', response.data.callId)
           if (response.data.callId) {
             await fetchCalls(response.data.callId)
           } else {
-            console.log('❌ У заказа нет callId')
+            console.log('У заказа нет callId')
           }
           
               // Если статус "Готово", устанавливаем флаги и вычисляем значения
@@ -156,11 +156,11 @@ const OrderDetail: NextPage = () => {
           const expenseNum = parseFloat(expense) || 0
           
           if (totalNum > 5000) {
-            newNotifications.push('⚠️ Итог больше 5000₽ - необходимо прикрепить Договор')
+            newNotifications.push('Итог больше 5000₽ - необходимо прикрепить Договор')
           }
           
           if (expenseNum > 1001) {
-            newNotifications.push('⚠️ Расход больше 1001₽ - необходимо прикрепить чек расхода')
+            newNotifications.push('Расход больше 1001₽ - необходимо прикрепить чек расхода')
           }
           
           setNotifications(newNotifications)
@@ -524,11 +524,11 @@ const OrderDetail: NextPage = () => {
     const expense = parseFloat(expenseAmount) || 0
     
     if (total > 5000) {
-      newNotifications.push('⚠️ Итог больше 5000₽ - необходимо прикрепить Договор')
+      newNotifications.push('Итог больше 5000₽ - необходимо прикрепить Договор')
     }
     
     if (expense > 1001) {
-      newNotifications.push('⚠️ Расход больше 1001₽ - необходимо прикрепить чек расхода')
+      newNotifications.push('Расход больше 1001₽ - необходимо прикрепить чек расхода')
     }
     
     setNotifications(newNotifications)
@@ -559,18 +559,18 @@ const OrderDetail: NextPage = () => {
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, string> = {
-      'Ожидает': 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-      'Принял': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-      'В пути': 'bg-purple-500/20 text-purple-300 border-purple-500/30',
-      'В работе': 'bg-orange-500/20 text-orange-300 border-orange-500/30',
-      'Готово': 'bg-green-500/20 text-green-300 border-green-500/30',
-      'Отказ': 'bg-red-500/20 text-red-300 border-red-500/30',
-      'Модерн': 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
-      'Незаказ': 'bg-gray-500/20 text-gray-300 border-gray-500/30'
+      'Ожидает': 'bg-yellow-500/20 text-yellow-800 border-yellow-500/30',
+      'Принял': 'bg-blue-500/20 text-blue-800 border-blue-500/30',
+      'В пути': 'bg-purple-500/20 text-purple-800 border-purple-500/30',
+      'В работе': 'bg-orange-500/20 text-orange-800 border-orange-500/30',
+      'Готово': 'bg-green-500/20 text-green-800 border-green-500/30',
+      'Отказ': 'bg-red-500/20 text-red-800 border-red-500/30',
+      'Модерн': 'bg-cyan-500/20 text-cyan-800 border-cyan-500/30',
+      'Незаказ': 'bg-gray-500/20 text-gray-800 border-gray-500/30'
     }
 
     return (
-      <Badge className={variants[status] || 'bg-gray-500/20 text-gray-300 border-gray-500/30'}>
+      <Badge className={variants[status] || 'bg-gray-500/20 text-gray-800 border-gray-500/30'}>
         {status}
       </Badge>
     )
@@ -578,13 +578,13 @@ const OrderDetail: NextPage = () => {
 
   const getOrderTypeBadge = (orderType: string) => {
     const variants: Record<string, string> = {
-      'Впервые': 'bg-green-500/20 text-green-300 border-green-500/30',
-      'Повтор': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-      'Гарантия': 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+      'Впервые': 'bg-green-500/20 text-green-800 border-green-500/30',
+      'Повтор': 'bg-blue-500/20 text-blue-800 border-blue-500/30',
+      'Гарантия': 'bg-purple-500/20 text-purple-800 border-purple-500/30'
     }
 
     return (
-      <Badge className={variants[orderType] || 'bg-gray-500/20 text-gray-300 border-gray-500/30'}>
+      <Badge className={variants[orderType] || 'bg-gray-500/20 text-gray-800 border-gray-500/30'}>
         {orderType}
       </Badge>
     )
@@ -934,7 +934,9 @@ const OrderDetail: NextPage = () => {
                       <h3 className="text-lg font-semibold text-gray-800 mb-4">Основная информация</h3>
                       <div className="space-y-3">
                         <div className="flex items-center space-x-3">
-                          <div className="text-lg">🏢</div>
+                          <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center">
+                            <span className="text-xs font-bold text-gray-600">РК</span>
+                          </div>
                           <div>
                             <p className="text-sm text-gray-600">РК</p>
                             <p className="text-gray-800 font-medium">{order.rk}</p>
@@ -942,7 +944,9 @@ const OrderDetail: NextPage = () => {
                         </div>
                         
                         <div className="flex items-center space-x-3">
-                          <div className="text-lg">🏙️</div>
+                          <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center">
+                            <span className="text-xs font-bold text-gray-600">Г</span>
+                          </div>
                           <div>
                             <p className="text-sm text-gray-600">Город</p>
                             <p className="text-gray-800 font-medium">{order.city}</p>
@@ -950,7 +954,9 @@ const OrderDetail: NextPage = () => {
                         </div>
                         
                         <div className="flex items-center space-x-3">
-                          <div className="text-lg">👨‍🔧</div>
+                          <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center">
+                            <span className="text-xs font-bold text-gray-600">А</span>
+                          </div>
                           <div>
                             <p className="text-sm text-gray-600">Имя аккаунта</p>
                             <p className="text-gray-800 font-medium">{order.avitoName || order.rk}</p>
@@ -958,7 +964,9 @@ const OrderDetail: NextPage = () => {
                         </div>
                         
                         <div className="flex items-center space-x-3">
-                          <div className="text-lg">📝</div>
+                          <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center">
+                            <span className="text-xs font-bold text-gray-600">Т</span>
+                          </div>
                           <div>
                             <p className="text-sm text-gray-600">Тип заказа</p>
                             <div className="mt-1">{getOrderTypeBadge(order.typeOrder)}</div>
@@ -966,7 +974,9 @@ const OrderDetail: NextPage = () => {
                         </div>
                         
                         <div className="flex items-center space-x-3">
-                          <div className="text-lg">📊</div>
+                          <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center">
+                            <span className="text-xs font-bold text-gray-600">С</span>
+                          </div>
                           <div>
                             <p className="text-sm text-gray-600">Статус</p>
                             <div className="mt-1">{getStatusBadge(order.statusOrder)}</div>
@@ -980,7 +990,9 @@ const OrderDetail: NextPage = () => {
                       <h3 className="text-lg font-semibold text-white mb-4">Информация о клиенте</h3>
                       <div className="space-y-3">
                         <div className="flex items-center space-x-3">
-                          <div className="text-lg">👤</div>
+                          <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center">
+                            <span className="text-xs font-bold text-gray-600">И</span>
+                          </div>
                           <div>
                             <p className="text-sm text-gray-600">Имя клиента</p>
                             <p className="text-gray-800 font-medium">{order.clientName}</p>
@@ -1011,7 +1023,9 @@ const OrderDetail: NextPage = () => {
                     <h3 className="text-lg font-semibold text-white mb-4">Техническая информация</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="flex items-center space-x-3">
-                        <div className="text-lg">🔧</div>
+                        <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center">
+                          <span className="text-xs font-bold text-gray-600">Н</span>
+                        </div>
                         <div>
                           <p className="text-sm text-gray-600">Направление</p>
                           <p className="text-gray-800 font-medium">{order.typeEquipment}</p>
@@ -1034,20 +1048,24 @@ const OrderDetail: NextPage = () => {
                       </div>
                     </div>
                     
-                    <div className="mt-4">
-                      <div className="flex items-start space-x-3">
-                        <AlertTriangle className="h-4 w-4 text-gray-600 mt-1" />
-                        <div className="flex-1">
-                          <p className="text-sm text-gray-600">Проблема</p>
-                          <p className="text-gray-800 font-medium">{order.problem}</p>
+                      <div className="mt-4">
+                        <div className="flex items-start space-x-3">
+                          <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center mt-1">
+                            <span className="text-xs font-bold text-gray-600">П</span>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm text-gray-600">Проблема</p>
+                            <p className="text-gray-800 font-medium">{order.problem}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
                     
                     {order.note && (
                       <div className="mt-4">
                         <div className="flex items-start space-x-3">
-                          <div className="text-lg">📝</div>
+                          <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center">
+                            <span className="text-xs font-bold text-gray-600">П</span>
+                          </div>
                           <div className="flex-1">
                             <p className="text-sm text-gray-600">Примечания</p>
                             <p className="text-white font-medium whitespace-pre-line text-sm">{order.note}</p>
@@ -1198,7 +1216,9 @@ const OrderDetail: NextPage = () => {
                         <div className="p-4 bg-gray-700/30 rounded-lg">
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center space-x-3">
-                              <div className="text-lg">📄</div>
+                              <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center">
+                                <span className="text-xs font-bold text-gray-600">Д</span>
+                              </div>
                               <span className="text-white font-medium">Договор</span>
                             </div>
                             {order.statusOrder !== 'Готово' && order.statusOrder !== 'Незаказ' && order.statusOrder !== 'Отказ' && (
@@ -1214,7 +1234,7 @@ const OrderDetail: NextPage = () => {
                           </div>
                           <div className="text-sm text-gray-600">
                             {order.bsoDoc ? (
-                              <span className="text-green-400">📎 {order.bsoDoc}</span>
+                              <span className="text-green-400">Файл прикреплен: {order.bsoDoc}</span>
                             ) : (
                               'Файл не прикреплен'
                             )}
@@ -1224,7 +1244,9 @@ const OrderDetail: NextPage = () => {
                         <div className="p-4 bg-gray-700/30 rounded-lg">
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center space-x-3">
-                              <div className="text-lg">🧾</div>
+                              <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center">
+                                <span className="text-xs font-bold text-gray-600">Ч</span>
+                              </div>
                               <span className="text-white font-medium">Чек расхода</span>
                             </div>
                             {order.statusOrder !== 'Готово' && order.statusOrder !== 'Незаказ' && order.statusOrder !== 'Отказ' && (
@@ -1240,7 +1262,7 @@ const OrderDetail: NextPage = () => {
                           </div>
                           <div className="text-sm text-gray-600">
                             {order.expenditureDoc ? (
-                              <span className="text-green-400">📎 {order.expenditureDoc}</span>
+                              <span className="text-green-400">Файл прикреплен: {order.expenditureDoc}</span>
                             ) : (
                               'Файл не прикреплен'
                             )}
@@ -1354,7 +1376,7 @@ const OrderDetail: NextPage = () => {
             {notifications.length > 0 && order?.statusOrder === 'В работе' && (
               <div className="mb-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
                 <p className="text-red-300 text-sm font-medium text-center">
-                  ⚠️ Завершить заказ можно только после прикрепления всех необходимых документов
+                  Завершить заказ можно только после прикрепления всех необходимых документов
                 </p>
               </div>
             )}
@@ -1363,7 +1385,7 @@ const OrderDetail: NextPage = () => {
             {validationError && (
               <div className="mb-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
                 <p className="text-red-300 text-sm font-medium text-center">
-                  ⚠️ {validationError}
+                  {validationError}
                 </p>
               </div>
             )}
@@ -1392,7 +1414,7 @@ const OrderDetail: NextPage = () => {
                 size="sm"
                 className="bg-green-600 hover:bg-green-700 text-white border-0"
               >
-                ✕
+                Закрыть
               </Button>
             </div>
 
