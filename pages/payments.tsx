@@ -593,6 +593,7 @@ const Payments: NextPage = () => {
               </div>
             </div>
           )}
+          </div>
         </div>
       </div>
     </>
