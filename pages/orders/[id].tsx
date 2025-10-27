@@ -608,7 +608,7 @@ const OrderDetail: NextPage = () => {
             >
               <div className="flex items-center justify-center space-x-2">
                 {isUpdating ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  'Обновление...'
                 ) : (
                   <div className="w-2 h-2 bg-white rounded-full"></div>
                 )}
@@ -622,7 +622,7 @@ const OrderDetail: NextPage = () => {
             >
               <div className="flex items-center justify-center space-x-2">
                 {isUpdating ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  'Обновление...'
                 ) : (
                   <div className="w-2 h-2 bg-white rounded-full"></div>
                 )}
@@ -685,7 +685,7 @@ const OrderDetail: NextPage = () => {
             >
               <div className="flex items-center justify-center space-x-2">
                 {isUpdating ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  'Обновление...'
                 ) : (
                   <div className="w-2 h-2 bg-white rounded-full"></div>
                 )}
@@ -703,7 +703,7 @@ const OrderDetail: NextPage = () => {
             >
               <div className="flex items-center justify-center space-x-2">
                 {isUpdating ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  'Обновление...'
                 ) : (
                   <div className="w-2 h-2 bg-white rounded-full"></div>
                 )}
@@ -720,7 +720,7 @@ const OrderDetail: NextPage = () => {
             >
               <div className="flex items-center justify-center space-x-2">
                 {isUpdating ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  'Обновление...'
                 ) : (
                   <div className="w-2 h-2 bg-white rounded-full"></div>
                 )}
@@ -747,7 +747,7 @@ const OrderDetail: NextPage = () => {
             >
               <div className="flex items-center justify-center space-x-2">
                 {isUpdating ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  'Обновление...'
                 ) : (
                   <div className="w-2 h-2 bg-white rounded-full"></div>
                 )}
@@ -799,7 +799,6 @@ const OrderDetail: NextPage = () => {
         <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
           <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
             <div className="flex items-center space-x-2">
-              <Loader2 className="h-6 w-6 animate-spin text-green-500" />
               <div className="text-white text-lg">Загрузка заказа...</div>
             </div>
           </div>
@@ -817,7 +816,6 @@ const OrderDetail: NextPage = () => {
         <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
           <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
             <div className="text-center">
-              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
               <div className="text-red-300 text-lg mb-4">{error}</div>
               <Button 
                 onClick={() => router.push('/orders')}
@@ -884,11 +882,8 @@ const OrderDetail: NextPage = () => {
                           : 'border-transparent text-gray-600 hover:text-teal-600 hover:border-gray-300'
                       }`}
                     >
-                      <div className="flex items-center space-x-1 sm:space-x-2">
-                        <User className="h-3 w-3 sm:h-4 sm:w-4" />
-                        <span className="hidden sm:inline">Информация по заказу</span>
-                        <span className="sm:hidden">Информация</span>
-                      </div>
+                      <span className="hidden sm:inline">Информация по заказу</span>
+                      <span className="sm:hidden">Информация</span>
                     </button>
                 {(order.statusOrder === 'В работе' && showCloseButton) || (order.statusOrder !== 'Ожидает' && order.statusOrder !== 'Принял' && order.statusOrder !== 'В пути' && order.statusOrder !== 'В работе') && (
                   <button
@@ -899,10 +894,7 @@ const OrderDetail: NextPage = () => {
                           : 'border-transparent text-gray-600 hover:text-teal-600 hover:border-gray-300'
                       }`}
                   >
-                    <div className="flex items-center space-x-1 sm:space-x-2">
-                      <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
-                      <span>Итог</span>
-                    </div>
+                    <span>Итог</span>
                   </button>
                 )}
                 {order.statusOrder !== 'Ожидает' && (
@@ -914,11 +906,8 @@ const OrderDetail: NextPage = () => {
                         : 'border-transparent text-gray-600 hover:text-teal-600 hover:border-gray-300'
                     }`}
                   >
-                    <div className="flex items-center space-x-1 sm:space-x-2">
-                      <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4" />
-                      <span className="hidden sm:inline">Записи звонков / Чат Авито</span>
-                      <span className="sm:hidden">Звонки / Чат</span>
-                    </div>
+                    <span className="hidden sm:inline">Записи звонков / Чат Авито</span>
+                    <span className="sm:hidden">Звонки / Чат</span>
                   </button>
                 )}
               </nav>
@@ -934,19 +923,13 @@ const OrderDetail: NextPage = () => {
                       <h3 className="text-lg font-semibold text-gray-800 mb-4">Основная информация</h3>
                       <div className="space-y-3">
                         <div className="flex items-center space-x-3">
-                          <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center">
-                            <span className="text-xs font-bold text-gray-600">РК</span>
-                          </div>
                           <div>
-                            <p className="text-sm text-gray-600">РК</p>
+                            <p className="text-sm text-gray-600">Рекламная компания</p>
                             <p className="text-gray-800 font-medium">{order.rk}</p>
                           </div>
                         </div>
                         
                         <div className="flex items-center space-x-3">
-                          <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center">
-                            <span className="text-xs font-bold text-gray-600">Г</span>
-                          </div>
                           <div>
                             <p className="text-sm text-gray-600">Город</p>
                             <p className="text-gray-800 font-medium">{order.city}</p>
@@ -954,9 +937,6 @@ const OrderDetail: NextPage = () => {
                         </div>
                         
                         <div className="flex items-center space-x-3">
-                          <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center">
-                            <span className="text-xs font-bold text-gray-600">А</span>
-                          </div>
                           <div>
                             <p className="text-sm text-gray-600">Имя аккаунта</p>
                             <p className="text-gray-800 font-medium">{order.avitoName || order.rk}</p>
@@ -964,9 +944,6 @@ const OrderDetail: NextPage = () => {
                         </div>
                         
                         <div className="flex items-center space-x-3">
-                          <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center">
-                            <span className="text-xs font-bold text-gray-600">Т</span>
-                          </div>
                           <div>
                             <p className="text-sm text-gray-600">Тип заказа</p>
                             <div className="mt-1">{getOrderTypeBadge(order.typeOrder)}</div>
@@ -974,9 +951,6 @@ const OrderDetail: NextPage = () => {
                         </div>
                         
                         <div className="flex items-center space-x-3">
-                          <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center">
-                            <span className="text-xs font-bold text-gray-600">С</span>
-                          </div>
                           <div>
                             <p className="text-sm text-gray-600">Статус</p>
                             <div className="mt-1">{getStatusBadge(order.statusOrder)}</div>
@@ -990,9 +964,6 @@ const OrderDetail: NextPage = () => {
                       <h3 className="text-lg font-semibold text-white mb-4">Информация о клиенте</h3>
                       <div className="space-y-3">
                         <div className="flex items-center space-x-3">
-                          <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center">
-                            <span className="text-xs font-bold text-gray-600">И</span>
-                          </div>
                           <div>
                             <p className="text-sm text-gray-600">Имя клиента</p>
                             <p className="text-gray-800 font-medium">{order.clientName}</p>
@@ -1000,7 +971,6 @@ const OrderDetail: NextPage = () => {
                         </div>
                         
                         <div className="flex items-center space-x-3">
-                          <Phone className="h-4 w-4 text-gray-600" />
                           <div>
                             <p className="text-sm text-gray-600">Телефон</p>
                             <p className="text-gray-800 font-medium">{order.phone}</p>
@@ -1008,7 +978,6 @@ const OrderDetail: NextPage = () => {
                         </div>
                         
                         <div className="flex items-start space-x-3">
-                          <MapPin className="h-4 w-4 text-gray-600 mt-1" />
                           <div className="flex-1">
                             <p className="text-sm text-gray-600">Адрес</p>
                             <p className="text-gray-800 font-medium">{order.address}</p>
@@ -1023,9 +992,6 @@ const OrderDetail: NextPage = () => {
                     <h3 className="text-lg font-semibold text-white mb-4">Техническая информация</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="flex items-center space-x-3">
-                        <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center">
-                          <span className="text-xs font-bold text-gray-600">Н</span>
-                        </div>
                         <div>
                           <p className="text-sm text-gray-600">Направление</p>
                           <p className="text-gray-800 font-medium">{order.typeEquipment}</p>
@@ -1033,7 +999,6 @@ const OrderDetail: NextPage = () => {
                       </div>
                       
                       <div className="flex items-center space-x-3">
-                        <Calendar className="h-4 w-4 text-gray-600" />
                         <div>
                           <p className="text-sm text-gray-600">Дата встречи</p>
                           <p className="text-gray-800 font-medium">{new Date(order.dateMeeting).toLocaleDateString('ru-RU', {
@@ -1050,9 +1015,6 @@ const OrderDetail: NextPage = () => {
                     
                       <div className="mt-4">
                         <div className="flex items-start space-x-3">
-                          <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center mt-1">
-                            <span className="text-xs font-bold text-gray-600">П</span>
-                          </div>
                           <div className="flex-1">
                             <p className="text-sm text-gray-600">Проблема</p>
                             <p className="text-gray-800 font-medium">{order.problem}</p>
@@ -1063,9 +1025,6 @@ const OrderDetail: NextPage = () => {
                     {order.note && (
                       <div className="mt-4">
                         <div className="flex items-start space-x-3">
-                          <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center">
-                            <span className="text-xs font-bold text-gray-600">П</span>
-                          </div>
                           <div className="flex-1">
                             <p className="text-sm text-gray-600">Примечания</p>
                             <p className="text-white font-medium whitespace-pre-line text-sm">{order.note}</p>
@@ -1216,9 +1175,6 @@ const OrderDetail: NextPage = () => {
                         <div className="p-4 bg-gray-700/30 rounded-lg">
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center space-x-3">
-                              <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center">
-                                <span className="text-xs font-bold text-gray-600">Д</span>
-                              </div>
                               <span className="text-white font-medium">Договор</span>
                             </div>
                             {order.statusOrder !== 'Готово' && order.statusOrder !== 'Незаказ' && order.statusOrder !== 'Отказ' && (
@@ -1227,7 +1183,6 @@ const OrderDetail: NextPage = () => {
                                 variant="outline" 
                                 className="bg-gray-600 border-gray-500 text-white hover:bg-gray-500"
                               >
-                                <Upload className="h-4 w-4 mr-1" />
                                 Прикрепить
                               </Button>
                             )}
@@ -1244,9 +1199,6 @@ const OrderDetail: NextPage = () => {
                         <div className="p-4 bg-gray-700/30 rounded-lg">
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center space-x-3">
-                              <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center">
-                                <span className="text-xs font-bold text-gray-600">Ч</span>
-                              </div>
                               <span className="text-white font-medium">Чек расхода</span>
                             </div>
                             {order.statusOrder !== 'Готово' && order.statusOrder !== 'Незаказ' && order.statusOrder !== 'Отказ' && (
@@ -1255,7 +1207,6 @@ const OrderDetail: NextPage = () => {
                                 variant="outline" 
                                 className="bg-gray-600 border-gray-500 text-white hover:bg-gray-500"
                               >
-                                <Upload className="h-4 w-4 mr-1" />
                                 Прикрепить
                               </Button>
                             )}
@@ -1287,7 +1238,6 @@ const OrderDetail: NextPage = () => {
                           <div key={call.id} className="p-3 sm:p-4 bg-gray-700/30 rounded-lg">
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 space-y-2 sm:space-y-0">
                               <div className="flex items-center space-x-2">
-                                <Phone className="h-4 w-4 text-green-400 flex-shrink-0" />
                                 <span className="text-white font-medium text-sm sm:text-base">
                                   {call.status === 'incoming' ? 'Входящий' : 'Исходящий'} звонок
                                 </span>
@@ -1339,11 +1289,6 @@ const OrderDetail: NextPage = () => {
                         className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white p-4 h-auto"
                       >
                         <div className="flex items-center justify-center space-x-3">
-                          {isLoadingChat ? (
-                            <Loader2 className="h-5 w-5 animate-spin" />
-                          ) : (
-                            <MessageSquare className="h-5 w-5" />
-                          )}
                           <div className="text-left">
                             <div className="font-semibold">
                               {isLoadingChat ? 'Загружаем чат...' : 'Просмотреть чат Авито'}
@@ -1354,7 +1299,6 @@ const OrderDetail: NextPage = () => {
                     ) : (
                       <div className="p-4 bg-gray-700/30 rounded-lg text-center">
                         <div className="flex items-center justify-center space-x-2 mb-2">
-                          <MessageSquare className="h-5 w-5 text-gray-600" />
                           <span className="text-gray-600 font-medium">Чат Авито не настроен</span>
                         </div>
                         <p className="text-gray-500 text-sm">
@@ -1404,7 +1348,6 @@ const OrderDetail: NextPage = () => {
             {/* Заголовок модального окна */}
             <div className="flex items-center justify-between p-4 border-b border-gray-700">
               <div className="flex items-center space-x-3">
-                <MessageSquare className="h-5 w-5 text-blue-400" />
                 <div>
                   <h3 className="text-lg font-semibold text-white">Чат Авито</h3>
                 </div>
@@ -1543,7 +1486,6 @@ const OrderDetail: NextPage = () => {
                 ))
               ) : (
                 <div className="text-center text-gray-600 py-8">
-                  <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>Сообщения не найдены</p>
                 </div>
               )}
@@ -1582,11 +1524,9 @@ const OrderDetail: NextPage = () => {
                   } text-white`}
                 >
                   {isUploadingImage ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    'Загрузка...'
                   ) : (
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
+                    'Изображение'
                   )}
                 </label>
                 <Button
@@ -1595,9 +1535,9 @@ const OrderDetail: NextPage = () => {
                   className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-6"
                 >
                   {isSendingMessage ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    'Отправка...'
                   ) : (
-                    <MessageSquare className="h-4 w-4" />
+                    'Отправить'
                   )}
                 </Button>
               </div>
