@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { CheckCircle, XCircle, DollarSign, Calculator, Wallet, Calendar, Filter, ChevronDown, ChevronUp, Loader2, AlertCircle } from 'lucide-react'
+// Убрали все иконки из lucide-react
 import apiClient from '@/lib/api'
 import { useRouter } from 'next/router'
 
@@ -136,29 +136,28 @@ const Statistics: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       
-      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-green-900">
-        <div className="max-w-7xl mx-auto p-6 pt-4 md:pt-6 space-y-6">
+      <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
+        <div className="container mx-auto px-2 sm:px-4 py-8 pt-4 md:pt-8">
+          <div className="max-w-none mx-auto">
           {/* Date Filter */}
-          <Card className="bg-black/80 backdrop-blur-sm border-gray-800">
-            <CardHeader className="pb-3">
+          <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in mb-8" style={{borderColor: '#114643'}}>
+            <div className="mb-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Filter className="h-4 w-4 text-gray-400" />
-                  <CardTitle className="text-white text-sm">Фильтр</CardTitle>
+                  <h3 className="text-lg font-semibold text-gray-800">Фильтр</h3>
                 </div>
                 <Button
                   onClick={() => setIsFilterVisible(!isFilterVisible)}
                   variant="ghost"
                   size="sm"
-                  className="text-gray-400 hover:text-white hover:bg-gray-800/50 h-8 w-8 p-0"
+                  className="text-gray-600 hover:text-teal-600 hover:bg-teal-50 h-8 w-8 p-0"
                 >
-                  {isFilterVisible ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                  {isFilterVisible ? 'Свернуть' : 'Развернуть'}
                 </Button>
               </div>
-            </CardHeader>
+            </div>
             {isFilterVisible && (
-              <CardContent>
-                <div className="space-y-4">
+              <div className="space-y-4">
                   {/* Period Selection */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     {[
@@ -172,8 +171,8 @@ const Statistics: NextPage = () => {
                         onClick={() => handlePeriodChange(option.value)}
                         className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 text-center ${
                           period === option.value
-                            ? 'bg-green-600 text-white border border-green-500 shadow-lg shadow-green-500/25'
-                            : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50 hover:text-white border border-gray-700'
+                            ? 'bg-teal-600 text-white border border-teal-500 shadow-lg shadow-teal-500/25'
+                            : 'bg-gray-100 text-gray-700 hover:bg-teal-50 hover:text-teal-600 border border-gray-300'
                         }`}
                       >
                         {option.label}
@@ -183,25 +182,25 @@ const Statistics: NextPage = () => {
 
                   {/* Date Range Selection */}
                   {period === 'custom' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 bg-gray-800/30 rounded-lg">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 bg-gray-50 rounded-lg">
                       <div className="space-y-1">
-                        <Label htmlFor="startDate" className="text-gray-300 text-xs">Дата начала</Label>
+                        <Label htmlFor="startDate" className="text-gray-700 text-xs">Дата начала</Label>
                         <Input
                           id="startDate"
                           type="date"
                           value={startDate}
                           onChange={(e) => setStartDate(e.target.value)}
-                          className="bg-gray-800/50 border-gray-600 text-white focus:border-gray-500 text-sm h-9"
+                          className="bg-white border-gray-300 text-gray-800 focus:border-teal-500 text-sm h-9"
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label htmlFor="endDate" className="text-gray-300 text-xs">Дата окончания</Label>
+                        <Label htmlFor="endDate" className="text-gray-700 text-xs">Дата окончания</Label>
                         <Input
                           id="endDate"
                           type="date"
                           value={endDate}
                           onChange={(e) => setEndDate(e.target.value)}
-                          className="bg-gray-800/50 border-gray-600 text-white focus:border-gray-500 text-sm h-9"
+                          className="bg-white border-gray-300 text-gray-800 focus:border-teal-500 text-sm h-9"
                         />
                       </div>
                     </div>
@@ -209,61 +208,58 @@ const Statistics: NextPage = () => {
 
                   {/* Selected Period Display */}
                   {period !== 'custom' && (startDate || endDate) && (
-                    <div className="flex items-center space-x-2 p-2 bg-gray-800/30 rounded-lg border border-gray-700">
-                      <Calendar className="h-3 w-3 text-gray-400" />
-                      <span className="text-xs text-gray-300">
+                    <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg border border-gray-300">
+                      <span className="text-xs text-gray-700">
                         Период: {new Date(startDate).toLocaleDateString('ru-RU')} - {new Date(endDate).toLocaleDateString('ru-RU')}
                       </span>
                     </div>
                   )}
                 </div>
-              </CardContent>
-            )}
-          </Card>
+              )}
+            </div>
 
           {/* Statistics Table */}
-          <Card className="bg-black/80 backdrop-blur-sm border-gray-800">
-            <CardHeader>
-            </CardHeader>
-            <CardContent>
+          <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in" style={{borderColor: '#114643'}}>
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-800 text-center">Статистика</h2>
+            </div>
+            <div>
               {loading ? (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-green-500" />
-                  <span className="ml-2 text-gray-300">Загрузка статистики...</span>
+                  <div className="text-gray-600">Загрузка статистики...</div>
                 </div>
               ) : error ? (
                 <div className="flex items-center justify-center py-12">
-                  <AlertCircle className="h-8 w-8 text-red-500" />
-                  <span className="ml-2 text-red-300">{error}</span>
+                  <div className="text-red-600">{error}</div>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-gray-700">
-                        <th className="text-left py-3 px-4 text-gray-300 font-medium">Город</th>
-                        <th className="text-right py-3 px-4 text-gray-300 font-medium">Закрытые заказы</th>
-                        <th className="text-right py-3 px-4 text-gray-300 font-medium">Модерны</th>
-                        <th className="text-right py-3 px-4 text-gray-300 font-medium">Оборот</th>
-                        <th className="text-right py-3 px-4 text-gray-300 font-medium">Средний чек</th>
-                        <th className="text-right py-3 px-4 text-gray-300 font-medium">Зарплата</th>
+                      <tr className="border-b border-gray-300">
+                        <th className="text-left py-3 px-4 text-gray-700 font-medium">Город</th>
+                        <th className="text-right py-3 px-4 text-gray-700 font-medium">Закрытые заказы</th>
+                        <th className="text-right py-3 px-4 text-gray-700 font-medium">Модерны</th>
+                        <th className="text-right py-3 px-4 text-gray-700 font-medium">Оборот</th>
+                        <th className="text-right py-3 px-4 text-gray-700 font-medium">Средний чек</th>
+                        <th className="text-right py-3 px-4 text-gray-700 font-medium">Зарплата</th>
                       </tr>
                     </thead>
                     <tbody>
                       {cityStatistics.map((stat, index) => (
                         <tr 
                           key={index} 
-                          className={`border-b border-gray-800/50 ${
+                          className={`border-b border-gray-200 ${
                             stat.city === 'ИТОГО' 
-                              ? 'bg-gray-800/30 font-semibold' 
-                              : 'hover:bg-gray-800/20'
+                              ? 'bg-teal-50 font-semibold' 
+                              : 'hover:bg-gray-50'
                           }`}
                         >
                           <td className="py-3 px-4">
                             <span className={`${
                               stat.city === 'ИТОГО' 
-                                ? 'text-white font-bold' 
-                                : 'text-white'
+                                ? 'text-teal-800 font-bold' 
+                                : 'text-gray-800'
                             }`}>
                               {stat.city}
                             </span>
@@ -271,8 +267,8 @@ const Statistics: NextPage = () => {
                           <td className="py-3 px-4 text-right">
                             <span className={`${
                               stat.city === 'ИТОГО' 
-                                ? 'text-white font-bold' 
-                                : 'text-gray-300'
+                                ? 'text-teal-800 font-bold' 
+                                : 'text-gray-600'
                             }`}>
                               {stat.closedOrders}
                             </span>
@@ -280,8 +276,8 @@ const Statistics: NextPage = () => {
                           <td className="py-3 px-4 text-right">
                             <span className={`${
                               stat.city === 'ИТОГО' 
-                                ? 'text-white font-bold' 
-                                : 'text-gray-300'
+                                ? 'text-teal-800 font-bold' 
+                                : 'text-gray-600'
                             }`}>
                               {stat.modernOrders}
                             </span>
@@ -289,8 +285,8 @@ const Statistics: NextPage = () => {
                           <td className="py-3 px-4 text-right">
                             <span className={`${
                               stat.city === 'ИТОГО' 
-                                ? 'text-white font-bold' 
-                                : 'text-gray-300'
+                                ? 'text-teal-800 font-bold' 
+                                : 'text-gray-600'
                             }`}>
                               {stat.totalRevenue.toLocaleString('ru-RU')} ₽
                             </span>
@@ -298,8 +294,8 @@ const Statistics: NextPage = () => {
                           <td className="py-3 px-4 text-right">
                             <span className={`${
                               stat.city === 'ИТОГО' 
-                                ? 'text-white font-bold' 
-                                : 'text-gray-300'
+                                ? 'text-teal-800 font-bold' 
+                                : 'text-gray-600'
                             }`}>
                               {stat.averageCheck.toLocaleString('ru-RU')} ₽
                             </span>
@@ -307,8 +303,8 @@ const Statistics: NextPage = () => {
                           <td className="py-3 px-4 text-right">
                             <span className={`${
                               stat.city === 'ИТОГО' 
-                                ? 'text-white font-bold' 
-                                : 'text-gray-300'
+                                ? 'text-teal-800 font-bold' 
+                                : 'text-gray-600'
                             }`}>
                               {stat.salary.toLocaleString('ru-RU')} ₽
                             </span>
@@ -319,9 +315,9 @@ const Statistics: NextPage = () => {
                   </table>
                 </div>
               )}
-            </CardContent>
-          </Card>
-
+            </div>
+          </div>
+          </div>
         </div>
       </div>
     </>

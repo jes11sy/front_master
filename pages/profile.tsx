@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { User, Mail, Phone, MapPin, Edit3, Save, X, Upload, FileImage, Loader2, AlertCircle } from 'lucide-react'
+// Убрали все иконки из lucide-react
 import apiClient from '@/lib/api'
 import { useRouter } from 'next/router'
 
@@ -106,91 +106,81 @@ const Profile: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       
-      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-green-900">
-        <div className="max-w-4xl mx-auto p-4 md:p-6 pt-4 md:pt-6 space-y-6">
+      <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
+        <div className="container mx-auto px-2 sm:px-4 py-8 pt-4 md:pt-8">
+          <div className="max-w-4xl mx-auto">
 
           {/* Profile Card */}
-          <Card className="bg-black/80 backdrop-blur-sm border-gray-800">
-            <CardHeader>
+          <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in" style={{borderColor: '#114643'}}>
+            <div className="mb-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <CardTitle className="text-white flex items-center">
-                    <User className="h-5 w-5 mr-2" />
-                    Личная информация
-                  </CardTitle>
+                  <h2 className="text-2xl font-bold text-gray-800">Личная информация</h2>
                 </div>
                 {!isEditing ? (
-                  <Button onClick={handleEdit} className="bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto">
-                    <Edit3 className="h-4 w-4 mr-2" />
+                  <Button onClick={handleEdit} className="bg-teal-600 hover:bg-teal-700 text-white w-full sm:w-auto">
                     Загрузить документы
                   </Button>
                 ) : (
                   <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                    <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">
-                      <Save className="h-4 w-4 mr-2" />
+                    <Button onClick={handleSave} className="bg-teal-600 hover:bg-teal-700 w-full sm:w-auto">
                       Сохранить
                     </Button>
-                    <Button onClick={handleCancel} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800 w-full sm:w-auto">
-                      <X className="h-4 w-4 mr-2" />
+                    <Button onClick={handleCancel} variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-100 w-full sm:w-auto">
                       Отмена
                     </Button>
                   </div>
                 )}
               </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
+            </div>
+            <div className="space-y-6">
               {loading ? (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-green-500" />
-                  <span className="ml-2 text-gray-300">Загрузка профиля...</span>
+                  <div className="text-gray-600">Загрузка профиля...</div>
                 </div>
               ) : error ? (
                 <div className="flex items-center justify-center py-12">
-                  <AlertCircle className="h-8 w-8 text-red-500" />
-                  <span className="ml-2 text-red-300">{error}</span>
+                  <div className="text-red-600">{error}</div>
                 </div>
               ) : profileData ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="name" className="text-gray-300">Имя</Label>
-                    <p className="text-white font-medium">{profileData.name}</p>
+                    <Label htmlFor="name" className="text-gray-700">Имя</Label>
+                    <p className="text-gray-800 font-medium">{profileData.name}</p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="login" className="text-gray-300">Логин</Label>
-                    <p className="text-white font-medium flex items-center">
-                      <Mail className="h-4 w-4 mr-2 text-gray-400" />
+                    <Label htmlFor="login" className="text-gray-700">Логин</Label>
+                    <p className="text-gray-800 font-medium">
                       {profileData.login}
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="status" className="text-gray-300">Статус работы</Label>
-                    <p className="text-white font-medium flex items-center">
-                      <Phone className="h-4 w-4 mr-2 text-gray-400" />
+                    <Label htmlFor="status" className="text-gray-700">Статус работы</Label>
+                    <p className="text-gray-800 font-medium">
                       {profileData.statusWork}
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="cities" className="text-gray-300">Города</Label>
-                    <p className="text-white font-medium flex items-center">
-                      <MapPin className="h-4 w-4 mr-2 text-gray-400" />
+                    <Label htmlFor="cities" className="text-gray-700">Города</Label>
+                    <p className="text-gray-800 font-medium">
                       {profileData.cities.join(', ')}
                     </p>
                   </div>
 
                   {profileData.tgId && (
                     <div className="space-y-2">
-                      <Label htmlFor="tgId" className="text-gray-300">Telegram ID</Label>
-                      <p className="text-white font-medium">{profileData.tgId}</p>
+                      <Label htmlFor="tgId" className="text-gray-700">Telegram ID</Label>
+                      <p className="text-gray-800 font-medium">{profileData.tgId}</p>
                     </div>
                   )}
 
                   {profileData.note && (
                     <div className="space-y-2">
-                      <Label htmlFor="note" className="text-gray-300">Примечание</Label>
-                      <p className="text-white font-medium">{profileData.note}</p>
+                      <Label htmlFor="note" className="text-gray-700">Примечание</Label>
+                      <p className="text-gray-800 font-medium">{profileData.note}</p>
                     </div>
                   )}
                 </div>
@@ -198,14 +188,13 @@ const Profile: NextPage = () => {
 
               {/* Documents Section */}
               {profileData && (
-                <div className="mt-8 pt-6 border-t border-gray-700">
-                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                    <FileImage className="h-5 w-5 mr-2" />
+                <div className="mt-8 pt-6 border-t border-gray-300">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
                     Документы
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                     <div className="space-y-2">
-                      <Label className="text-gray-300">Фото паспорта</Label>
+                      <Label className="text-gray-700">Фото паспорта</Label>
                       {isEditing ? (
                         <div className="space-y-2">
                           <input
@@ -217,30 +206,29 @@ const Profile: NextPage = () => {
                           />
                           <label
                             htmlFor="passport-upload"
-                            className="flex items-center justify-center w-full h-16 sm:h-20 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer hover:border-green-500 transition-colors"
+                            className="flex items-center justify-center w-full h-16 sm:h-20 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-teal-500 transition-colors"
                           >
                             <div className="text-center">
-                              <Upload className="h-6 w-6 mx-auto text-gray-400 mb-1" />
-                              <p className="text-sm text-gray-400">Загрузить фото</p>
+                              <p className="text-sm text-gray-600">Загрузить фото</p>
                             </div>
                           </label>
                           {profileData.passportDoc && (
-                            <p className="text-green-400 text-sm">{profileData.passportDoc}</p>
+                            <p className="text-teal-600 text-sm">{profileData.passportDoc}</p>
                           )}
                         </div>
                       ) : (
-                        <div className="flex items-center justify-center w-full h-16 sm:h-20 border border-gray-600 rounded-lg bg-gray-800/30">
+                        <div className="flex items-center justify-center w-full h-16 sm:h-20 border border-gray-300 rounded-lg bg-gray-50">
                           {profileData.passportDoc ? (
-                            <p className="text-white text-sm">{profileData.passportDoc}</p>
+                            <p className="text-gray-800 text-sm">{profileData.passportDoc}</p>
                           ) : (
-                            <p className="text-gray-400 text-sm">Фото не загружено</p>
+                            <p className="text-gray-500 text-sm">Фото не загружено</p>
                           )}
                         </div>
                       )}
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-gray-300">Фото договора</Label>
+                      <Label className="text-gray-700">Фото договора</Label>
                       {isEditing ? (
                         <div className="space-y-2">
                           <input
@@ -252,23 +240,22 @@ const Profile: NextPage = () => {
                           />
                           <label
                             htmlFor="contract-upload"
-                            className="flex items-center justify-center w-full h-16 sm:h-20 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer hover:border-green-500 transition-colors"
+                            className="flex items-center justify-center w-full h-16 sm:h-20 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-teal-500 transition-colors"
                           >
                             <div className="text-center">
-                              <Upload className="h-6 w-6 mx-auto text-gray-400 mb-1" />
-                              <p className="text-sm text-gray-400">Загрузить фото</p>
+                              <p className="text-sm text-gray-600">Загрузить фото</p>
                             </div>
                           </label>
                           {profileData.contractDoc && (
-                            <p className="text-green-400 text-sm">{profileData.contractDoc}</p>
+                            <p className="text-teal-600 text-sm">{profileData.contractDoc}</p>
                           )}
                         </div>
                       ) : (
-                        <div className="flex items-center justify-center w-full h-16 sm:h-20 border border-gray-600 rounded-lg bg-gray-800/30">
+                        <div className="flex items-center justify-center w-full h-16 sm:h-20 border border-gray-300 rounded-lg bg-gray-50">
                           {profileData.contractDoc ? (
-                            <p className="text-white text-sm">{profileData.contractDoc}</p>
+                            <p className="text-gray-800 text-sm">{profileData.contractDoc}</p>
                           ) : (
-                            <p className="text-gray-400 text-sm">Фото не загружено</p>
+                            <p className="text-gray-500 text-sm">Фото не загружено</p>
                           )}
                         </div>
                       )}
@@ -276,9 +263,9 @@ const Profile: NextPage = () => {
                   </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
-
+            </div>
+          </div>
+          </div>
         </div>
       </div>
     </>

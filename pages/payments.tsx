@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Eye, Search, Filter, ChevronDown, ChevronUp, Upload, CheckCircle, XCircle, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
+// Убрали все иконки из lucide-react
 import { apiClient } from '@/lib/api'
 
 interface Order {
@@ -223,9 +223,9 @@ const Payments: NextPage = () => {
 
   const getCashSubmissionStatusBadge = (status: string) => {
     const variants = {
-      submitted: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-      approved: 'bg-green-500/20 text-green-300 border-green-500/30',
-      rejected: 'bg-red-500/20 text-red-300 border-red-500/30',
+      submitted: 'bg-yellow-500/20 text-yellow-800 border-yellow-500/30',
+      approved: 'bg-green-500/20 text-green-800 border-green-500/30',
+      rejected: 'bg-red-500/20 text-red-800 border-red-500/30',
     }
     
     const labels = {
@@ -261,33 +261,35 @@ const Payments: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       
-      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-green-900">
-        <div className="max-w-7xl mx-auto p-6 pt-4 md:pt-6 space-y-6">
+      <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
+        <div className="container mx-auto px-2 sm:px-4 py-8 pt-4 md:pt-8">
+          <div className="max-w-none mx-auto">
           {/* Суммы */}
-          <Card className="bg-black/80 backdrop-blur-sm border-gray-800">
-            <CardContent className="p-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="text-center">
-                  <div className="text-xs text-gray-400 mb-1">Не сдано</div>
-                  <div className="text-lg font-bold text-white">{formatNumber(getNotSubmittedSum())} ₽</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xs text-gray-400 mb-1">На проверке</div>
-                  <div className="text-lg font-bold text-white">{formatNumber(getOnReviewSum())} ₽</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xs text-gray-400 mb-1">Общая сумма</div>
-                  <div className="text-xl font-bold text-green-400">{formatNumber(getNotSubmittedSum() + getOnReviewSum())} ₽</div>
-                </div>
+          <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in mb-8" style={{borderColor: '#114643'}}>
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-800 text-center">Сдача на проверку</h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="text-center">
+                <div className="text-sm text-gray-600 mb-1">Не сдано</div>
+                <div className="text-lg font-bold text-gray-800">{formatNumber(getNotSubmittedSum())} ₽</div>
               </div>
-            </CardContent>
-          </Card>
+              <div className="text-center">
+                <div className="text-sm text-gray-600 mb-1">На проверке</div>
+                <div className="text-lg font-bold text-gray-800">{formatNumber(getOnReviewSum())} ₽</div>
+              </div>
+              <div className="text-center">
+                <div className="text-sm text-gray-600 mb-1">Общая сумма</div>
+                <div className="text-xl font-bold text-teal-600">{formatNumber(getNotSubmittedSum() + getOnReviewSum())} ₽</div>
+              </div>
+            </div>
+          </div>
 
           {/* Уведомления */}
           {notifications.length > 0 && (
             <div className="fixed top-20 right-4 z-50 space-y-2">
               {notifications.map((notification, index) => (
-                <div key={index} className="bg-green-500/20 text-green-300 border border-green-500/30 px-4 py-2 rounded-lg">
+                <div key={index} className="bg-teal-500/20 text-teal-800 border border-teal-500/30 px-4 py-2 rounded-lg">
                   {notification}
                 </div>
               ))}
@@ -296,68 +298,68 @@ const Payments: NextPage = () => {
 
 
           {/* Фильтр */}
-          <Card className="bg-black/80 backdrop-blur-sm border-gray-800">
-            <CardHeader>
+          <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in mb-8" style={{borderColor: '#114643'}}>
+            <div className="mb-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Filter className="h-4 w-4 text-gray-400" />
-                  <CardTitle className="text-white text-sm">Фильтр по статусу</CardTitle>
+                  <h3 className="text-lg font-semibold text-gray-800">Фильтр по статусу</h3>
                 </div>
                 <Button
                   onClick={() => setShowFilters(!showFilters)}
                   variant="ghost"
                   size="sm"
-                  className="md:hidden text-gray-400 hover:text-white hover:bg-gray-800/50 h-8 w-8 p-0"
+                  className="md:hidden text-gray-600 hover:text-teal-600 hover:bg-teal-50 h-8 w-8 p-0"
                 >
-                  {showFilters ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                  {showFilters ? 'Свернуть' : 'Развернуть'}
                 </Button>
               </div>
-            </CardHeader>
-            <CardContent className={`${showFilters ? 'block' : 'hidden md:block'}`}>
+            </div>
+            <div className={`${showFilters ? 'block' : 'hidden md:block'}`}>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-64 bg-gray-800/50 border-gray-700 text-white">
+                <SelectTrigger className="w-full sm:w-64 bg-white border-gray-300 text-gray-800">
                   <SelectValue placeholder="Выберите статус" />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
-                  <SelectItem value="all" className="text-white focus:text-gray-900 focus:bg-gray-200 hover:text-gray-900 hover:bg-gray-200">
+                <SelectContent className="bg-white border-gray-300">
+                  <SelectItem value="all" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
                     Все статусы
                   </SelectItem>
-                  <SelectItem value="not_submitted" className="text-white focus:text-gray-900 focus:bg-gray-200 hover:text-gray-900 hover:bg-gray-200">
+                  <SelectItem value="not_submitted" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
                     Не отправлена
                   </SelectItem>
-                  <SelectItem value="submitted" className="text-white focus:text-gray-900 focus:bg-gray-200 hover:text-gray-900 hover:bg-gray-200">
+                  <SelectItem value="submitted" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
                     На проверке
                   </SelectItem>
-                  <SelectItem value="approved" className="text-white focus:text-gray-900 focus:bg-gray-200 hover:text-gray-900 hover:bg-gray-200">
+                  <SelectItem value="approved" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
                     Подтверждено
                   </SelectItem>
-                  <SelectItem value="rejected" className="text-white focus:text-gray-900 focus:bg-gray-200 hover:text-gray-900 hover:bg-gray-200">
+                  <SelectItem value="rejected" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
                     Отклонено
                   </SelectItem>
                 </SelectContent>
               </Select>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Объединенная таблица */}
-          <Card className="bg-black/80 backdrop-blur-sm border-gray-800">
-            <CardHeader>
-            </CardHeader>
-            <CardContent>
+          <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in" style={{borderColor: '#114643'}}>
+            <div className="mb-6">
+              <h3 className="text-xl font-semibold text-gray-800 text-center">Заказы и сдачи</h3>
+            </div>
+            <div>
               {loading ? (
-                <div className="text-center py-8 text-gray-300">Загрузка...</div>
+                <div className="text-center py-8 text-gray-600">Загрузка...</div>
               ) : (
                 <>
                   {/* Десктопная таблица */}
                   <div className="hidden md:block overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-gray-700 hover:bg-gray-800/50">
-                      <TableHead className="text-gray-300">Заказ</TableHead>
-                          <TableHead className="text-gray-300">Клиент</TableHead>
-                      <TableHead className="text-gray-300">Сумма</TableHead>
-                          <TableHead className="text-gray-300">Статус сдачи</TableHead>
-                          <TableHead className="text-gray-300">Дата закрытия</TableHead>
+                    <TableRow className="border-gray-300 hover:bg-gray-50">
+                      <TableHead className="text-gray-700">Заказ</TableHead>
+                          <TableHead className="text-gray-700">Клиент</TableHead>
+                      <TableHead className="text-gray-700">Сумма</TableHead>
+                          <TableHead className="text-gray-700">Статус сдачи</TableHead>
+                          <TableHead className="text-gray-700">Дата закрытия</TableHead>
                     </TableRow>
                   </TableHeader>
                       <TableBody>
@@ -366,24 +368,24 @@ const Payments: NextPage = () => {
                           return (
                             <TableRow 
                               key={isOrder ? item.id : `submission-${item.id}`} 
-                              className="border-gray-700 hover:bg-gray-800/50 cursor-pointer" 
+                              className="border-gray-200 hover:bg-gray-50 cursor-pointer" 
                               onClick={() => isOrder && handleSubmitCash(item)}
                             >
-                              <TableCell className="text-white font-medium">#{item.id}</TableCell>
-                              <TableCell className="text-gray-300">{item.clientName}</TableCell>
-                              <TableCell className="text-white font-semibold">
+                              <TableCell className="text-gray-800 font-medium">#{item.id}</TableCell>
+                              <TableCell className="text-gray-600">{item.clientName}</TableCell>
+                              <TableCell className="text-gray-800 font-semibold">
                                 {item.masterChange?.toLocaleString('ru-RU')} ₽
                               </TableCell>
                               <TableCell>
                                 {isOrder ? (
-                                  <Badge className="bg-gray-500/20 text-gray-300 border-gray-500/30">
+                                  <Badge className="bg-gray-500/20 text-gray-800 border-gray-500/30">
                                     Не отправлена
                                   </Badge>
                                 ) : (
                                   getCashSubmissionStatusBadge(item.cashSubmissionStatus)
                                 )}
                               </TableCell>
-                              <TableCell className="text-gray-300">
+                              <TableCell className="text-gray-600">
                                 {isOrder ? (
                                   item.closingData ? formatDate(item.closingData) : '-'
                                 ) : (
@@ -398,26 +400,26 @@ const Payments: NextPage = () => {
               </div>
 
                   {/* Мобильные карточки */}
-                  <div className="md:hidden space-y-3 p-4">
+                  <div className="md:hidden space-y-3">
                     {getCurrentPageItems().map((item) => {
                       const isOrder = !item.cashSubmissionStatus || item.cashSubmissionStatus === 'not_submitted'
                       return (
                         <div 
                           key={isOrder ? item.id : `submission-${item.id}`}
-                          className="bg-gray-800/50 rounded-lg p-4 border border-gray-700 cursor-pointer hover:bg-gray-800/70 transition-colors"
+                          className="bg-gray-50 rounded-lg p-4 border border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors"
                           onClick={() => isOrder && handleSubmitCash(item)}
                         >
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex items-center space-x-2">
-                              <span className="text-white font-semibold text-lg">#{item.id}</span>
+                              <span className="text-gray-800 font-semibold text-lg">#{item.id}</span>
                             </div>
                             <div className="text-right">
-                              <div className="text-white font-semibold text-sm">
+                              <div className="text-gray-800 font-semibold text-sm">
                                 {item.masterChange?.toLocaleString('ru-RU')} ₽
                               </div>
                               <div className="mt-1">
                                 {isOrder ? (
-                                  <Badge className="bg-gray-500/20 text-gray-300 border-gray-500/30 text-xs">
+                                  <Badge className="bg-gray-500/20 text-gray-800 border-gray-500/30 text-xs">
                                     Не отправлена
                                   </Badge>
                                 ) : (
@@ -429,15 +431,15 @@ const Payments: NextPage = () => {
                           
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                              <span className="text-gray-400 text-sm">Клиент:</span>
-                              <span className="text-white text-sm font-medium">{item.clientName}</span>
+                              <span className="text-gray-600 text-sm">Клиент:</span>
+                              <span className="text-gray-800 text-sm font-medium">{item.clientName}</span>
                             </div>
                             
                             <div className="flex items-center justify-between">
-                              <span className="text-gray-400 text-sm">
+                              <span className="text-gray-600 text-sm">
                                 {isOrder ? 'Дата закрытия:' : 'Дата отправки:'}
                               </span>
-                              <span className="text-gray-300 text-sm">
+                              <span className="text-gray-700 text-sm">
                                 {isOrder ? (
                                   item.closingData ? formatDate(item.closingData) : '-'
                                 ) : (
@@ -451,19 +453,19 @@ const Payments: NextPage = () => {
                     })}
                     
                     {getCurrentPageItems().length === 0 && (
-                      <div className="text-center py-8 text-gray-300">
+                      <div className="text-center py-8 text-gray-600">
                         Нет заказов для сдачи
                       </div>
                     )}
                   </div>
                 </>
               )}
-            </CardContent>
+            </div>
             
             {/* Пагинация */}
             {getTotalPages() > 1 && (
-              <div className="flex items-center justify-between px-6 py-4 border-t border-gray-700">
-                <div className="text-sm text-gray-400">
+              <div className="flex items-center justify-between px-6 py-4 border-t border-gray-300">
+                <div className="text-sm text-gray-600">
                   Показано {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, getAllFilteredItems().length)} из {getAllFilteredItems().length} заказов
                 </div>
                 <div className="flex items-center space-x-2">
@@ -472,9 +474,9 @@ const Payments: NextPage = () => {
                     size="sm"
                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                     disabled={currentPage === 1}
-                    className="text-gray-400 hover:text-white hover:bg-gray-800/50 disabled:opacity-50"
+                    className="text-gray-600 hover:text-teal-600 hover:bg-teal-50 disabled:opacity-50"
                   >
-                    <ChevronLeft className="h-4 w-4" />
+                    Назад
                   </Button>
                   
                   <div className="flex items-center space-x-1">
@@ -488,8 +490,8 @@ const Payments: NextPage = () => {
                           onClick={() => setCurrentPage(pageNum)}
                           className={`${
                             pageNum === currentPage
-                              ? 'bg-green-600 hover:bg-green-700 text-white'
-                              : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                              ? 'bg-teal-600 hover:bg-teal-700 text-white'
+                              : 'text-gray-600 hover:text-teal-600 hover:bg-teal-50'
                           } w-8 h-8 p-0`}
                         >
                           {pageNum}
@@ -503,52 +505,50 @@ const Payments: NextPage = () => {
                     size="sm"
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, getTotalPages()))}
                     disabled={currentPage === getTotalPages()}
-                    className="text-gray-400 hover:text-white hover:bg-gray-800/50 disabled:opacity-50"
+                    className="text-gray-600 hover:text-teal-600 hover:bg-teal-50 disabled:opacity-50"
                   >
-                    <ChevronRight className="h-4 w-4" />
+                    Вперед
                   </Button>
                 </div>
               </div>
             )}
-          </Card>
+          </div>
 
           {/* Модальное окно для отправки сдачи */}
           {showSubmissionModal && selectedOrder && (
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-              <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-md">
+              <div className="bg-white border border-gray-300 rounded-xl shadow-2xl w-full max-w-md">
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-semibold text-white">Отправить сдачу на проверку</h2>
+                    <h2 className="text-xl font-semibold text-gray-800">Отправить сдачу на проверку</h2>
                     <button
                       onClick={() => setShowSubmissionModal(false)}
-                      className="text-gray-400 hover:text-white transition-colors"
+                      className="text-gray-600 hover:text-gray-800 transition-colors"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
+                      Закрыть
                     </button>
                   </div>
                   
                   <div className="space-y-5">
-                    <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-                      <div className="text-sm text-gray-400 mb-1">Заказ</div>
-                      <div className="text-white font-medium">#{selectedOrder.id} • {selectedOrder.clientName}</div>
+                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <div className="text-sm text-gray-600 mb-1">Заказ</div>
+                      <div className="text-gray-800 font-medium">#{selectedOrder.id} • {selectedOrder.clientName}</div>
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
                         Сумма сдачи
                       </label>
                       <Input
                         type="number"
                         value={submissionAmount}
                         readOnly
-                        className="bg-gray-800/30 border-gray-600 text-white cursor-not-allowed opacity-75"
+                        className="bg-gray-100 border-gray-300 text-gray-800 cursor-not-allowed opacity-75"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
                         Чек/скриншот перевода
                       </label>
                       <div className="relative">
@@ -556,11 +556,11 @@ const Payments: NextPage = () => {
                           type="file"
                           accept="image/*,.pdf"
                           onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
-                          className="bg-gray-800/50 border-gray-600 text-white file:bg-gray-700 file:border-gray-600 file:text-gray-300 file:rounded-md file:px-3 file:py-1 file:mr-3 file:text-sm hover:file:bg-gray-600 focus:border-green-500 focus:ring-green-500/20"
+                          className="bg-white border-gray-300 text-gray-800 file:bg-gray-100 file:border-gray-300 file:text-gray-700 file:rounded-md file:px-3 file:py-1 file:mr-3 file:text-sm hover:file:bg-gray-200 focus:border-teal-500 focus:ring-teal-500/20"
                         />
                         {receiptFile && (
-                          <div className="mt-2 text-sm text-green-400">
-                            ✓ Файл выбран: {receiptFile.name}
+                          <div className="mt-2 text-sm text-teal-600">
+                            Файл выбран: {receiptFile.name}
                           </div>
                         )}
                       </div>
@@ -570,14 +570,10 @@ const Payments: NextPage = () => {
                       <Button
                         onClick={handleSubmitCashSubmission}
                         disabled={submitting || !submissionAmount}
-                        className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 text-base disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 text-base disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         {submitting ? (
                           <div className="flex items-center justify-center">
-                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
                             Отправка...
                           </div>
                         ) : (
@@ -587,7 +583,7 @@ const Payments: NextPage = () => {
                       <Button
                         onClick={() => setShowSubmissionModal(false)}
                         variant="outline"
-                        className="flex-1 border-2 border-gray-500 text-gray-800 bg-white hover:bg-gray-100 hover:text-gray-900 hover:border-gray-600 font-semibold py-3 text-base transition-colors"
+                        className="flex-1 border-2 border-gray-300 text-gray-800 bg-white hover:bg-gray-100 hover:text-gray-900 hover:border-gray-400 font-semibold py-3 text-base transition-colors"
                       >
                         Отмена
                       </Button>
