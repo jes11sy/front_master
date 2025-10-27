@@ -101,16 +101,20 @@ const Payments: NextPage = () => {
 
   // Функции пагинации
   const getAllFilteredItems = () => {
+    // Проверяем, что это массивы
+    const ordersArray = Array.isArray(orders) ? orders : []
+    const cashSubmissionsArray = Array.isArray(cashSubmissions) ? cashSubmissions : []
+    
     if (statusFilter === 'all') {
       // Показываем все: не отправленные заказы + все сдачи
-      const notSubmittedOrders = orders.filter(order => !order.cashSubmissionStatus || order.cashSubmissionStatus === 'not_submitted')
-      return [...notSubmittedOrders, ...cashSubmissions]
+      const notSubmittedOrders = ordersArray.filter(order => !order.cashSubmissionStatus || order.cashSubmissionStatus === 'not_submitted')
+      return [...notSubmittedOrders, ...cashSubmissionsArray]
     } else if (statusFilter === 'not_submitted') {
       // Показываем только не отправленные заказы
-      return orders.filter(order => !order.cashSubmissionStatus || order.cashSubmissionStatus === 'not_submitted')
+      return ordersArray.filter(order => !order.cashSubmissionStatus || order.cashSubmissionStatus === 'not_submitted')
     } else {
       // Показываем только сдачи с определенным статусом
-      return cashSubmissions.filter(submission => submission.cashSubmissionStatus === statusFilter)
+      return cashSubmissionsArray.filter(submission => submission.cashSubmissionStatus === statusFilter)
     }
   }
 
