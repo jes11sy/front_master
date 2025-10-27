@@ -86,17 +86,19 @@ const Payments: NextPage = () => {
 
   // Функции фильтрации
   const getFilteredOrders = () => {
+    const ordersArray = Array.isArray(orders) ? orders : []
     if (statusFilter === 'all' || statusFilter === 'not_submitted') {
-      return orders.filter(order => !order.cashSubmissionStatus || order.cashSubmissionStatus === 'not_submitted')
+      return ordersArray.filter(order => !order.cashSubmissionStatus || order.cashSubmissionStatus === 'not_submitted')
     }
     return []
   }
 
   const getFilteredSubmissions = () => {
+    const cashSubmissionsArray = Array.isArray(cashSubmissions) ? cashSubmissions : []
     if (statusFilter === 'all') {
-      return cashSubmissions
+      return cashSubmissionsArray
     }
-    return cashSubmissions.filter(submission => submission.cashSubmissionStatus === statusFilter)
+    return cashSubmissionsArray.filter(submission => submission.cashSubmissionStatus === statusFilter)
   }
 
   // Функции пагинации
@@ -132,7 +134,8 @@ const Payments: NextPage = () => {
 
   // Суммы для отображения
   const getNotSubmittedSum = () => {
-    return orders
+    const ordersArray = Array.isArray(orders) ? orders : []
+    return ordersArray
       .filter(order => !order.cashSubmissionStatus || order.cashSubmissionStatus === 'not_submitted')
       .reduce((sum, order) => {
         const amount = typeof order.masterChange === 'number' ? order.masterChange : parseFloat(order.masterChange?.toString() || '0')
@@ -141,7 +144,8 @@ const Payments: NextPage = () => {
   }
 
   const getOnReviewSum = () => {
-    return cashSubmissions
+    const cashSubmissionsArray = Array.isArray(cashSubmissions) ? cashSubmissions : []
+    return cashSubmissionsArray
       .filter(submission => submission.cashSubmissionStatus === 'submitted')
       .reduce((sum, submission) => {
         const amount = typeof submission.masterChange === 'number' ? submission.masterChange : parseFloat(submission.masterChange?.toString() || '0')
