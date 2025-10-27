@@ -212,7 +212,7 @@ class ApiClient {
     if (params?.endDate) searchParams.append('endDate', params.endDate)
 
     const query = searchParams.toString()
-    return this.request<any[]>(`/orders/statistics/master${query ? `?${query}` : ''}`)
+    return this.request<any[]>(`/reports/statistics/master${query ? `?${query}` : ''}`)
   }
 
   async getMasterProfile() {
@@ -259,7 +259,8 @@ class ApiClient {
     if (params?.status) searchParams.append('status', params.status)
 
     const query = searchParams.toString()
-    return this.request<any[]>(`/handover${query ? `?${query}` : ''}`)
+    const response = await this.request<any>(`/handover${query ? `?${query}` : ''}`)
+    return response
   }
 
   async submitCashForReview(orderId: number, amount: number, type: string, receiptDoc?: string) {
