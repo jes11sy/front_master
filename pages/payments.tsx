@@ -171,7 +171,7 @@ const Payments: NextPage = () => {
 
       // Загружаем отправленные сдачи
       const submissionsResponse = await apiClient.getMasterCashSubmissions()
-      if (submissionsResponse.success) {
+      if (submissionsResponse && submissionsResponse.data) {
         setCashSubmissions(submissionsResponse.data || [])
       }
     } catch (error) {
