@@ -216,7 +216,7 @@ class ApiClient {
   }
 
   async getMasterProfile() {
-    return this.request<any>('/orders/profile/master')
+    return this.request<any>('/masters/profile')
   }
 
   // Мастера (Users Service)
