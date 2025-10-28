@@ -140,24 +140,29 @@ const Statistics: NextPage = () => {
         <div className="container mx-auto px-2 sm:px-4 py-8 pt-4 md:pt-8">
           <div className="max-w-none mx-auto">
           {/* Date Filter */}
-          <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in mb-8" style={{borderColor: '#114643'}}>
-            <div className="mb-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <h3 className="text-lg font-semibold text-gray-800">Фильтр</h3>
-                </div>
-                <Button
-                  onClick={() => setIsFilterVisible(!isFilterVisible)}
-                  variant="ghost"
-                  size="sm"
-                  className="text-gray-600 hover:text-teal-600 hover:bg-teal-50 h-8 w-8 p-0"
+          <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in mb-8 animate-slide-in-left" style={{borderColor: '#114643'}}>
+            <div className="mb-4">
+              <button
+                onClick={() => setIsFilterVisible(!isFilterVisible)}
+                className="flex items-center gap-2 text-left cursor-pointer group"
+              >
+                <h2 className="text-lg font-semibold text-gray-700 group-hover:text-teal-600 transition-colors duration-200">
+                  Фильтр
+                </h2>
+                <svg
+                  className={`w-5 h-5 text-gray-600 group-hover:text-teal-600 transition-all duration-200 ${
+                    isFilterVisible ? 'rotate-180' : ''
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  {isFilterVisible ? 'Свернуть' : 'Развернуть'}
-                </Button>
-              </div>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
             </div>
             {isFilterVisible && (
-              <div className="space-y-4">
+              <div className="relative z-50 space-y-4 animate-slide-in-right">
                   {/* Period Selection */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     {[

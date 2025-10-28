@@ -108,16 +108,21 @@ const Payments: NextPage = () => {
     const ordersArray = Array.isArray(orders) ? orders : []
     const cashSubmissionsArray = Array.isArray(cashSubmissions) ? cashSubmissions : []
     
+    // Фильтруем cashSubmissions - исключаем not_submitted и null
+    const filteredSubmissions = cashSubmissionsArray.filter(
+      submission => submission.cashSubmissionStatus && submission.cashSubmissionStatus !== 'not_submitted'
+    )
+    
     if (statusFilter === 'all') {
       // Показываем все: не отправленные заказы + все сдачи (исключая not_submitted)
       const notSubmittedOrders = ordersArray.filter(order => order.cashSubmissionStatus === 'Не отправлено')
-      return [...notSubmittedOrders, ...cashSubmissionsArray]
+      return [...notSubmittedOrders, ...filteredSubmissions]
     } else if (statusFilter === 'Не отправлено') {
       // Показываем только не отправленные заказы (исключая not_submitted)
       return ordersArray.filter(order => order.cashSubmissionStatus === 'Не отправлено')
     } else {
       // Показываем только сдачи с определенным статусом
-      return cashSubmissionsArray.filter(submission => submission.cashSubmissionStatus === statusFilter)
+      return filteredSubmissions.filter(submission => submission.cashSubmissionStatus === statusFilter)
     }
   }
 
@@ -328,46 +333,53 @@ const Payments: NextPage = () => {
 
 
           {/* Фильтр */}
-          <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in mb-8" style={{borderColor: '#114643'}}>
-            <div className="mb-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <h3 className="text-lg font-semibold text-gray-800">Фильтр по статусу</h3>
-                </div>
-                <Button
-                  onClick={() => setShowFilters(!showFilters)}
-                  variant="ghost"
-                  size="sm"
-                  className="md:hidden text-gray-600 hover:text-teal-600 hover:bg-teal-50 h-8 w-8 p-0"
+          <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in mb-8 animate-slide-in-left" style={{borderColor: '#114643'}}>
+            <div className="mb-4">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center gap-2 text-left cursor-pointer group"
+              >
+                <h2 className="text-lg font-semibold text-gray-700 group-hover:text-teal-600 transition-colors duration-200">
+                  Фильтр
+                </h2>
+                <svg
+                  className={`w-5 h-5 text-gray-600 group-hover:text-teal-600 transition-all duration-200 ${
+                    showFilters ? 'rotate-180' : ''
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  {showFilters ? 'Свернуть' : 'Развернуть'}
-                </Button>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+            {showFilters && (
+              <div className="relative z-50 animate-slide-in-right">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full sm:w-64 bg-white border-gray-300 text-gray-800">
+                    <SelectValue placeholder="Выберите статус" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-gray-300">
+                    <SelectItem value="all" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
+                      Все статусы
+                    </SelectItem>
+                    <SelectItem value="Не отправлено" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
+                      Не отправлена
+                    </SelectItem>
+                    <SelectItem value="На проверке" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
+                      На проверке
+                    </SelectItem>
+                    <SelectItem value="Одобрено" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
+                      Подтверждено
+                    </SelectItem>
+                    <SelectItem value="Отклонено" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
+                      Отклонено
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
-            <div className={`${showFilters ? 'block' : 'hidden md:block'}`}>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-64 bg-white border-gray-300 text-gray-800">
-                  <SelectValue placeholder="Выберите статус" />
-                </SelectTrigger>
-                <SelectContent className="bg-white border-gray-300">
-                  <SelectItem value="all" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
-                    Все статусы
-                  </SelectItem>
-                  <SelectItem value="Не отправлено" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
-                    Не отправлена
-                  </SelectItem>
-                  <SelectItem value="На проверке" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
-                    На проверке
-                  </SelectItem>
-                  <SelectItem value="Одобрено" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
-                    Подтверждено
-                  </SelectItem>
-                  <SelectItem value="Отклонено" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
-                    Отклонено
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            )}
           </div>
 
           {/* Объединенная таблица */}
