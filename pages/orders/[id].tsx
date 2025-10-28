@@ -100,16 +100,11 @@ const OrderDetail: NextPage = () => {
   }
 
   // Функция для загрузки звонков
-  const fetchCalls = async (callId: string) => {
+  const fetchCalls = async (orderId: string) => {
     try {
-      console.log('Загружаем звонки для callId:', callId)
-      const response = await apiClient.getCallsByOrderId(callId)
-      console.log('Ответ API:', response)
+      const response = await apiClient.getCallsByOrderId(orderId)
       if (response.success && response.data) {
-        console.log('Устанавливаем звонки:', response.data)
         setCalls(response.data)
-      } else {
-        console.log('Нет данных в ответе')
       }
     } catch (error) {
       console.error('Ошибка загрузки звонков:', error)
@@ -194,11 +189,8 @@ const OrderDetail: NextPage = () => {
           setExpenseAmount(expense)
           
           // Загружаем звонки если есть callId
-          console.log('callId заказа:', response.data.callId)
           if (response.data.callId) {
-            await fetchCalls(response.data.callId)
-          } else {
-            console.log('У заказа нет callId')
+            await fetchCalls(response.data.id.toString())
           }
           
               // Если статус "Готово", устанавливаем флаги и вычисляем значения

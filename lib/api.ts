@@ -181,8 +181,8 @@ class ApiClient {
     return this.request<any>(`/orders/${id}`)
   }
 
-  async getCallsByOrderId(callId: string) {
-    return this.request<any[]>(`/calls/order/${callId}`)
+  async getCallsByOrderId(orderId: string) {
+    return this.request<any[]>(`/calls/order/${orderId}`)
   }
 
   async createOrder(orderData: any) {
