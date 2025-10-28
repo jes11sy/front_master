@@ -453,6 +453,7 @@ const OrderDetail: NextPage = () => {
         updateData.expenditure = expense
         updateData.clean = clean
         updateData.masterChange = masterChange
+        updateData.cashSubmissionStatus = 'Не отправлено'
         
         console.log('Отправляем финансовые данные:', updateData)
       }
@@ -480,24 +481,6 @@ const OrderDetail: NextPage = () => {
           const masterChange = clean / 2
           setCleanAmount(clean.toString())
           setMasterChange(masterChange.toString())
-          
-          // Записываем приход в таблицу cash
-          try {
-            const cashData = {
-              name: 'приход',
-              amount: masterChange,
-              city: order.city,
-              note: `Итог по заказу: ${total}₽`,
-              paymentPurpose: `Заказ №${order.id}`,
-              nameCreate: order.master?.name || 'Неизвестный мастер'
-            }
-            
-            console.log('Записываем в cash:', cashData)
-            // await apiClient.createCashEntry(cashData)
-            console.log('Приход успешно записан в таблицу cash')
-          } catch (cashError) {
-            console.error('Ошибка при записи в таблицу cash:', cashError)
-          }
         }
         
         // Убираем автоматический редирект при статусе "Отказ" или "Незаказ"
