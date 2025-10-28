@@ -82,13 +82,11 @@ function OrdersContent() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [cityFilter, setCityFilter] = useState('')
-  const [masterFilter, setMasterFilter] = useState('')
   const [showFilters, setShowFilters] = useState(false)
 
   // Состояние для данных
   const [orders, setOrders] = useState<Order[]>([])
   const [allStatuses, setAllStatuses] = useState<string[]>([])
-  const [allMasters, setAllMasters] = useState<{id: number, name: string}[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [pagination, setPagination] = useState({
@@ -99,35 +97,6 @@ function OrdersContent() {
   })
   const [isInitialized, setIsInitialized] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-
-  // Загрузка мастеров для городов директора
-  const loadMasters = async () => {
-    try {
-      const currentUser = await apiClient.getCurrentUser()
-      if (!currentUser || !currentUser.cities || !Array.isArray(currentUser.cities)) {
-        setAllMasters([])
-        return
-      }
-      
-      // Загружаем мастеров из всех городов директора
-      const mastersPromises = currentUser.cities.map((city: string) => 
-        apiClient.getMasters(city).catch(() => [])
-      )
-      
-      const mastersArrays = await Promise.all(mastersPromises)
-      const allMastersData = mastersArrays.flat()
-      
-      // Удаляем дубликаты по ID
-      const uniqueMasters = Array.from(
-        new Map(allMastersData.map(master => [master.id, master])).values()
-      )
-      
-      setAllMasters(uniqueMasters)
-    } catch (err) {
-      logger.error('Error loading masters', err)
-      setAllMasters([])
-    }
-  }
 
   // Загрузка данных
   const loadOrders = async () => {
@@ -144,7 +113,6 @@ function OrdersContent() {
         status: statusFilter || undefined,
         city: cityFilter || undefined,
         search: searchTerm || undefined,
-        master: masterFilter || undefined,
       } as any)
       
       setOrders(Array.isArray(response.data?.orders) ? response.data.orders : [])
@@ -165,17 +133,12 @@ function OrdersContent() {
     }
   }
 
-  // Загружаем мастеров один раз при инициализации
-  useEffect(() => {
-    loadMasters()
-  }, [])
-
   // Загружаем данные при изменении фильтров и itemsPerPage (исключаем searchTerm - у него свой дебаунс)
   useEffect(() => {
     if (itemsPerPage > 0) {
       loadOrders()
     }
-  }, [currentPage, statusFilter, cityFilter, masterFilter, itemsPerPage])
+  }, [currentPage, statusFilter, cityFilter, itemsPerPage])
 
   // Обработчики фильтров
   const handleSearchChange = (value: string) => {
@@ -204,11 +167,6 @@ function OrdersContent() {
     setCurrentPage(1)
   }
 
-  const handleMasterChange = (value: string) => {
-    setMasterFilter(value)
-    setCurrentPage(1)
-  }
-
   // Получаем уникальные значения для фильтров из загруженных данных
   const safeOrders = Array.isArray(orders) ? orders : []
   // Применяем сортировку
@@ -220,7 +178,6 @@ function OrdersContent() {
     setSearchTerm('')
     setStatusFilter('')
     setCityFilter('')
-    setMasterFilter('')
     setCurrentPage(1)
   }
 
@@ -356,50 +313,26 @@ function OrdersContent() {
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* Город */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">
-                        Город
-                      </label>
-                      <Select value={cityFilter || "all"} onValueChange={(value) => handleCityChange(value === "all" ? "" : value)}>
-                        <SelectTrigger className="w-full bg-white border-gray-300 text-gray-800">
-                          <SelectValue placeholder="Все города" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white border-gray-300">
-                          <SelectItem value="all" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
-                            Все города
+                  {/* Город */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Город
+                    </label>
+                    <Select value={cityFilter || "all"} onValueChange={(value) => handleCityChange(value === "all" ? "" : value)}>
+                      <SelectTrigger className="w-full sm:w-64 bg-white border-gray-300 text-gray-800">
+                        <SelectValue placeholder="Все города" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white border-gray-300">
+                        <SelectItem value="all" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
+                          Все города
+                        </SelectItem>
+                        {Array.isArray(uniqueCities) && uniqueCities.map(city => (
+                          <SelectItem key={city} value={city} className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
+                            {city}
                           </SelectItem>
-                          {Array.isArray(uniqueCities) && uniqueCities.map(city => (
-                            <SelectItem key={city} value={city} className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
-                              {city}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    {/* Мастер */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">
-                        Мастер
-                      </label>
-                      <Select value={masterFilter || "all"} onValueChange={(value) => handleMasterChange(value === "all" ? "" : value)}>
-                        <SelectTrigger className="w-full bg-white border-gray-300 text-gray-800">
-                          <SelectValue placeholder="Все мастера" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white border-gray-300">
-                          <SelectItem value="all" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
-                            Все мастера
-                          </SelectItem>
-                          {Array.isArray(allMasters) && allMasters.map(master => (
-                            <SelectItem key={master.id} value={master.id.toString()} className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
-                              {master.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   
                   {/* Кнопки управления фильтрами */}
