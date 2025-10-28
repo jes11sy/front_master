@@ -140,7 +140,7 @@ const Statistics: NextPage = () => {
         <div className="container mx-auto px-2 sm:px-4 py-8 pt-4 md:pt-8">
           <div className="max-w-none mx-auto">
           {/* Date Filter */}
-          <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in mb-8 animate-slide-in-left" style={{borderColor: '#114643'}}>
+          <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-4 md:p-6 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in mb-8 animate-slide-in-left" style={{borderColor: '#114643'}}>
             <div className="mb-4">
               <button
                 onClick={() => setIsFilterVisible(!isFilterVisible)}
