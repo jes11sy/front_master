@@ -281,7 +281,7 @@ class ApiClient {
         const formData = new FormData()
         formData.append('file', receiptFile)
 
-        const uploadUrl = `${this.baseURL}/files/upload?folder=f7eead03-crmfiles/director/cash/cashreceipt_doc`
+        const uploadUrl = `${this.baseURL}/files/upload?folder=director/cash/cashreceipt_doc`
         console.log('Upload URL:', uploadUrl)
 
         // Указываем кастомную папку для чеков
