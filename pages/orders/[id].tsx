@@ -131,8 +131,27 @@ const OrderDetail: NextPage = () => {
         
         if (updateResponse.success && updateResponse.data) {
           setOrder(updateResponse.data)
-          setNotifications([`Файл успешно загружен`])
-          setTimeout(() => setNotifications([]), 3000)
+          
+          // Перепроверяем валидацию с обновленными данными
+          const newNotifications: string[] = []
+          const total = parseFloat(totalAmount) || 0
+          const expense = parseFloat(expenseAmount) || 0
+          
+          if (total > 5000 && !updateResponse.data.bsoDoc) {
+            newNotifications.push('Итог больше 5000₽ - необходимо прикрепить Договор')
+          }
+          
+          if (expense > 1001 && !updateResponse.data.expenditureDoc) {
+            newNotifications.push('Расход больше 1001₽ - необходимо прикрепить чек расхода')
+          }
+          
+          // Если нет уведомлений о валидации, показываем успех
+          if (newNotifications.length === 0) {
+            setNotifications([`Файл успешно загружен`])
+            setTimeout(() => setNotifications([]), 3000)
+          } else {
+            setNotifications(newNotifications)
+          }
         }
       }
     } catch (error) {
@@ -191,11 +210,13 @@ const OrderDetail: NextPage = () => {
           const totalNum = parseFloat(total) || 0
           const expenseNum = parseFloat(expense) || 0
           
-          if (totalNum > 5000) {
+          // Проверяем, нужен ли договор и прикреплен ли он
+          if (totalNum > 5000 && !response.data.bsoDoc) {
             newNotifications.push('Итог больше 5000₽ - необходимо прикрепить Договор')
           }
           
-          if (expenseNum > 1001) {
+          // Проверяем, нужен ли чек расхода и прикреплен ли он
+          if (expenseNum > 1001 && !response.data.expenditureDoc) {
             newNotifications.push('Расход больше 1001₽ - необходимо прикрепить чек расхода')
           }
           
@@ -376,16 +397,20 @@ const OrderDetail: NextPage = () => {
 
   // Функция для проверки валидации сумм
   const validateAmounts = () => {
+    if (!order) return
+    
     const newNotifications: string[] = []
     
     const total = parseFloat(totalAmount) || 0
     const expense = parseFloat(expenseAmount) || 0
     
-    if (total > 5000) {
+    // Проверяем, нужен ли договор и прикреплен ли он
+    if (total > 5000 && !order.bsoDoc) {
       newNotifications.push('Итог больше 5000₽ - необходимо прикрепить Договор')
     }
     
-    if (expense > 1001) {
+    // Проверяем, нужен ли чек расхода и прикреплен ли он
+    if (expense > 1001 && !order.expenditureDoc) {
       newNotifications.push('Расход больше 1001₽ - необходимо прикрепить чек расхода')
     }
     
