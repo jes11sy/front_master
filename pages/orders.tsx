@@ -38,6 +38,45 @@ interface Order {
   }
 }
 
+// Функция для сортировки заказов по статусам и датам (вынесена за пределы компонента)
+const sortOrders = (orders: Order[]) => {
+  // Порядок статусов
+  const statusOrder: Record<string, number> = {
+    'Ожидает': 1,
+    'Принял': 2,
+    'В пути': 3,
+    'В работе': 4,
+    'Модерн': 5,
+    'Готово': 6,
+    'Отказ': 7,
+    'Незаказ': 8
+  }
+
+  return [...orders].sort((a, b) => {
+    // Сначала сортируем по статусу
+    const statusA = statusOrder[a.statusOrder] || 999
+    const statusB = statusOrder[b.statusOrder] || 999
+    
+    if (statusA !== statusB) {
+      return statusA - statusB
+    }
+
+    // Внутри статуса сортируем по дате
+    // Для статусов Готово, Отказ, Незаказ - по дате закрытия
+    // Для остальных - по дате встречи
+    const useClosingDate = ['Готово', 'Отказ', 'Незаказ'].includes(a.statusOrder)
+    
+    const dateA = useClosingDate 
+      ? (a.closingData || a.dateMeeting)
+      : a.dateMeeting
+    const dateB = useClosingDate 
+      ? (b.closingData || b.dateMeeting)
+      : b.dateMeeting
+
+    return new Date(dateA).getTime() - new Date(dateB).getTime()
+  })
+}
+
 function OrdersContent() {
   const router = useRouter()
   const [currentPage, setCurrentPage] = useState(1)
@@ -194,45 +233,6 @@ function OrdersContent() {
       case 'Гарантия': return '#ef4444'
       default: return '#6b7280'
     }
-  }
-
-  // Функция для сортировки заказов по статусам и датам
-  const sortOrders = (orders: Order[]) => {
-    // Порядок статусов
-    const statusOrder: Record<string, number> = {
-      'Ожидает': 1,
-      'Принял': 2,
-      'В пути': 3,
-      'В работе': 4,
-      'Модерн': 5,
-      'Готово': 6,
-      'Отказ': 7,
-      'Незаказ': 8
-    }
-
-    return [...orders].sort((a, b) => {
-      // Сначала сортируем по статусу
-      const statusA = statusOrder[a.statusOrder] || 999
-      const statusB = statusOrder[b.statusOrder] || 999
-      
-      if (statusA !== statusB) {
-        return statusA - statusB
-      }
-
-      // Внутри статуса сортируем по дате
-      // Для статусов Готово, Отказ, Незаказ - по дате закрытия
-      // Для остальных - по дате встречи
-      const useClosingDate = ['Готово', 'Отказ', 'Незаказ'].includes(a.statusOrder)
-      
-      const dateA = useClosingDate 
-        ? (a.closingData || a.dateMeeting)
-        : a.dateMeeting
-      const dateB = useClosingDate 
-        ? (b.closingData || b.dateMeeting)
-        : b.dateMeeting
-
-      return new Date(dateA).getTime() - new Date(dateB).getTime()
-    })
   }
 
   return (
