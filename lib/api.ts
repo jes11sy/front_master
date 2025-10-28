@@ -432,7 +432,7 @@ class ApiClient {
   }
 
   async getOrderAvitoChat(orderId: string) {
-    return this.request<any>(`/avito/orders/${orderId}/chat`)
+    return this.request<any>(`/orders/${orderId}/avito-chat`)
   }
 
   async openAvitoChat(orderId: string) {
@@ -453,6 +453,60 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ image_id: imageId }),
     })
+  }
+
+  // Новые методы для работы с Avito Messenger (как у директора)
+  async getAvitoMessages(chatId: string, avitoAccountName: string, limit: number = 100): Promise<any[]> {
+    const response = await fetch(`${this.baseURL}/avito-messenger/chats/${chatId}/messages?avitoAccountName=${avitoAccountName}&limit=${limit}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Ошибка получения сообщений')
+    }
+
+    const result = await response.json()
+    return result.data?.messages || []
+  }
+
+  async sendAvitoMessageNew(chatId: string, text: string, avitoAccountName: string): Promise<any> {
+    const response = await fetch(`${this.baseURL}/avito-messenger/chats/${chatId}/messages`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ text, avitoAccountName }),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Ошибка отправки сообщения')
+    }
+
+    const result = await response.json()
+    return result.data
+  }
+
+  async markAvitoChatAsReadNew(chatId: string, avitoAccountName: string): Promise<void> {
+    const response = await fetch(`${this.baseURL}/avito-messenger/chats/${chatId}/read`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ avitoAccountName }),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Ошибка отметки чата как прочитанного')
+    }
   }
 }
 

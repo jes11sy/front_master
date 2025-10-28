@@ -67,7 +67,7 @@ export default function AvitoChat() {
       setError(null)
 
       // Получаем данные заказа
-      const orderResponse = await apiClient.getOrderById(Number(id))
+      const orderResponse = await apiClient.getOrderById(id as string)
       if (orderResponse.success && orderResponse.data) {
         setOrder(orderResponse.data)
       }
@@ -80,22 +80,18 @@ export default function AvitoChat() {
         return
       }
 
-      const { chat, avitoName } = chatResponse.data
-      setChatData({ chatId: chat.id, avitoAccountName: avitoName })
+      const { chatId, avitoAccountName } = chatResponse.data
+      setChatData({ chatId, avitoAccountName })
 
       // Загружаем сообщения
-      const messagesResponse = await apiClient.getAvitoChatMessages(
-        avitoName,
-        chat.id,
-        { limit: 100, offset: 0 }
+      const msgs = await apiClient.getAvitoMessages(
+        chatId,
+        avitoAccountName,
+        100
       )
 
-      if (!messagesResponse.success || !messagesResponse.data) {
-        setError('Не удалось загрузить сообщения чата')
-        return
-      }
-
-      const messagesArray = Array.isArray(messagesResponse.data) ? messagesResponse.data : []
+      // Проверяем что msgs это массив
+      const messagesArray = Array.isArray(msgs) ? msgs : []
 
       // Сортируем по времени (старые сверху)
       const sortedMessages = messagesArray.sort((a: Message, b: Message) => 
@@ -106,7 +102,7 @@ export default function AvitoChat() {
 
       // Отмечаем чат как прочитанный
       try {
-        await apiClient.markAvitoChatAsRead(chat.id, avitoName)
+        await apiClient.markAvitoChatAsReadNew(chatId, avitoAccountName)
       } catch (err) {
         console.error('Error marking chat as read:', err)
       }
@@ -127,15 +123,15 @@ export default function AvitoChat() {
     try {
       setSending(true)
 
-      await apiClient.sendAvitoMessage(
-        chatData.avitoAccountName,
+      const sentMessage = await apiClient.sendAvitoMessageNew(
         chatData.chatId,
-        messageText
+        messageText,
+        chatData.avitoAccountName
       )
 
       // Добавляем отправленное сообщение в список
       const newMsg: Message = {
-        id: Date.now().toString(),
+        id: sentMessage.id || Date.now().toString(),
         type: 'text',
         direction: 'out',
         content: { text: messageText },
