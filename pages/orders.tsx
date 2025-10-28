@@ -25,6 +25,7 @@ interface Order {
   problem: string
   note: string | null
   createDate: string
+  closingData?: string
   operator?: {
     id: number
     name: string
@@ -141,6 +142,8 @@ function OrdersContent() {
 
   // Получаем уникальные значения для фильтров из загруженных данных
   const safeOrders = Array.isArray(orders) ? orders : []
+  // Применяем сортировку
+  const sortedOrders = sortOrders(safeOrders)
   const uniqueCities = Array.from(new Set(safeOrders.map(order => order.city)))
 
   // Сброс фильтров
@@ -191,6 +194,45 @@ function OrdersContent() {
       case 'Гарантия': return '#ef4444'
       default: return '#6b7280'
     }
+  }
+
+  // Функция для сортировки заказов по статусам и датам
+  const sortOrders = (orders: Order[]) => {
+    // Порядок статусов
+    const statusOrder: Record<string, number> = {
+      'Ожидает': 1,
+      'Принял': 2,
+      'В пути': 3,
+      'В работе': 4,
+      'Модерн': 5,
+      'Готово': 6,
+      'Отказ': 7,
+      'Незаказ': 8
+    }
+
+    return [...orders].sort((a, b) => {
+      // Сначала сортируем по статусу
+      const statusA = statusOrder[a.statusOrder] || 999
+      const statusB = statusOrder[b.statusOrder] || 999
+      
+      if (statusA !== statusB) {
+        return statusA - statusB
+      }
+
+      // Внутри статуса сортируем по дате
+      // Для статусов Готово, Отказ, Незаказ - по дате закрытия
+      // Для остальных - по дате встречи
+      const useClosingDate = ['Готово', 'Отказ', 'Незаказ'].includes(a.statusOrder)
+      
+      const dateA = useClosingDate 
+        ? (a.closingData || a.dateMeeting)
+        : a.dateMeeting
+      const dateB = useClosingDate 
+        ? (b.closingData || b.dateMeeting)
+        : b.dateMeeting
+
+      return new Date(dateA).getTime() - new Date(dateB).getTime()
+    })
   }
 
   return (
@@ -338,13 +380,13 @@ function OrdersContent() {
             </div>
 
             {/* Десктопная таблица */}
-            {!loading && !error && safeOrders.length === 0 && (
+            {!loading && !error && sortedOrders.length === 0 && (
               <div className="text-center py-8 animate-fade-in">
                 <p className="text-gray-500 font-medium">Нет заказов для отображения</p>
               </div>
             )}
             
-            {!loading && !error && safeOrders.length > 0 && (
+            {!loading && !error && sortedOrders.length > 0 && (
             <div className="hidden md:block overflow-x-auto animate-fade-in relative z-10">
               <table className="w-full border-collapse text-xs bg-white rounded-lg shadow-lg">
                 <thead>
@@ -366,7 +408,7 @@ function OrdersContent() {
                   </tr>
                 </thead>
                 <tbody>
-                  {Array.isArray(safeOrders) && safeOrders.map((order) => (
+                  {Array.isArray(sortedOrders) && sortedOrders.map((order) => (
                     <tr 
                       key={order.id}
                       className="border-b hover:bg-teal-50 transition-colors cursor-pointer" 
@@ -403,9 +445,9 @@ function OrdersContent() {
             )}
 
             {/* Мобильные карточки */}
-            {!loading && !error && safeOrders.length > 0 && (
+            {!loading && !error && sortedOrders.length > 0 && (
             <div className="md:hidden space-y-4 animate-fade-in">
-              {Array.isArray(safeOrders) && safeOrders.map((order) => (
+              {Array.isArray(sortedOrders) && sortedOrders.map((order) => (
                 <div 
                   key={order.id}
                   className="bg-white rounded-lg p-4 border border-gray-200 cursor-pointer hover:bg-teal-50 transition-all duration-200 shadow-sm hover:shadow-md"
@@ -451,7 +493,7 @@ function OrdersContent() {
 
 
             {/* Пагинация */}
-            {!loading && !error && safeOrders.length > 0 && (pagination?.totalPages || 0) > 1 && (
+            {!loading && !error && sortedOrders.length > 0 && (pagination?.totalPages || 0) > 1 && (
               <div className="mt-6 flex justify-center items-center gap-2 flex-wrap animate-fade-in">
                 <button
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
