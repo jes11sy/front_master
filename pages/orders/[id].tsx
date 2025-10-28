@@ -62,6 +62,7 @@ const OrderDetail: NextPage = () => {
   const { id } = router.query
   const [order, setOrder] = useState<Order | null>(null)
   const [calls, setCalls] = useState<Call[]>([])
+  const [recordingUrls, setRecordingUrls] = useState<{ [key: number]: string }>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState('info')
@@ -110,6 +111,27 @@ const OrderDetail: NextPage = () => {
       console.error('Ошибка загрузки звонков:', error)
     }
   }
+
+  // Получаем прямые S3 URL для записей
+  useEffect(() => {
+    const loadRecordingUrls = () => {
+      const urls: { [key: number]: string } = {}
+      
+      for (const call of calls) {
+        if (call.recordingUrl) {
+          // Используем прямой S3 URL
+          const s3Url = `https://s3.twcstorage.ru/f7eead03-crmfiles/${call.recordingUrl}`
+          urls[call.id] = s3Url
+        }
+      }
+      
+      setRecordingUrls(urls)
+    }
+
+    if (calls.length > 0) {
+      loadRecordingUrls()
+    }
+  }, [calls])
 
   // Функция для обработки выбора файла
   const handleFileSelect = async (file: File, type: 'bso' | 'expenditure') => {
@@ -1170,25 +1192,18 @@ const OrderDetail: NextPage = () => {
                                 {new Date(call.dateCreate).toLocaleString('ru-RU')}
                               </span>
                             </div>
-                            <div className="space-y-1 mb-3">
-                              <p className="text-xs sm:text-sm text-gray-600">
-                                Клиент: {call.phoneClient}
-                              </p>
-                              <p className="text-xs sm:text-sm text-gray-600">
-                                Оператор: {call.operator?.name || 'Неизвестно'}
-                              </p>
-                            </div>
-                            {call.recordingUrl && (
+                            {recordingUrls[call.id] && (
                               <div className="mt-3">
                                 <audio 
                                   controls 
                                   className="w-full h-10 sm:h-12"
                                   style={{ 
-                                    background: 'rgba(55, 65, 81, 0.5)',
-                                    borderRadius: '8px'
+                                    background: 'transparent',
+                                    border: 'none',
+                                    outline: 'none'
                                   }}
                                 >
-                                  <source src={call.recordingUrl} type="audio/mpeg" />
+                                  <source src={recordingUrls[call.id]} type="audio/mpeg" />
                                   Ваш браузер не поддерживает аудио элемент.
                                 </audio>
                               </div>
