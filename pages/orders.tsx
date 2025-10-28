@@ -100,6 +100,35 @@ function OrdersContent() {
   const [isInitialized, setIsInitialized] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
+  // Загрузка мастеров для городов директора
+  const loadMasters = async () => {
+    try {
+      const currentUser = await apiClient.getCurrentUser()
+      if (!currentUser || !currentUser.cities || !Array.isArray(currentUser.cities)) {
+        setAllMasters([])
+        return
+      }
+      
+      // Загружаем мастеров из всех городов директора
+      const mastersPromises = currentUser.cities.map((city: string) => 
+        apiClient.getMasters(city).catch(() => [])
+      )
+      
+      const mastersArrays = await Promise.all(mastersPromises)
+      const allMastersData = mastersArrays.flat()
+      
+      // Удаляем дубликаты по ID
+      const uniqueMasters = Array.from(
+        new Map(allMastersData.map(master => [master.id, master])).values()
+      )
+      
+      setAllMasters(uniqueMasters)
+    } catch (err) {
+      logger.error('Error loading masters', err)
+      setAllMasters([])
+    }
+  }
+
   // Загрузка данных
   const loadOrders = async () => {
     if (isLoading) return
@@ -120,7 +149,6 @@ function OrdersContent() {
       
       setOrders(Array.isArray(response.data?.orders) ? response.data.orders : [])
       setAllStatuses(['Ожидает', 'Принял', 'В пути', 'В работе', 'Готово', 'Отказ', 'Модерн', 'Незаказ'])
-      setAllMasters([])
       setPagination(response.data?.pagination || {
         page: 1,
         limit: itemsPerPage,
@@ -136,6 +164,11 @@ function OrdersContent() {
       setIsLoading(false)
     }
   }
+
+  // Загружаем мастеров один раз при инициализации
+  useEffect(() => {
+    loadMasters()
+  }, [])
 
   // Загружаем данные при изменении фильтров и itemsPerPage (исключаем searchTerm - у него свой дебаунс)
   useEffect(() => {

@@ -1,4 +1,6 @@
 // API клиент для работы с бэкендом
+import { logger } from './logger'
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.test-shem.ru/api/v1'
 
 interface ApiResponse<T> {
@@ -220,9 +222,33 @@ class ApiClient {
   }
 
   // Мастера (Users Service)
-  async getMasters() {
-    const response = await this.request<any>('/masters')
+  async getMasters(city?: string) {
+    const url = city ? `/masters?city=${encodeURIComponent(city)}` : '/masters'
+    const response = await this.request<any>(url)
     return response.data || []
+  }
+  
+  async getCurrentUser() {
+    try {
+      // Декодируем JWT токен, чтобы получить информацию о пользователе
+      if (!this.token) return null
+      
+      const base64Url = this.token.split('.')[1]
+      if (!base64Url) return null
+      
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      )
+      
+      return JSON.parse(jsonPayload)
+    } catch (error) {
+      logger.error('Error decoding token', error)
+      return null
+    }
   }
 
   async getMasterById(id: string) {
