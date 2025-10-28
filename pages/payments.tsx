@@ -226,14 +226,13 @@ const Payments: NextPage = () => {
   }
 
   const handleSubmitCashSubmission = async () => {
-    if (!selectedOrder || !submissionAmount) return
+    if (!selectedOrder) return
 
     try {
       setSubmitting(true)
       
       const result = await apiClient.submitCashForReview(
-        selectedOrder.id.toString(),
-        parseFloat(submissionAmount),
+        selectedOrder.id,
         receiptFile || undefined
       )
 
@@ -611,7 +610,7 @@ const Payments: NextPage = () => {
                     <div className="flex space-x-3 pt-4">
                       <Button
                         onClick={handleSubmitCashSubmission}
-                        disabled={submitting || !submissionAmount}
+                        disabled={submitting}
                         className="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 text-base disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         {submitting ? (

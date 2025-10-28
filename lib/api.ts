@@ -263,16 +263,50 @@ class ApiClient {
     return response
   }
 
-  async submitCashForReview(orderId: number, amount: number, type: string, receiptDoc?: string) {
-    return this.request('/cash', {
-      method: 'POST',
-      body: JSON.stringify({
-        orderId,
-        amount,
-        type, // 'расход', 'предоплата', 'чистый'
-        receiptDoc,
-      }),
-    })
+  async submitCashForReview(orderId: number, receiptFile?: File) {
+    try {
+      let cashReceiptDoc: string | undefined
+
+      // Если есть файл - загружаем его в S3 через files-service
+      if (receiptFile) {
+        const formData = new FormData()
+        formData.append('file', receiptFile)
+
+        // Указываем кастомную папку для чеков
+        const uploadResponse = await fetch(`${this.baseURL}/files/upload?folder=f7eead03-crmfiles/director/cash/cashreceipt_doc`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.getToken()}`,
+          },
+          body: formData,
+        })
+
+        if (!uploadResponse.ok) {
+          throw new Error('Ошибка загрузки файла')
+        }
+
+        const uploadResult = await uploadResponse.json()
+        
+        if (uploadResult.success && uploadResult.data?.key) {
+          cashReceiptDoc = uploadResult.data.key
+          console.log('File uploaded to S3:', cashReceiptDoc)
+        }
+      }
+
+      // Отправляем запрос на обновление статуса в orders-service
+      return this.request(`/orders/${orderId}/submit-cash`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          cashReceiptDoc,
+        }),
+      })
+    } catch (error) {
+      console.error('Error in submitCashForReview:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Ошибка отправки сдачи'
+      }
+    }
   }
 
   // Создать handover (сдачу мастера)
