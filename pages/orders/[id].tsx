@@ -961,7 +961,7 @@ const OrderDetail: NextPage = () => {
 
                     {/* Информация о клиенте */}
                     <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-white mb-4">Информация о клиенте</h3>
+                      <h3 className="text-lg font-semibold text-gray-800 mb-4">Информация о клиенте</h3>
                       <div className="space-y-3">
                         <div className="flex items-center space-x-3">
                           <div>
@@ -988,8 +988,8 @@ const OrderDetail: NextPage = () => {
                   </div>
 
                   {/* Техническая информация */}
-                  <div className="pt-6 border-t border-gray-700">
-                    <h3 className="text-lg font-semibold text-white mb-4">Техническая информация</h3>
+                  <div className="pt-6 border-t border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Техническая информация</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="flex items-center space-x-3">
                         <div>
@@ -1027,7 +1027,7 @@ const OrderDetail: NextPage = () => {
                         <div className="flex items-start space-x-3">
                           <div className="flex-1">
                             <p className="text-sm text-gray-600">Примечания</p>
-                            <p className="text-white font-medium whitespace-pre-line text-sm">{order.note}</p>
+                            <p className="text-gray-800 font-medium whitespace-pre-line text-sm">{order.note}</p>
                           </div>
                         </div>
                       </div>
@@ -1041,8 +1041,8 @@ const OrderDetail: NextPage = () => {
                 <div className="space-y-6">
                   {/* Блок модерна - показывается при статусе Модерн и флаге showModernBlock */}
                   {order.statusOrder === 'Модерн' && showModernBlock && (
-                    <div className="space-y-4 p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
-                      <h3 className="text-lg font-semibold text-white mb-4">Информация по модерну</h3>
+                    <div className="space-y-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                      <h3 className="text-lg font-semibold text-gray-800 mb-4">Информация по модерну</h3>
                       
                       <div className="space-y-4">
                         {/* Уведомления для модерна */}
@@ -1051,8 +1051,8 @@ const OrderDetail: NextPage = () => {
                             {notifications.map((notification, index) => (
                               <div key={index} className={`p-3 rounded-lg border ${
                                 notification.includes('Модерн записан') 
-                                  ? 'bg-green-500/10 border-green-500/30 text-green-300' 
-                                  : 'bg-red-500/10 border-red-500/30 text-red-300'
+                                  ? 'bg-green-50 border-green-200 text-green-700' 
+                                  : 'bg-red-50 border-red-200 text-red-700'
                               }`}>
                                 <p className="text-sm font-medium text-center">{notification}</p>
                               </div>
@@ -1061,7 +1061,7 @@ const OrderDetail: NextPage = () => {
                         )}
                         
                         <div className="space-y-2">
-                          <Label htmlFor="prepayment" className="text-white font-medium">Сумма предоплаты</Label>
+                          <Label htmlFor="prepayment" className="text-gray-700 font-medium">Сумма предоплаты</Label>
                           <div className="relative">
                             <Input
                               id="prepayment"
@@ -1069,32 +1069,32 @@ const OrderDetail: NextPage = () => {
                               placeholder="0"
                               value={prepayment}
                               onChange={(e) => setPrepayment(e.target.value)}
-                              className="bg-gray-700/50 border-gray-600 text-white placeholder-gray-400 pr-8"
+                              className="bg-white border-gray-200 text-gray-800 placeholder-gray-400 pr-8"
                             />
-                            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 text-sm">₽</span>
+                            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">₽</span>
                           </div>
                         </div>
                         
                         <div className="space-y-2">
-                          <Label htmlFor="closingDate" className="text-white font-medium">Дата закрытия</Label>
+                          <Label htmlFor="closingDate" className="text-gray-700 font-medium">Дата закрытия</Label>
                           <Input
                             id="closingDate"
                             type="datetime-local"
                             value={dateClosmod}
                             onChange={(e) => setDateClosmod(e.target.value)}
-                            className="bg-gray-700/50 border-gray-600 text-white"
+                            className="bg-white border-gray-200 text-gray-800"
                           />
                         </div>
                         
                         <div className="space-y-2">
-                          <Label htmlFor="comment" className="text-white font-medium">Комментарий</Label>
+                          <Label htmlFor="comment" className="text-gray-700 font-medium">Комментарий</Label>
                           <textarea
                             id="comment"
                             rows={4}
                             placeholder="Введите комментарий..."
                             value={comment}
                             onChange={(e) => setComment(e.target.value)}
-                            className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                           />
                         </div>
                       </div>
@@ -1106,7 +1106,7 @@ const OrderDetail: NextPage = () => {
                   {(order.statusOrder !== 'Модерн' || !showModernBlock) && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <Label htmlFor="total" className="text-white font-medium">Итог</Label>
+                        <Label htmlFor="total" className="text-gray-700 font-medium">Итог</Label>
                         <div className="relative">
                           <Input
                             id="total"
@@ -1115,14 +1115,14 @@ const OrderDetail: NextPage = () => {
                             value={totalAmount}
                             onChange={(e) => setTotalAmount(e.target.value)}
                             disabled={isCompleted || order.statusOrder === 'Готово'}
-                            className={`bg-gray-700/50 border-gray-600 text-white placeholder-gray-400 pr-8 ${(isCompleted || order.statusOrder === 'Готово') ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`bg-white border-gray-200 text-gray-800 placeholder-gray-400 pr-8 ${(isCompleted || order.statusOrder === 'Готово') ? 'opacity-50 cursor-not-allowed' : ''}`}
                           />
-                          <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 text-sm">₽</span>
+                          <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">₽</span>
                         </div>
                       </div>
                       
                       <div className="space-y-2">
-                        <Label htmlFor="expense" className="text-white font-medium">Расход</Label>
+                        <Label htmlFor="expense" className="text-gray-700 font-medium">Расход</Label>
                         <div className="relative">
                           <Input
                             id="expense"
@@ -1131,9 +1131,9 @@ const OrderDetail: NextPage = () => {
                             value={expenseAmount}
                             onChange={(e) => setExpenseAmount(e.target.value)}
                             disabled={isCompleted || order.statusOrder === 'Готово'}
-                            className={`bg-gray-700/50 border-gray-600 text-white placeholder-gray-400 pr-8 ${(isCompleted || order.statusOrder === 'Готово') ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`bg-white border-gray-200 text-gray-800 placeholder-gray-400 pr-8 ${(isCompleted || order.statusOrder === 'Готово') ? 'opacity-50 cursor-not-allowed' : ''}`}
                           />
-                          <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 text-sm">₽</span>
+                          <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">₽</span>
                         </div>
                       </div>
                     </div>
@@ -1141,16 +1141,16 @@ const OrderDetail: NextPage = () => {
 
                   {/* Текст "Чистыми" и "Сдача мастера" - показывается после завершения или при статусе "Готово" */}
                   {(isCompleted || order.statusOrder === 'Готово') && (
-                    <div className="pt-4 border-t border-gray-700">
+                    <div className="pt-4 border-t border-gray-200">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <p className="text-white font-medium">Чистыми:</p>
-                          <p className="text-green-400 text-lg font-semibold">{cleanAmount}₽</p>
+                          <p className="text-gray-700 font-medium">Чистыми:</p>
+                          <p className="text-green-600 text-lg font-semibold">{cleanAmount}₽</p>
                         </div>
                         
                         <div className="space-y-2">
-                          <p className="text-white font-medium">Сдача мастера:</p>
-                          <p className="text-blue-400 text-lg font-semibold">{masterChange}₽</p>
+                          <p className="text-gray-700 font-medium">Сдача мастера:</p>
+                          <p className="text-blue-600 text-lg font-semibold">{masterChange}₽</p>
                         </div>
                       </div>
                     </div>
@@ -1160,8 +1160,8 @@ const OrderDetail: NextPage = () => {
                   {(order.statusOrder !== 'Модерн' || !showModernBlock) && notifications.length > 0 && (
                     <div className="space-y-2">
                       {notifications.map((notification, index) => (
-                        <div key={index} className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
-                          <p className="text-yellow-300 text-sm font-medium">{notification}</p>
+                        <div key={index} className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                          <p className="text-yellow-700 text-sm font-medium">{notification}</p>
                         </div>
                       ))}
                     </div>
@@ -1170,18 +1170,18 @@ const OrderDetail: NextPage = () => {
                   {/* Документы - показываются если НЕ статус Модерн или блок модерна скрыт */}
                   {(order.statusOrder !== 'Модерн' || !showModernBlock) && (
                     <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-white">Документы</h3>
+                      <h3 className="text-lg font-semibold text-gray-800">Документы</h3>
                       <div className="space-y-3">
-                        <div className="p-4 bg-gray-700/30 rounded-lg">
+                        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center space-x-3">
-                              <span className="text-white font-medium">Договор</span>
+                              <span className="text-gray-800 font-medium">Договор</span>
                             </div>
                             {order.statusOrder !== 'Готово' && order.statusOrder !== 'Незаказ' && order.statusOrder !== 'Отказ' && (
                               <Button 
                                 size="sm" 
                                 variant="outline" 
-                                className="bg-gray-600 border-gray-500 text-white hover:bg-gray-500"
+                                className="bg-teal-600 border-teal-600 text-white hover:bg-teal-700"
                               >
                                 Прикрепить
                               </Button>
@@ -1189,23 +1189,23 @@ const OrderDetail: NextPage = () => {
                           </div>
                           <div className="text-sm text-gray-600">
                             {order.bsoDoc ? (
-                              <span className="text-green-400">Файл прикреплен: {order.bsoDoc}</span>
+                              <span className="text-green-600">Файл прикреплен: {order.bsoDoc}</span>
                             ) : (
                               'Файл не прикреплен'
                             )}
                           </div>
                         </div>
                         
-                        <div className="p-4 bg-gray-700/30 rounded-lg">
+                        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center space-x-3">
-                              <span className="text-white font-medium">Чек расхода</span>
+                              <span className="text-gray-800 font-medium">Чек расхода</span>
                             </div>
                             {order.statusOrder !== 'Готово' && order.statusOrder !== 'Незаказ' && order.statusOrder !== 'Отказ' && (
                               <Button 
                                 size="sm" 
                                 variant="outline" 
-                                className="bg-gray-600 border-gray-500 text-white hover:bg-gray-500"
+                                className="bg-teal-600 border-teal-600 text-white hover:bg-teal-700"
                               >
                                 Прикрепить
                               </Button>
@@ -1213,7 +1213,7 @@ const OrderDetail: NextPage = () => {
                           </div>
                           <div className="text-sm text-gray-600">
                             {order.expenditureDoc ? (
-                              <span className="text-green-400">Файл прикреплен: {order.expenditureDoc}</span>
+                              <span className="text-green-600">Файл прикреплен: {order.expenditureDoc}</span>
                             ) : (
                               'Файл не прикреплен'
                             )}
@@ -1231,26 +1231,26 @@ const OrderDetail: NextPage = () => {
                 <div className="space-y-6">
                   {/* Записи звонков */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-white">Записи звонков</h3>
+                    <h3 className="text-lg font-semibold text-gray-800">Записи звонков</h3>
                     <div className="space-y-3">
                       {calls.length > 0 ? (
                         calls.map((call) => (
-                          <div key={call.id} className="p-3 sm:p-4 bg-gray-700/30 rounded-lg">
+                          <div key={call.id} className="p-3 sm:p-4 bg-gray-50 border border-gray-200 rounded-lg">
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 space-y-2 sm:space-y-0">
                               <div className="flex items-center space-x-2">
-                                <span className="text-white font-medium text-sm sm:text-base">
+                                <span className="text-gray-800 font-medium text-sm sm:text-base">
                                   {call.status === 'incoming' ? 'Входящий' : 'Исходящий'} звонок
                                 </span>
                               </div>
-                              <span className="text-xs sm:text-sm text-gray-600">
+                              <span className="text-xs sm:text-sm text-gray-500">
                                 {new Date(call.dateCreate).toLocaleString('ru-RU')}
                               </span>
                             </div>
                             <div className="space-y-1 mb-3">
-                              <p className="text-xs sm:text-sm text-gray-300">
+                              <p className="text-xs sm:text-sm text-gray-600">
                                 Клиент: {call.phoneClient}
                               </p>
-                              <p className="text-xs sm:text-sm text-gray-300">
+                              <p className="text-xs sm:text-sm text-gray-600">
                                 Оператор: {call.operator?.name || 'Неизвестно'}
                               </p>
                             </div>
@@ -1272,7 +1272,7 @@ const OrderDetail: NextPage = () => {
                           </div>
                         ))
                       ) : (
-                        <div className="p-4 bg-gray-700/30 rounded-lg text-center">
+                        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
                           <p className="text-gray-600">Записи звонков не найдены</p>
                         </div>
                       )}
@@ -1281,7 +1281,7 @@ const OrderDetail: NextPage = () => {
 
                   {/* Чат Авито */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-white">Чат Авито</h3>
+                    <h3 className="text-lg font-semibold text-gray-800">Чат Авито</h3>
                     {order.avitoChatId && order.avitoName ? (
                       <Button
                         onClick={handleOpenAvitoChat}
@@ -1297,9 +1297,9 @@ const OrderDetail: NextPage = () => {
                         </div>
                       </Button>
                     ) : (
-                      <div className="p-4 bg-gray-700/30 rounded-lg text-center">
+                      <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
                         <div className="flex items-center justify-center space-x-2 mb-2">
-                          <span className="text-gray-600 font-medium">Чат Авито не настроен</span>
+                          <span className="text-gray-700 font-medium">Чат Авито не настроен</span>
                         </div>
                         <p className="text-gray-500 text-sm">
                           У этого заказа не указан ID чата Авито или имя аккаунта
