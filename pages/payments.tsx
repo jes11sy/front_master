@@ -228,6 +228,10 @@ const Payments: NextPage = () => {
   const handleSubmitCashSubmission = async () => {
     if (!selectedOrder) return
 
+    console.log('=== handleSubmitCashSubmission ===')
+    console.log('Selected Order:', selectedOrder)
+    console.log('Receipt File:', receiptFile)
+
     try {
       setSubmitting(true)
       
@@ -235,6 +239,8 @@ const Payments: NextPage = () => {
         selectedOrder.id,
         receiptFile || undefined
       )
+
+      console.log('Result:', result)
 
       if (result.success) {
         setNotifications(['Сдача успешно отправлена на проверку'])

@@ -265,15 +265,27 @@ class ApiClient {
 
   async submitCashForReview(orderId: number, receiptFile?: File) {
     try {
+      console.log('=== submitCashForReview START ===')
+      console.log('Order ID:', orderId)
+      console.log('Receipt File:', receiptFile)
+      
       let cashReceiptDoc: string | undefined
 
       // Если есть файл - загружаем его в S3 через files-service
       if (receiptFile) {
+        console.log('Uploading file to S3...')
+        console.log('File name:', receiptFile.name)
+        console.log('File size:', receiptFile.size)
+        console.log('File type:', receiptFile.type)
+        
         const formData = new FormData()
         formData.append('file', receiptFile)
 
+        const uploadUrl = `${this.baseURL}/files/upload?folder=f7eead03-crmfiles/director/cash/cashreceipt_doc`
+        console.log('Upload URL:', uploadUrl)
+
         // Указываем кастомную папку для чеков
-        const uploadResponse = await fetch(`${this.baseURL}/files/upload?folder=f7eead03-crmfiles/director/cash/cashreceipt_doc`, {
+        const uploadResponse = await fetch(uploadUrl, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${this.getToken()}`,
@@ -281,27 +293,44 @@ class ApiClient {
           body: formData,
         })
 
+        console.log('Upload response status:', uploadResponse.status)
+
         if (!uploadResponse.ok) {
-          throw new Error('Ошибка загрузки файла')
+          const errorText = await uploadResponse.text()
+          console.error('Upload failed:', errorText)
+          throw new Error(`Ошибка загрузки файла: ${uploadResponse.status}`)
         }
 
         const uploadResult = await uploadResponse.json()
+        console.log('Upload result:', uploadResult)
         
         if (uploadResult.success && uploadResult.data?.key) {
           cashReceiptDoc = uploadResult.data.key
-          console.log('File uploaded to S3:', cashReceiptDoc)
+          console.log('✅ File uploaded to S3:', cashReceiptDoc)
+        } else {
+          console.warn('⚠️ No key in upload result')
         }
+      } else {
+        console.log('No file to upload')
       }
 
       // Отправляем запрос на обновление статуса в orders-service
-      return this.request(`/orders/${orderId}/submit-cash`, {
+      console.log('Submitting cash to orders-service...')
+      console.log('cashReceiptDoc:', cashReceiptDoc)
+      
+      const result = await this.request(`/orders/${orderId}/submit-cash`, {
         method: 'PATCH',
         body: JSON.stringify({
           cashReceiptDoc,
         }),
       })
+      
+      console.log('Submit result:', result)
+      console.log('=== submitCashForReview END ===')
+      
+      return result
     } catch (error) {
-      console.error('Error in submitCashForReview:', error)
+      console.error('❌ Error in submitCashForReview:', error)
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Ошибка отправки сдачи'
