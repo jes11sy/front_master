@@ -91,7 +91,7 @@ const CustomSelect = React.memo<CustomSelectProps>(({
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white border-2 border-teal-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white border-2 border-teal-200 rounded-lg shadow-lg z-[9999] max-h-60 overflow-y-auto">
           {options.map((option) => (
             <SelectOption
               key={option.value}

@@ -142,8 +142,6 @@ const Statistics: NextPage = () => {
           {/* Statistics Table with Filter */}
           <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in" style={{borderColor: '#114643'}}>
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-800 text-center mb-6">Статистика</h2>
-              
               {/* Date Filter */}
               <div className="mb-6">
                 <button

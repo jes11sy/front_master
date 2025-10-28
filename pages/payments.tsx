@@ -340,8 +340,6 @@ const Payments: NextPage = () => {
           {/* Объединенная таблица с фильтром */}
           <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in" style={{borderColor: '#114643'}}>
             <div className="mb-6">
-              <h3 className="text-xl font-semibold text-gray-800 text-center mb-6">Заказы и сдачи</h3>
-              
               {/* Фильтр */}
               <div className="mb-6">
                 <button

@@ -287,7 +287,7 @@ function OrdersContent() {
               </div>
               
               {showFilters && (
-                <div className="relative z-50 space-y-4 animate-slide-in-right">
+                <div className="relative z-[100] space-y-4 animate-slide-in-right">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* Поиск */}
                     <div>
