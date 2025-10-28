@@ -87,8 +87,8 @@ const Payments: NextPage = () => {
   // Функции фильтрации
   const getFilteredOrders = () => {
     const ordersArray = Array.isArray(orders) ? orders : []
-    if (statusFilter === 'all' || statusFilter === 'not_submitted') {
-      return ordersArray.filter(order => !order.cashSubmissionStatus || order.cashSubmissionStatus === 'not_submitted')
+    if (statusFilter === 'all' || statusFilter === 'Не отправлено') {
+      return ordersArray.filter(order => !order.cashSubmissionStatus || order.cashSubmissionStatus === 'Не отправлено')
     }
     return []
   }
@@ -109,11 +109,11 @@ const Payments: NextPage = () => {
     
     if (statusFilter === 'all') {
       // Показываем все: не отправленные заказы + все сдачи
-      const notSubmittedOrders = ordersArray.filter(order => !order.cashSubmissionStatus || order.cashSubmissionStatus === 'not_submitted')
+      const notSubmittedOrders = ordersArray.filter(order => !order.cashSubmissionStatus || order.cashSubmissionStatus === 'Не отправлено')
       return [...notSubmittedOrders, ...cashSubmissionsArray]
-    } else if (statusFilter === 'not_submitted') {
+    } else if (statusFilter === 'Не отправлено') {
       // Показываем только не отправленные заказы
-      return ordersArray.filter(order => !order.cashSubmissionStatus || order.cashSubmissionStatus === 'not_submitted')
+      return ordersArray.filter(order => !order.cashSubmissionStatus || order.cashSubmissionStatus === 'Не отправлено')
     } else {
       // Показываем только сдачи с определенным статусом
       return cashSubmissionsArray.filter(submission => submission.cashSubmissionStatus === statusFilter)
@@ -136,7 +136,7 @@ const Payments: NextPage = () => {
   const getNotSubmittedSum = () => {
     const ordersArray = Array.isArray(orders) ? orders : []
     return ordersArray
-      .filter(order => !order.cashSubmissionStatus || order.cashSubmissionStatus === 'not_submitted')
+      .filter(order => !order.cashSubmissionStatus || order.cashSubmissionStatus === 'Не отправлено')
       .reduce((sum, order) => {
         const amount = typeof order.masterChange === 'number' ? order.masterChange : parseFloat(order.masterChange?.toString() || '0')
         return sum + amount
@@ -146,7 +146,7 @@ const Payments: NextPage = () => {
   const getOnReviewSum = () => {
     const cashSubmissionsArray = Array.isArray(cashSubmissions) ? cashSubmissions : []
     return cashSubmissionsArray
-      .filter(submission => submission.cashSubmissionStatus === 'submitted')
+      .filter(submission => submission.cashSubmissionStatus === 'На проверке')
       .reduce((sum, submission) => {
         const amount = typeof submission.masterChange === 'number' ? submission.masterChange : parseFloat(submission.masterChange?.toString() || '0')
         return sum + amount
@@ -231,20 +231,20 @@ const Payments: NextPage = () => {
 
   const getCashSubmissionStatusBadge = (status: string) => {
     const variants = {
-      submitted: 'bg-yellow-500/20 text-yellow-800 border-yellow-500/30',
-      approved: 'bg-green-500/20 text-green-800 border-green-500/30',
-      rejected: 'bg-red-500/20 text-red-800 border-red-500/30',
+      'На проверке': 'bg-yellow-500/20 text-yellow-800 border-yellow-500/30',
+      'Одобрено': 'bg-green-500/20 text-green-800 border-green-500/30',
+      'Отклонено': 'bg-red-500/20 text-red-800 border-red-500/30',
     }
     
     const labels = {
-      submitted: 'На проверке',
-      approved: 'Подтверждено',
-      rejected: 'Отклонено',
+      'На проверке': 'На проверке',
+      'Одобрено': 'Подтверждено',
+      'Отклонено': 'Отклонено',
     }
 
     return (
       <Badge className={variants[status as keyof typeof variants]}>
-        {labels[status as keyof typeof labels]}
+        {labels[status as keyof typeof labels] || status}
       </Badge>
     )
   }
@@ -331,16 +331,16 @@ const Payments: NextPage = () => {
                   <SelectItem value="all" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
                     Все статусы
                   </SelectItem>
-                  <SelectItem value="not_submitted" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
+                  <SelectItem value="Не отправлено" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
                     Не отправлена
                   </SelectItem>
-                  <SelectItem value="submitted" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
+                  <SelectItem value="На проверке" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
                     На проверке
                   </SelectItem>
-                  <SelectItem value="approved" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
+                  <SelectItem value="Одобрено" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
                     Подтверждено
                   </SelectItem>
-                  <SelectItem value="rejected" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
+                  <SelectItem value="Отклонено" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
                     Отклонено
                   </SelectItem>
                 </SelectContent>
@@ -372,7 +372,7 @@ const Payments: NextPage = () => {
                   </TableHeader>
                       <TableBody>
                         {getCurrentPageItems().map((item) => {
-                          const isOrder = !item.cashSubmissionStatus || item.cashSubmissionStatus === 'not_submitted'
+                          const isOrder = !item.cashSubmissionStatus || item.cashSubmissionStatus === 'Не отправлено'
                           return (
                             <TableRow 
                               key={isOrder ? item.id : `submission-${item.id}`} 
@@ -410,7 +410,7 @@ const Payments: NextPage = () => {
                   {/* Мобильные карточки */}
                   <div className="md:hidden space-y-3">
                     {getCurrentPageItems().map((item) => {
-                      const isOrder = !item.cashSubmissionStatus || item.cashSubmissionStatus === 'not_submitted'
+                      const isOrder = !item.cashSubmissionStatus || item.cashSubmissionStatus === 'Не отправлено'
                       return (
                         <div 
                           key={isOrder ? item.id : `submission-${item.id}`}
