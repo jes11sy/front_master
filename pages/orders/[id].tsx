@@ -82,6 +82,10 @@ const OrderDetail: NextPage = () => {
   const [dateClosmod, setDateClosmod] = useState('')
   const [comment, setComment] = useState('')
 
+  // Состояния для файлов
+  const [bsoFile, setBsoFile] = useState<File | null>(null)
+  const [expenditureFile, setExpenditureFile] = useState<File | null>(null)
+
   // Функция для загрузки звонков
   const fetchCalls = async (callId: string) => {
     try {
@@ -96,6 +100,47 @@ const OrderDetail: NextPage = () => {
       }
     } catch (error) {
       console.error('Ошибка загрузки звонков:', error)
+    }
+  }
+
+  // Функция для обработки выбора файла
+  const handleFileSelect = async (file: File, type: 'bso' | 'expenditure') => {
+    if (!order) return
+
+    try {
+      setIsUpdating(true)
+      
+      // Определяем папку на S3 в зависимости от типа файла
+      const folder = type === 'bso' ? 'director/orders/bso_doc' : 'director/orders/expenditure_doc'
+      
+      // Загружаем файл на S3 в указанную папку
+      const response = await apiClient.uploadFile(file, folder)
+      
+      if (response.success && response.data?.url) {
+        // Обновляем заказ с путём к файлу
+        const updateData: any = {}
+        if (type === 'bso') {
+          updateData.bsoDoc = response.data.url
+          setBsoFile(file)
+        } else {
+          updateData.expenditureDoc = response.data.url
+          setExpenditureFile(file)
+        }
+        
+        const updateResponse = await apiClient.updateOrder(order.id.toString(), updateData)
+        
+        if (updateResponse.success && updateResponse.data) {
+          setOrder(updateResponse.data)
+          setNotifications([`Файл успешно загружен`])
+          setTimeout(() => setNotifications([]), 3000)
+        }
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки файла:', error)
+      setNotifications(['Ошибка загрузки файла'])
+      setTimeout(() => setNotifications([]), 3000)
+    } finally {
+      setIsUpdating(false)
     }
   }
 
@@ -991,18 +1036,36 @@ const OrderDetail: NextPage = () => {
                               <span className="text-gray-800 font-medium">Договор</span>
                             </div>
                             {order.statusOrder !== 'Готово' && order.statusOrder !== 'Незаказ' && order.statusOrder !== 'Отказ' && (
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
-                                className="bg-teal-600 border-teal-600 text-white hover:bg-teal-700"
-                              >
-                                Прикрепить
-                              </Button>
+                              <div className="relative">
+                                <input
+                                  type="file"
+                                  id="bso-upload"
+                                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0]
+                                    if (file) handleFileSelect(file, 'bso')
+                                  }}
+                                />
+                                <label htmlFor="bso-upload">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="bg-teal-600 border-teal-600 text-white hover:bg-teal-700"
+                                    onClick={(e) => {
+                                      e.preventDefault()
+                                      document.getElementById('bso-upload')?.click()
+                                    }}
+                                  >
+                                    Прикрепить
+                                  </Button>
+                                </label>
+                              </div>
                             )}
                           </div>
                           <div className="text-sm text-gray-600">
                             {order.bsoDoc ? (
-                              <span className="text-green-600">Файл прикреплен: {order.bsoDoc}</span>
+                              <span className="text-green-600">Файл прикреплен: {bsoFile?.name || order.bsoDoc.split('/').pop()}</span>
                             ) : (
                               'Файл не прикреплен'
                             )}
@@ -1015,18 +1078,36 @@ const OrderDetail: NextPage = () => {
                               <span className="text-gray-800 font-medium">Чек расхода</span>
                             </div>
                             {order.statusOrder !== 'Готово' && order.statusOrder !== 'Незаказ' && order.statusOrder !== 'Отказ' && (
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
-                                className="bg-teal-600 border-teal-600 text-white hover:bg-teal-700"
-                              >
-                                Прикрепить
-                              </Button>
+                              <div className="relative">
+                                <input
+                                  type="file"
+                                  id="expenditure-upload"
+                                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0]
+                                    if (file) handleFileSelect(file, 'expenditure')
+                                  }}
+                                />
+                                <label htmlFor="expenditure-upload">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="bg-teal-600 border-teal-600 text-white hover:bg-teal-700"
+                                    onClick={(e) => {
+                                      e.preventDefault()
+                                      document.getElementById('expenditure-upload')?.click()
+                                    }}
+                                  >
+                                    Прикрепить
+                                  </Button>
+                                </label>
+                              </div>
                             )}
                           </div>
                           <div className="text-sm text-gray-600">
                             {order.expenditureDoc ? (
-                              <span className="text-green-600">Файл прикреплен: {order.expenditureDoc}</span>
+                              <span className="text-green-600">Файл прикреплен: {expenditureFile?.name || order.expenditureDoc.split('/').pop()}</span>
                             ) : (
                               'Файл не прикреплен'
                             )}

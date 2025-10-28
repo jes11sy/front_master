@@ -508,6 +508,32 @@ class ApiClient {
       throw new Error(error.message || 'Ошибка отметки чата как прочитанного')
     }
   }
+
+  async uploadFile(file: File, folder?: string): Promise<any> {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    let url = `${this.baseURL}/files/upload`
+    if (folder) {
+      url += `?folder=${encodeURIComponent(folder)}`
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+      },
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Ошибка загрузки файла')
+    }
+
+    const result = await response.json()
+    return result
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL)
