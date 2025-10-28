@@ -88,7 +88,8 @@ const Payments: NextPage = () => {
   const getFilteredOrders = () => {
     const ordersArray = Array.isArray(orders) ? orders : []
     if (statusFilter === 'all' || statusFilter === 'Не отправлено') {
-      return ordersArray.filter(order => !order.cashSubmissionStatus || order.cashSubmissionStatus === 'Не отправлено')
+      // Исключаем not_submitted - они не должны отображаться
+      return ordersArray.filter(order => order.cashSubmissionStatus === 'Не отправлено')
     }
     return []
   }
@@ -108,12 +109,12 @@ const Payments: NextPage = () => {
     const cashSubmissionsArray = Array.isArray(cashSubmissions) ? cashSubmissions : []
     
     if (statusFilter === 'all') {
-      // Показываем все: не отправленные заказы + все сдачи
-      const notSubmittedOrders = ordersArray.filter(order => !order.cashSubmissionStatus || order.cashSubmissionStatus === 'Не отправлено')
+      // Показываем все: не отправленные заказы + все сдачи (исключая not_submitted)
+      const notSubmittedOrders = ordersArray.filter(order => order.cashSubmissionStatus === 'Не отправлено')
       return [...notSubmittedOrders, ...cashSubmissionsArray]
     } else if (statusFilter === 'Не отправлено') {
-      // Показываем только не отправленные заказы
-      return ordersArray.filter(order => !order.cashSubmissionStatus || order.cashSubmissionStatus === 'Не отправлено')
+      // Показываем только не отправленные заказы (исключая not_submitted)
+      return ordersArray.filter(order => order.cashSubmissionStatus === 'Не отправлено')
     } else {
       // Показываем только сдачи с определенным статусом
       return cashSubmissionsArray.filter(submission => submission.cashSubmissionStatus === statusFilter)
@@ -122,9 +123,10 @@ const Payments: NextPage = () => {
 
   const getCurrentPageItems = () => {
     const allItems = getAllFilteredItems()
+    const sortedItems = sortItemsByStatus(allItems)
     const startIndex = (currentPage - 1) * itemsPerPage
     const endIndex = startIndex + itemsPerPage
-    return allItems.slice(startIndex, endIndex)
+    return sortedItems.slice(startIndex, endIndex)
   }
 
   const getTotalPages = () => {
@@ -132,11 +134,35 @@ const Payments: NextPage = () => {
     return Math.ceil(allItems.length / itemsPerPage)
   }
 
+  // Функция сортировки по статусам
+  const sortItemsByStatus = (items: (Order | CashSubmission)[]) => {
+    const statusOrder = {
+      'Не отправлено': 1,
+      'На проверке': 2,
+      'Одобрено': 3,
+      'Отклонено': 4
+    }
+    
+    return [...items].sort((a, b) => {
+      const statusA = a.cashSubmissionStatus || 'Не отправлено'
+      const statusB = b.cashSubmissionStatus || 'Не отправлено'
+      
+      const orderA = statusOrder[statusA as keyof typeof statusOrder] || 999
+      const orderB = statusOrder[statusB as keyof typeof statusOrder] || 999
+      
+      return orderA - orderB
+    })
+  }
+
   // Суммы для отображения
   const getNotSubmittedSum = () => {
     const ordersArray = Array.isArray(orders) ? orders : []
     return ordersArray
-      .filter(order => !order.cashSubmissionStatus || order.cashSubmissionStatus === 'Не отправлено')
+      .filter(order => 
+        !order.cashSubmissionStatus || 
+        order.cashSubmissionStatus === 'Не отправлено' || 
+        order.cashSubmissionStatus === 'not_submitted'
+      )
       .reduce((sum, order) => {
         const amount = typeof order.masterChange === 'number' ? order.masterChange : parseFloat(order.masterChange?.toString() || '0')
         return sum + amount
@@ -372,7 +398,7 @@ const Payments: NextPage = () => {
                   </TableHeader>
                       <TableBody>
                         {getCurrentPageItems().map((item) => {
-                          const isOrder = !item.cashSubmissionStatus || item.cashSubmissionStatus === 'Не отправлено'
+                          const isOrder = !item.cashSubmissionStatus || item.cashSubmissionStatus === 'Не отправлено' || item.cashSubmissionStatus === 'not_submitted'
                           return (
                             <TableRow 
                               key={isOrder ? item.id : `submission-${item.id}`} 
@@ -410,7 +436,7 @@ const Payments: NextPage = () => {
                   {/* Мобильные карточки */}
                   <div className="md:hidden space-y-3">
                     {getCurrentPageItems().map((item) => {
-                      const isOrder = !item.cashSubmissionStatus || item.cashSubmissionStatus === 'Не отправлено'
+                      const isOrder = !item.cashSubmissionStatus || item.cashSubmissionStatus === 'Не отправлено' || item.cashSubmissionStatus === 'not_submitted'
                       return (
                         <div 
                           key={isOrder ? item.id : `submission-${item.id}`}
