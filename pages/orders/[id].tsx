@@ -86,6 +86,19 @@ const OrderDetail: NextPage = () => {
   const [bsoFile, setBsoFile] = useState<File | null>(null)
   const [expenditureFile, setExpenditureFile] = useState<File | null>(null)
 
+  // Функция для извлечения имени файла из URL
+  const getFileNameFromUrl = (url: string): string => {
+    try {
+      // Убираем query параметры (все после ?)
+      const urlWithoutQuery = url.split('?')[0]
+      // Извлекаем имя файла (последняя часть после /)
+      const fileName = urlWithoutQuery.split('/').pop() || 'файл'
+      return decodeURIComponent(fileName)
+    } catch {
+      return 'файл'
+    }
+  }
+
   // Функция для загрузки звонков
   const fetchCalls = async (callId: string) => {
     try {
@@ -1090,7 +1103,7 @@ const OrderDetail: NextPage = () => {
                           </div>
                           <div className="text-sm text-gray-600">
                             {order.bsoDoc ? (
-                              <span className="text-green-600">Файл прикреплен: {bsoFile?.name || order.bsoDoc.split('/').pop()}</span>
+                              <span className="text-green-600">Файл прикреплен: {bsoFile?.name || getFileNameFromUrl(order.bsoDoc)}</span>
                             ) : (
                               'Файл не прикреплен'
                             )}
@@ -1132,7 +1145,7 @@ const OrderDetail: NextPage = () => {
                           </div>
                           <div className="text-sm text-gray-600">
                             {order.expenditureDoc ? (
-                              <span className="text-green-600">Файл прикреплен: {expenditureFile?.name || order.expenditureDoc.split('/').pop()}</span>
+                              <span className="text-green-600">Файл прикреплен: {expenditureFile?.name || getFileNameFromUrl(order.expenditureDoc)}</span>
                             ) : (
                               'Файл не прикреплен'
                             )}
