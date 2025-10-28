@@ -5,9 +5,7 @@ import { useState, useEffect } from 'react'
 import AuthGuard from "@/components/auth-guard"
 import { apiClient } from '@/lib/api'
 import { logger } from '@/lib/logger'
-
-// Импортируем оптимизированный CustomSelect
-import CustomSelect from '@/components/optimized/CustomSelect'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface Order {
   id: number
@@ -86,7 +84,6 @@ function OrdersContent() {
   const [cityFilter, setCityFilter] = useState('')
   const [masterFilter, setMasterFilter] = useState('')
   const [showFilters, setShowFilters] = useState(false)
-  const [openSelect, setOpenSelect] = useState<string | null>(null)
 
   // Состояние для данных
   const [orders, setOrders] = useState<Order[]>([])
@@ -308,19 +305,21 @@ function OrdersContent() {
                       <label className="block text-xs font-medium text-gray-600 mb-1">
                         Статус
                       </label>
-                      <CustomSelect
-                        value={statusFilter}
-                        onChange={handleStatusChange}
-                        options={[
-                          { value: '', label: 'Все статусы' },
-                          ...(Array.isArray(allStatuses) ? allStatuses : []).map(status => ({ value: status, label: status }))
-                        ]}
-                        placeholder="Все статусы"
-                        compact={true}
-                        selectId="status"
-                        openSelect={openSelect}
-                        setOpenSelect={setOpenSelect}
-                      />
+                      <Select value={statusFilter} onValueChange={handleStatusChange}>
+                        <SelectTrigger className="w-full bg-white border-gray-300 text-gray-800">
+                          <SelectValue placeholder="Все статусы" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white border-gray-300">
+                          <SelectItem value="" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
+                            Все статусы
+                          </SelectItem>
+                          {Array.isArray(allStatuses) && allStatuses.map(status => (
+                            <SelectItem key={status} value={status} className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
+                              {status}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   
@@ -330,19 +329,21 @@ function OrdersContent() {
                       <label className="block text-xs font-medium text-gray-600 mb-1">
                         Город
                       </label>
-                      <CustomSelect
-                        value={cityFilter}
-                        onChange={handleCityChange}
-                        options={[
-                          { value: '', label: 'Все города' },
-                          ...(Array.isArray(uniqueCities) ? uniqueCities : []).map(city => ({ value: city, label: city }))
-                        ]}
-                        placeholder="Все города"
-                        compact={true}
-                        selectId="city"
-                        openSelect={openSelect}
-                        setOpenSelect={setOpenSelect}
-                      />
+                      <Select value={cityFilter} onValueChange={handleCityChange}>
+                        <SelectTrigger className="w-full bg-white border-gray-300 text-gray-800">
+                          <SelectValue placeholder="Все города" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white border-gray-300">
+                          <SelectItem value="" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
+                            Все города
+                          </SelectItem>
+                          {Array.isArray(uniqueCities) && uniqueCities.map(city => (
+                            <SelectItem key={city} value={city} className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
+                              {city}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     
                     {/* Мастер */}
@@ -350,19 +351,21 @@ function OrdersContent() {
                       <label className="block text-xs font-medium text-gray-600 mb-1">
                         Мастер
                       </label>
-                      <CustomSelect
-                        value={masterFilter}
-                        onChange={handleMasterChange}
-                        options={[
-                          { value: '', label: 'Все мастера' },
-                          ...(Array.isArray(allMasters) ? allMasters : []).map(master => ({ value: master.id.toString(), label: master.name }))
-                        ]}
-                        placeholder="Все мастера"
-                        compact={true}
-                        selectId="master"
-                        openSelect={openSelect}
-                        setOpenSelect={setOpenSelect}
-                      />
+                      <Select value={masterFilter} onValueChange={handleMasterChange}>
+                        <SelectTrigger className="w-full bg-white border-gray-300 text-gray-800">
+                          <SelectValue placeholder="Все мастера" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white border-gray-300">
+                          <SelectItem value="" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
+                            Все мастера
+                          </SelectItem>
+                          {Array.isArray(allMasters) && allMasters.map(master => (
+                            <SelectItem key={master.id} value={master.id.toString()} className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
+                              {master.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   
