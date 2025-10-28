@@ -305,12 +305,12 @@ function OrdersContent() {
                       <label className="block text-xs font-medium text-gray-600 mb-1">
                         Статус
                       </label>
-                      <Select value={statusFilter} onValueChange={handleStatusChange}>
+                      <Select value={statusFilter || "all"} onValueChange={(value) => handleStatusChange(value === "all" ? "" : value)}>
                         <SelectTrigger className="w-full bg-white border-gray-300 text-gray-800">
                           <SelectValue placeholder="Все статусы" />
                         </SelectTrigger>
                         <SelectContent className="bg-white border-gray-300">
-                          <SelectItem value="" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
+                          <SelectItem value="all" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
                             Все статусы
                           </SelectItem>
                           {Array.isArray(allStatuses) && allStatuses.map(status => (
@@ -329,12 +329,12 @@ function OrdersContent() {
                       <label className="block text-xs font-medium text-gray-600 mb-1">
                         Город
                       </label>
-                      <Select value={cityFilter} onValueChange={handleCityChange}>
+                      <Select value={cityFilter || "all"} onValueChange={(value) => handleCityChange(value === "all" ? "" : value)}>
                         <SelectTrigger className="w-full bg-white border-gray-300 text-gray-800">
                           <SelectValue placeholder="Все города" />
                         </SelectTrigger>
                         <SelectContent className="bg-white border-gray-300">
-                          <SelectItem value="" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
+                          <SelectItem value="all" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
                             Все города
                           </SelectItem>
                           {Array.isArray(uniqueCities) && uniqueCities.map(city => (
@@ -351,12 +351,12 @@ function OrdersContent() {
                       <label className="block text-xs font-medium text-gray-600 mb-1">
                         Мастер
                       </label>
-                      <Select value={masterFilter} onValueChange={handleMasterChange}>
+                      <Select value={masterFilter || "all"} onValueChange={(value) => handleMasterChange(value === "all" ? "" : value)}>
                         <SelectTrigger className="w-full bg-white border-gray-300 text-gray-800">
                           <SelectValue placeholder="Все мастера" />
                         </SelectTrigger>
                         <SelectContent className="bg-white border-gray-300">
-                          <SelectItem value="" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
+                          <SelectItem value="all" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
                             Все мастера
                           </SelectItem>
                           {Array.isArray(allMasters) && allMasters.map(master => (
