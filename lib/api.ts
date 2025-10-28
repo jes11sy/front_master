@@ -288,7 +288,7 @@ class ApiClient {
         const uploadResponse = await fetch(uploadUrl, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${this.getToken()}`,
+            'Authorization': `Bearer ${this.token}`,
           },
           body: formData,
         })
