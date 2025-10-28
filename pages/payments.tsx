@@ -158,11 +158,7 @@ const Payments: NextPage = () => {
   const getNotSubmittedSum = () => {
     const ordersArray = Array.isArray(orders) ? orders : []
     return ordersArray
-      .filter(order => 
-        !order.cashSubmissionStatus || 
-        order.cashSubmissionStatus === 'Не отправлено' || 
-        order.cashSubmissionStatus === 'not_submitted'
-      )
+      .filter(order => order.cashSubmissionStatus === 'Не отправлено')
       .reduce((sum, order) => {
         const amount = typeof order.masterChange === 'number' ? order.masterChange : parseFloat(order.masterChange?.toString() || '0')
         return sum + amount
@@ -398,7 +394,7 @@ const Payments: NextPage = () => {
                   </TableHeader>
                       <TableBody>
                         {getCurrentPageItems().map((item) => {
-                          const isOrder = !item.cashSubmissionStatus || item.cashSubmissionStatus === 'Не отправлено' || item.cashSubmissionStatus === 'not_submitted'
+                          const isOrder = item.cashSubmissionStatus === 'Не отправлено'
                           return (
                             <TableRow 
                               key={isOrder ? item.id : `submission-${item.id}`} 
@@ -436,7 +432,7 @@ const Payments: NextPage = () => {
                   {/* Мобильные карточки */}
                   <div className="md:hidden space-y-3">
                     {getCurrentPageItems().map((item) => {
-                      const isOrder = !item.cashSubmissionStatus || item.cashSubmissionStatus === 'Не отправлено' || item.cashSubmissionStatus === 'not_submitted'
+                      const isOrder = item.cashSubmissionStatus === 'Не отправлено'
                       return (
                         <div 
                           key={isOrder ? item.id : `submission-${item.id}`}
