@@ -139,94 +139,93 @@ const Statistics: NextPage = () => {
       <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
         <div className="container mx-auto px-2 sm:px-4 py-8 pt-4 md:pt-8">
           <div className="max-w-none mx-auto">
-          {/* Date Filter */}
-          <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-4 md:p-6 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in mb-8 animate-slide-in-left" style={{borderColor: '#114643'}}>
-            <div className="mb-4">
-              <button
-                onClick={() => setIsFilterVisible(!isFilterVisible)}
-                className="flex items-center gap-2 text-left cursor-pointer group"
-              >
-                <h2 className="text-lg font-semibold text-gray-700 group-hover:text-teal-600 transition-colors duration-200">
-                  Фильтр
-                </h2>
-                <svg
-                  className={`w-5 h-5 text-gray-600 group-hover:text-teal-600 transition-all duration-200 ${
-                    isFilterVisible ? 'rotate-180' : ''
-                  }`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-            </div>
-            {isFilterVisible && (
-              <div className="relative z-50 space-y-4 animate-slide-in-right">
-                  {/* Period Selection */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {[
-                      { value: 'day', label: 'День' },
-                      { value: 'week', label: 'Неделя' },
-                      { value: 'month', label: 'Месяц' },
-                      { value: 'custom', label: 'Произвольный' }
-                    ].map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => handlePeriodChange(option.value)}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 text-center ${
-                          period === option.value
-                            ? 'bg-teal-600 text-white border border-teal-500 shadow-lg shadow-teal-500/25'
-                            : 'bg-gray-100 text-gray-700 hover:bg-teal-50 hover:text-teal-600 border border-gray-300'
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Date Range Selection */}
-                  {period === 'custom' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 bg-gray-50 rounded-lg">
-                      <div className="space-y-1">
-                        <Label htmlFor="startDate" className="text-gray-700 text-xs">Дата начала</Label>
-                        <Input
-                          id="startDate"
-                          type="date"
-                          value={startDate}
-                          onChange={(e) => setStartDate(e.target.value)}
-                          className="bg-white border-gray-300 text-gray-800 focus:border-teal-500 text-sm h-9"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label htmlFor="endDate" className="text-gray-700 text-xs">Дата окончания</Label>
-                        <Input
-                          id="endDate"
-                          type="date"
-                          value={endDate}
-                          onChange={(e) => setEndDate(e.target.value)}
-                          className="bg-white border-gray-300 text-gray-800 focus:border-teal-500 text-sm h-9"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Selected Period Display */}
-                  {period !== 'custom' && (startDate || endDate) && (
-                    <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg border border-gray-300">
-                      <span className="text-xs text-gray-700">
-                        Период: {new Date(startDate).toLocaleDateString('ru-RU')} - {new Date(endDate).toLocaleDateString('ru-RU')}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-          {/* Statistics Table */}
+          {/* Statistics Table with Filter */}
           <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in" style={{borderColor: '#114643'}}>
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-800 text-center">Статистика</h2>
+              <h2 className="text-2xl font-bold text-gray-800 text-center mb-6">Статистика</h2>
+              
+              {/* Date Filter */}
+              <div className="mb-6">
+                <button
+                  onClick={() => setIsFilterVisible(!isFilterVisible)}
+                  className="flex items-center gap-2 text-left cursor-pointer group"
+                >
+                  <h3 className="text-lg font-semibold text-gray-700 group-hover:text-teal-600 transition-colors duration-200">
+                    Фильтр
+                  </h3>
+                  <svg
+                    className={`w-5 h-5 text-gray-600 group-hover:text-teal-600 transition-all duration-200 ${
+                      isFilterVisible ? 'rotate-180' : ''
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {isFilterVisible && (
+                  <div className="relative z-50 space-y-4 animate-slide-in-right mt-4">
+                    {/* Period Selection */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {[
+                        { value: 'day', label: 'День' },
+                        { value: 'week', label: 'Неделя' },
+                        { value: 'month', label: 'Месяц' },
+                        { value: 'custom', label: 'Произвольный' }
+                      ].map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => handlePeriodChange(option.value)}
+                          className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 text-center ${
+                            period === option.value
+                              ? 'bg-teal-600 text-white border border-teal-500 shadow-lg shadow-teal-500/25'
+                              : 'bg-gray-100 text-gray-700 hover:bg-teal-50 hover:text-teal-600 border border-gray-300'
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Date Range Selection */}
+                    {period === 'custom' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 bg-gray-50 rounded-lg">
+                        <div className="space-y-1">
+                          <Label htmlFor="startDate" className="text-gray-700 text-xs">Дата начала</Label>
+                          <Input
+                            id="startDate"
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            className="bg-white border-gray-300 text-gray-800 focus:border-teal-500 text-sm h-9"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="endDate" className="text-gray-700 text-xs">Дата окончания</Label>
+                          <Input
+                            id="endDate"
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            className="bg-white border-gray-300 text-gray-800 focus:border-teal-500 text-sm h-9"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Selected Period Display */}
+                    {period !== 'custom' && (startDate || endDate) && (
+                      <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg border border-gray-300">
+                        <span className="text-xs text-gray-700">
+                          Период: {new Date(startDate).toLocaleDateString('ru-RU')} - {new Date(endDate).toLocaleDateString('ru-RU')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
             <div>
               {loading ? (
