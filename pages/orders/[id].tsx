@@ -516,28 +516,14 @@ const OrderDetail: NextPage = () => {
               disabled={isUpdating}
               className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-4 text-base rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 border-0"
             >
-              <div className="flex items-center justify-center space-x-2">
-                {isUpdating ? (
-                  'Обновление...'
-                ) : (
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                )}
-                <span>Принять</span>
-              </div>
+              {isUpdating ? 'Обновление...' : 'Принять'}
             </Button>
             <Button 
               onClick={handleDeclineOrder}
               disabled={isUpdating}
               className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-4 text-base rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 border-0"
             >
-              <div className="flex items-center justify-center space-x-2">
-                {isUpdating ? (
-                  'Обновление...'
-                ) : (
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                )}
-                <span>Отказаться</span>
-              </div>
+              {isUpdating ? 'Обновление...' : 'Отказаться'}
             </Button>
           </>
         )
@@ -549,14 +535,14 @@ const OrderDetail: NextPage = () => {
             disabled={isUpdating}
             className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-4 text-base rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 border-0"
           >
-            <div className="flex items-center justify-center space-x-2">
-              {isUpdating ? (
+            {isUpdating ? (
+              <span className="flex items-center justify-center space-x-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <div className="w-2 h-2 bg-white rounded-full"></div>
-              )}
-              <span>В пути</span>
-            </div>
+                <span>Обновление...</span>
+              </span>
+            ) : (
+              'В пути'
+            )}
           </Button>
         )
 
@@ -567,14 +553,14 @@ const OrderDetail: NextPage = () => {
             disabled={isUpdating}
             className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-4 text-base rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 border-0"
           >
-            <div className="flex items-center justify-center space-x-2">
-              {isUpdating ? (
+            {isUpdating ? (
+              <span className="flex items-center justify-center space-x-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <div className="w-2 h-2 bg-white rounded-full"></div>
-              )}
-              <span>В работе</span>
-            </div>
+                <span>Обновление...</span>
+              </span>
+            ) : (
+              'В работе'
+            )}
           </Button>
         )
 
@@ -593,14 +579,7 @@ const OrderDetail: NextPage = () => {
               disabled={isUpdating || hasUnfulfilledRequirements}
               className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-4 text-base rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 border-0"
             >
-              <div className="flex items-center justify-center space-x-2">
-                {isUpdating ? (
-                  'Обновление...'
-                ) : (
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                )}
-                <span>Провести</span>
-              </div>
+              {isUpdating ? 'Обновление...' : 'Провести'}
             </Button>
           )
         }
@@ -611,14 +590,7 @@ const OrderDetail: NextPage = () => {
               disabled={isUpdating || hasUnfulfilledRequirements}
               className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-4 text-base rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 border-0"
             >
-              <div className="flex items-center justify-center space-x-2">
-                {isUpdating ? (
-                  'Обновление...'
-                ) : (
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                )}
-                <span>Модерн</span>
-              </div>
+              {isUpdating ? 'Обновление...' : 'Модерн'}
             </Button>
             <Button 
               onClick={() => {
@@ -628,14 +600,7 @@ const OrderDetail: NextPage = () => {
               disabled={isUpdating || hasUnfulfilledRequirements}
               className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-4 text-base rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 border-0"
             >
-              <div className="flex items-center justify-center space-x-2">
-                {isUpdating ? (
-                  'Обновление...'
-                ) : (
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                )}
-                <span>Закрыть</span>
-              </div>
+              {isUpdating ? 'Обновление...' : 'Закрыть'}
             </Button>
           </>
         )
@@ -655,14 +620,7 @@ const OrderDetail: NextPage = () => {
               disabled={isUpdating || hasUnfulfilledRequirements}
               className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-4 text-base rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 border-0"
             >
-              <div className="flex items-center justify-center space-x-2">
-                {isUpdating ? (
-                  'Обновление...'
-                ) : (
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                )}
-                <span>Провести</span>
-              </div>
+              {isUpdating ? 'Обновление...' : 'Провести'}
             </Button>
           )
         } else {
@@ -673,23 +631,20 @@ const OrderDetail: NextPage = () => {
                 disabled={isUpdating}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-4 text-base rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 border-0"
               >
-                <div className="flex items-center justify-center space-x-2">
-                  {isUpdating ? (
+                {isUpdating ? (
+                  <span className="flex items-center justify-center space-x-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <div className="w-2 h-2 bg-white rounded-full"></div>
-                  )}
-                  <span>{isUpdating ? 'Сохранение...' : 'Сохранить'}</span>
-                </div>
+                    <span>Сохранение...</span>
+                  </span>
+                ) : (
+                  'Сохранить'
+                )}
               </Button>
               <Button 
                 onClick={() => setShowModernBlock(false)}
                 className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-4 text-base rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 border-0"
               >
-                <div className="flex items-center justify-center space-x-2">
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                  <span>Закрыть заказ</span>
-                </div>
+                Закрыть заказ
               </Button>
             </>
           )
@@ -767,7 +722,7 @@ const OrderDetail: NextPage = () => {
       </Head>
       <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
         
-        <div className="container mx-auto px-2 sm:px-4 py-8 pt-4 md:pt-8">
+        <div className="container mx-auto px-2 sm:px-4 py-8 pt-4 md:pt-8 pb-24 md:pb-8">
           <div className="max-w-none mx-auto">
             <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in" style={{borderColor: '#114643'}}>
               
@@ -1243,15 +1198,13 @@ const OrderDetail: NextPage = () => {
               )}
             </CardContent>
           </Card>
-        </div>
-        
-        {/* Фиксированные кнопки внизу экрана */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 z-50">
-          <div className="max-w-md mx-auto">
+
+          {/* Кнопки действий - для десктопа (inline) */}
+          <div className="hidden md:block mt-6 md:mt-8 pb-4">
             {/* Уведомление о заблокированных кнопках */}
             {notifications.length > 0 && order?.statusOrder === 'В работе' && (
-              <div className="mb-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-                <p className="text-red-300 text-sm font-medium text-center">
+              <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-700 text-sm font-medium text-center">
                   Завершить заказ можно только после прикрепления всех необходимых документов
                 </p>
               </div>
@@ -1259,8 +1212,35 @@ const OrderDetail: NextPage = () => {
             
             {/* Ошибка валидации */}
             {validationError && (
-              <div className="mb-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-                <p className="text-red-300 text-sm font-medium text-center">
+              <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-700 text-sm font-medium text-center">
+                  {validationError}
+                </p>
+              </div>
+            )}
+            
+            <div className="flex space-x-3 w-full max-w-2xl mx-auto">
+              {renderActionButtons()}
+            </div>
+          </div>
+        </div>
+        
+        {/* Фиксированные кнопки на мобильных устройствах */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 z-50 bg-gradient-to-t from-[#114643] via-[#114643] to-transparent pt-6">
+          <div className="max-w-md mx-auto">
+            {/* Уведомление о заблокированных кнопках для мобильных */}
+            {notifications.length > 0 && order?.statusOrder === 'В работе' && (
+              <div className="mb-3 p-3 bg-red-500/20 border border-red-400/50 rounded-lg backdrop-blur-sm">
+                <p className="text-red-100 text-sm font-medium text-center">
+                  Завершить заказ можно только после прикрепления всех необходимых документов
+                </p>
+              </div>
+            )}
+            
+            {/* Ошибка валидации для мобильных */}
+            {validationError && (
+              <div className="mb-3 p-3 bg-red-500/20 border border-red-400/50 rounded-lg backdrop-blur-sm">
+                <p className="text-red-100 text-sm font-medium text-center">
                   {validationError}
                 </p>
               </div>
