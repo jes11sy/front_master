@@ -13,13 +13,63 @@ interface ApiResponse<T> {
 class ApiClient {
   private baseURL: string
   private token: string | null = null
+  private refreshToken: string | null = null
+  private isRefreshing: boolean = false
+  private refreshSubscribers: Array<(token: string) => void> = []
 
   constructor(baseURL: string) {
     this.baseURL = baseURL
-    // Получаем токен из localStorage или sessionStorage при инициализации
+    // Получаем токены из localStorage или sessionStorage при инициализации
     if (typeof window !== 'undefined') {
       this.token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token')
+      this.refreshToken = localStorage.getItem('refresh_token') || sessionStorage.getItem('refresh_token')
+      
+      // Запускаем проверку истечения токена
+      this.startTokenExpiryCheck()
     }
+  }
+
+  // Проверка истечения токена и проактивное обновление
+  private startTokenExpiryCheck() {
+    if (typeof window === 'undefined') return
+
+    // Проверяем каждые 60 секунд
+    setInterval(() => {
+      if (!this.token) return
+
+      try {
+        // Декодируем JWT токен
+        const base64Url = this.token.split('.')[1]
+        if (!base64Url) return
+
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split('')
+            .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+            .join('')
+        )
+
+        const payload = JSON.parse(jsonPayload)
+        
+        // Проверяем, когда истекает токен
+        if (payload.exp) {
+          const expiryTime = payload.exp * 1000 // Конвертируем в миллисекунды
+          const currentTime = Date.now()
+          const timeUntilExpiry = expiryTime - currentTime
+
+          // Если токен истекает через 2 минуты или меньше, обновляем его проактивно
+          if (timeUntilExpiry > 0 && timeUntilExpiry < 2 * 60 * 1000) {
+            console.log('⏰ Токен скоро истечет, проактивно обновляем...')
+            this.refreshAccessToken().catch(err => {
+              console.error('Ошибка проактивного обновления токена:', err)
+            })
+          }
+        }
+      } catch (error) {
+        // Игнорируем ошибки декодирования
+      }
+    }, 60000) // Проверяем каждую минуту
   }
 
   setToken(token: string, remember: boolean = false) {
@@ -38,19 +88,86 @@ class ApiClient {
     }
   }
 
+  setRefreshToken(refreshToken: string, remember: boolean = false) {
+    this.refreshToken = refreshToken
+    if (typeof window !== 'undefined') {
+      if (remember) {
+        localStorage.setItem('refresh_token', refreshToken)
+      } else {
+        sessionStorage.setItem('refresh_token', refreshToken)
+        localStorage.removeItem('refresh_token')
+      }
+    }
+  }
+
   clearToken() {
     this.token = null
+    this.refreshToken = null
     if (typeof window !== 'undefined') {
       localStorage.removeItem('auth_token')
+      localStorage.removeItem('refresh_token')
       localStorage.removeItem('remember_me')
       sessionStorage.removeItem('auth_token')
+      sessionStorage.removeItem('refresh_token')
     }
+  }
+
+  // Метод для обновления access токена с помощью refresh токена
+  private async refreshAccessToken(): Promise<string | null> {
+    if (!this.refreshToken) {
+      return null
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refreshToken: this.refreshToken }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to refresh token')
+      }
+
+      const data = await response.json()
+      
+      if (data.success && data.data?.accessToken) {
+        const remember = typeof window !== 'undefined' && localStorage.getItem('remember_me') === 'true'
+        this.setToken(data.data.accessToken, remember)
+        
+        // Если сервер вернул новый refresh токен, обновляем его тоже
+        if (data.data.refreshToken) {
+          this.setRefreshToken(data.data.refreshToken, remember)
+        }
+        
+        return data.data.accessToken
+      }
+
+      return null
+    } catch (error) {
+      console.error('Error refreshing token:', error)
+      return null
+    }
+  }
+
+  // Подписка на обновление токена
+  private subscribeTokenRefresh(callback: (token: string) => void) {
+    this.refreshSubscribers.push(callback)
+  }
+
+  // Оповещение подписчиков о новом токене
+  private onTokenRefreshed(token: string) {
+    this.refreshSubscribers.forEach(callback => callback(token))
+    this.refreshSubscribers = []
   }
 
   private async request<T>(
     endpoint: string,
     options: RequestInit = {},
-    retries: number = 3
+    retries: number = 3,
+    isRetryAfterRefresh: boolean = false
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`
     
@@ -80,13 +197,76 @@ class ApiClient {
 
         const data = await response.json()
 
+        // Обрабатываем 401 ошибку - пытаемся обновить токен
+        if (response.status === 401 && !isRetryAfterRefresh && endpoint !== '/auth/refresh' && endpoint !== '/auth/login') {
+          console.log('🔄 Получена 401 ошибка, пытаемся обновить токен...')
+          
+          // Если уже идет процесс обновления, ждем его завершения
+          if (this.isRefreshing) {
+            return new Promise<ApiResponse<T>>((resolve, reject) => {
+              this.subscribeTokenRefresh((newToken: string) => {
+                // Повторяем запрос с новым токеном
+                this.request<T>(endpoint, options, retries, true)
+                  .then(resolve)
+                  .catch(reject)
+              })
+            })
+          }
+
+          this.isRefreshing = true
+
+          try {
+            const newToken = await this.refreshAccessToken()
+            
+            if (newToken) {
+              console.log('✅ Токен успешно обновлен')
+              this.isRefreshing = false
+              this.onTokenRefreshed(newToken)
+              
+              // Повторяем оригинальный запрос с новым токеном
+              return this.request<T>(endpoint, options, retries, true)
+            } else {
+              console.log('❌ Не удалось обновить токен, перенаправляем на логин')
+              this.isRefreshing = false
+              this.clearToken()
+              
+              // Перенаправляем на страницу логина
+              if (typeof window !== 'undefined') {
+                window.location.href = '/login'
+              }
+              
+              // Выбрасываем специальную ошибку, чтобы не показывать toast
+              throw new Error('SESSION_EXPIRED')
+            }
+          } catch (refreshError: any) {
+            console.log('❌ Ошибка обновления токена:', refreshError?.message || refreshError)
+            this.isRefreshing = false
+            this.clearToken()
+            
+            if (typeof window !== 'undefined') {
+              window.location.href = '/login'
+            }
+            
+            // Выбрасываем специальную ошибку, чтобы не показывать toast
+            throw new Error('SESSION_EXPIRED')
+          }
+        }
+
         if (!response.ok) {
           throw new Error(data.error || `Ошибка сервера: ${response.status}`)
         }
 
         return data
       } catch (error: any) {
-        console.error(`API Error (попытка ${attempt}/${retries}):`, error)
+        // Если это ошибка истечения сессии, сразу выбрасываем её без повторов и логирования
+        if (error.message === 'SESSION_EXPIRED') {
+          throw error
+        }
+        
+        // Не логируем ошибки на последующих попытках
+        if (attempt === 1) {
+          console.error(`API Error (попытка ${attempt}/${retries}):`, error)
+        }
         
         // Если это последняя попытка, выбрасываем ошибку
         if (attempt === retries) {
@@ -134,6 +314,11 @@ class ApiClient {
     // Новый формат ответа: { success, message, data: { user, accessToken, refreshToken } }
     if (response.success && response.data?.accessToken) {
       this.setToken(response.data.accessToken, remember)
+      
+      // Сохраняем refresh токен
+      if (response.data.refreshToken) {
+        this.setRefreshToken(response.data.refreshToken, remember)
+      }
     }
 
     return response

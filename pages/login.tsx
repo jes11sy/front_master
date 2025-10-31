@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { toast } from '@/components/ui/toast'
 import { sanitizeString } from '@/lib/sanitize'
 import { logger } from '@/lib/logger'
+import { getErrorMessage } from '@/lib/utils'
 import Image from 'next/image'
 import apiClient from '@/lib/api'
 
@@ -16,6 +17,7 @@ const Login: NextPage = () => {
   const router = useRouter()
   const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
   // Проверяем авторизацию при загрузке
@@ -45,7 +47,7 @@ const Login: NextPage = () => {
         return
       }
       
-      const response = await apiClient.login(sanitizedLogin, sanitizedPassword, false)
+      const response = await apiClient.login(sanitizedLogin, sanitizedPassword, rememberMe)
       
       if (response.success) {
         logger.info('Пользователь успешно авторизован')
@@ -56,8 +58,11 @@ const Login: NextPage = () => {
         toast.error(response.error || 'Ошибка авторизации')
       }
     } catch (error: any) {
-      // Показываем toast пользователю, не логируем в консоль (401 - это норма)
-      toast.error(error.message || 'Ошибка авторизации')
+      // Не показываем ошибку если это SESSION_EXPIRED (уже перенаправляет на логин)
+      const errorMessage = getErrorMessage(error, 'Ошибка авторизации')
+      if (errorMessage) {
+        toast.error(errorMessage)
+      }
     } finally {
       setIsLoading(false)
     }
@@ -124,6 +129,8 @@ const Login: NextPage = () => {
                     id="remember-me"
                     name="remember-me"
                     type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
                     className="h-4 w-4 rounded border-2 border-gray-300 focus:ring-2 transition-all duration-200"
                     style={{accentColor: '#114643'}}
                   />
