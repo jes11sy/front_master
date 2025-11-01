@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
+import apiClient from '@/lib/api'
 
 const navigationItems = [
   { name: 'Заказы', href: '/orders' },
@@ -20,15 +21,32 @@ const navigationItems = [
 
 export function Navigation() {
   const pathname = usePathname()
+  const router = useRouter()
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [expandedDropdown, setExpandedDropdown] = useState<string | null>(null)
 
+  const handleLogout = async () => {
+    try {
+      await apiClient.logout()
+    } catch (error) {
+      console.error('Ошибка при выходе:', error)
+      apiClient.clearToken()
+    } finally {
+      router.push('/login')
+    }
+  }
+
   const handleDropdownClick = (href: string) => {
     setMobileMenuOpen(false)
     setHoveredItem(null)
-    window.location.href = href
+    
+    if (href === '/logout') {
+      handleLogout()
+    } else {
+      window.location.href = href
+    }
   }
 
   return (

@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/router'
-import Head from 'next/head'
 import apiClient from '@/lib/api'
 
 const Logout: React.FC = () => {
@@ -16,14 +15,15 @@ const Logout: React.FC = () => {
         // Даже если произошла ошибка, очищаем локальные данные
         apiClient.clearToken()
       } finally {
-        // Перенаправляем на страницу логина
-        router.push('/login')
+        // Используем replace для мгновенного перенаправления без истории
+        router.replace('/login')
       }
     }
 
     handleLogout()
   }, [router])
 
+  // Возвращаем null для мгновенного редиректа
   return null
 }
 
