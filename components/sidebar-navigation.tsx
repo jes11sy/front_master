@@ -195,6 +195,32 @@ export function SidebarNavigation() {
                   )}
                 </div>
               ))}
+              
+              {/* Кнопка выхода для мобильной версии */}
+              <div className="pt-2 mt-2 border-t" style={{borderColor: '#e5e7eb'}}>
+                <Link
+                  href="/logout"
+                  className="flex items-center w-full px-4 py-3 text-sm font-medium transition-all duration-200 rounded-lg"
+                  style={{
+                    color: '#374151',
+                    textDecoration: 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = '#dc2626'
+                    e.currentTarget.style.backgroundColor = '#fef2f2'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = '#374151'
+                    e.currentTarget.style.backgroundColor = 'transparent'
+                  }}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <svg className="mr-3 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Выйти
+                </Link>
+              </div>
             </div>
           </div>
         )}

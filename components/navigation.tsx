@@ -25,6 +25,12 @@ export function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [expandedDropdown, setExpandedDropdown] = useState<string | null>(null)
 
+  const handleDropdownClick = (href: string) => {
+    setMobileMenuOpen(false)
+    setHoveredItem(null)
+    window.location.href = href
+  }
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 shadow-lg backdrop-blur-lg border-b bg-white" style={{borderColor: '#14b8a6'}}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
