@@ -369,8 +369,21 @@ const OrderDetail: NextPage = () => {
       if (newStatus === 'Готово') {
         const total = parseFloat(totalAmount) || 0
         const expense = parseFloat(expenseAmount) || 0
-        const clean = total - expense
-        const masterChange = clean / 2
+        let clean = total - expense
+        
+        // Проверка для заказов со статусом "Модерн": если прошло 7+ дней от даты встречи, чистыми минимум 3000
+        if (order.statusOrder === 'Модерн' && order.dateMeeting) {
+          const meetingDate = new Date(order.dateMeeting)
+          const today = new Date()
+          const daysDiff = Math.floor((today.getTime() - meetingDate.getTime()) / (1000 * 60 * 60 * 24))
+          
+          if (daysDiff >= 7 && clean < 3000) {
+            clean = 3000
+          }
+        }
+        
+        // Новая логика: если чистыми <= 5000, то 60%, иначе 50%
+        const masterChange = clean <= 5000 ? clean * 0.6 : clean * 0.5
         
         updateData.result = total
         updateData.expenditure = expense
@@ -400,8 +413,21 @@ const OrderDetail: NextPage = () => {
           // Вычисляем чистыми и сдачу мастера для отображения
           const total = parseFloat(totalAmount) || 0
           const expense = parseFloat(expenseAmount) || 0
-          const clean = total - expense
-          const masterChange = clean / 2
+          let clean = total - expense
+          
+          // Проверка для заказов со статусом "Модерн": если прошло 7+ дней от даты встречи, чистыми минимум 3000
+          if (order.statusOrder === 'Модерн' && order.dateMeeting) {
+            const meetingDate = new Date(order.dateMeeting)
+            const today = new Date()
+            const daysDiff = Math.floor((today.getTime() - meetingDate.getTime()) / (1000 * 60 * 60 * 24))
+            
+            if (daysDiff >= 7 && clean < 3000) {
+              clean = 3000
+            }
+          }
+          
+          // Новая логика: если чистыми <= 5000, то 60%, иначе 50%
+          const masterChange = clean <= 5000 ? clean * 0.6 : clean * 0.5
           setCleanAmount(clean.toString())
           setMasterChange(masterChange.toString())
         }
