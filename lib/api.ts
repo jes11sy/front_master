@@ -107,8 +107,10 @@ class ApiClient {
       localStorage.removeItem('auth_token')
       localStorage.removeItem('refresh_token')
       localStorage.removeItem('remember_me')
+      localStorage.removeItem('user')
       sessionStorage.removeItem('auth_token')
       sessionStorage.removeItem('refresh_token')
+      sessionStorage.removeItem('user')
     }
   }
 
@@ -171,9 +173,9 @@ class ApiClient {
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`
     
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string>),
     }
 
     if (this.token) {
@@ -325,19 +327,26 @@ class ApiClient {
   }
 
   async logout() {
-    try {
-      // Отправляем запрос на сервер для инвалидации токена (если есть токен)
-      if (this.token) {
+    // Сначала сохраняем токен для отправки на сервер
+    const token = this.token
+    
+    // СРАЗУ очищаем локальные токены для быстрого выхода
+    this.clearToken()
+    
+    // Затем пытаемся уведомить сервер (необязательно)
+    if (token) {
+      try {
         await this.request('/auth/logout', {
           method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
         })
+      } catch (error) {
+        // Игнорируем ошибки сервера при выходе - токен уже удален локально
+        console.warn('Ошибка при выходе на сервере (игнорируется):', error)
       }
-    } catch (error) {
-      // Игнорируем ошибки сервера при выходе
-      console.warn('Ошибка при выходе на сервере:', error)
-    } finally {
-      // Всегда очищаем локальные токены
-      this.clearToken()
     }
   }
 
