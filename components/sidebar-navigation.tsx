@@ -22,14 +22,11 @@ export function SidebarNavigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [expandedDropdown, setExpandedDropdown] = useState<string | null>(null)
 
-  const handleLogout = async () => {
-    try {
-      await apiClient.logout()
-    } catch (error) {
-      console.error('Logout error:', error)
-    } finally {
-      router.push('/login')
-    }
+  const handleLogout = () => {
+    // Выполняем logout синхронно
+    apiClient.logout()
+    // Сразу перенаправляем на логин
+    router.push('/login')
   }
 
   return (

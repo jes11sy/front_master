@@ -27,15 +27,11 @@ export function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [expandedDropdown, setExpandedDropdown] = useState<string | null>(null)
 
-  const handleLogout = async () => {
-    try {
-      await apiClient.logout()
-    } catch (error) {
-      console.error('Ошибка при выходе:', error)
-      apiClient.clearToken()
-    } finally {
-      router.push('/login')
-    }
+  const handleLogout = () => {
+    // Выполняем logout синхронно
+    apiClient.logout()
+    // Сразу перенаправляем на логин
+    router.push('/login')
   }
 
   const handleDropdownClick = (href: string) => {

@@ -326,27 +326,37 @@ class ApiClient {
     return response
   }
 
-  async logout() {
-    // Сначала сохраняем токен для отправки на сервер
+  logout() {
+    // Сначала очищаем локальные данные НАПРЯМУЮ и СИНХРОННО
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('refresh_token')
+      localStorage.removeItem('remember_me')
+      localStorage.removeItem('user')
+      sessionStorage.removeItem('auth_token')
+      sessionStorage.removeItem('refresh_token')
+      sessionStorage.removeItem('user')
+    }
+    
+    // Сохраняем токен для отправки на сервер
     const token = this.token
     
-    // СРАЗУ очищаем локальные токены для быстрого выхода
-    this.clearToken()
+    // Очищаем токены в памяти СРАЗУ
+    this.token = null
+    this.refreshToken = null
     
-    // Затем пытаемся уведомить сервер (необязательно)
+    // Уведомляем сервер в фоне (не ждем ответа)
     if (token) {
-      try {
-        await this.request('/auth/logout', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        })
-      } catch (error) {
+      fetch(`${this.baseURL}/auth/logout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      }).catch((error) => {
         // Игнорируем ошибки сервера при выходе - токен уже удален локально
         console.warn('Ошибка при выходе на сервере (игнорируется):', error)
-      }
+      })
     }
   }
 
