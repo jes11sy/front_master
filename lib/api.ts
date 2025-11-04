@@ -182,12 +182,15 @@ class ApiClient {
 
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
+        // Создаем AbortController для таймаута (совместимо со старыми браузерами)
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 секунд
+
         const response = await fetch(url, {
           ...options,
           headers,
-          // Добавляем таймаут для запросов
-          signal: AbortSignal.timeout(15000), // 15 секунд
-        })
+          signal: controller.signal,
+        }).finally(() => clearTimeout(timeoutId))
 
         // Проверяем, что ответ является JSON
         const contentType = response.headers.get('content-type')

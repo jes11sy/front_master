@@ -306,7 +306,7 @@ const OrderDetail: NextPage = () => {
     try {
       setIsUpdating(true)
       const response = await apiClient.updateOrder(order.id.toString(), {
-        statusOrder: 'Отказ'
+        masterId: null
       })
       
       if (response.success && response.data) {
