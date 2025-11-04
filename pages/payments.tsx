@@ -210,7 +210,6 @@ const Payments: NextPage = () => {
         setCashSubmissions(submissionsResponse.data || [])
       }
     } catch (error) {
-      console.error('Ошибка загрузки данных:', error)
       setNotifications(['Ошибка загрузки данных'])
       setTimeout(() => setNotifications([]), 4000)
     } finally {
@@ -228,10 +227,6 @@ const Payments: NextPage = () => {
   const handleSubmitCashSubmission = async () => {
     if (!selectedOrder) return
 
-    console.log('=== handleSubmitCashSubmission ===')
-    console.log('Selected Order:', selectedOrder)
-    console.log('Receipt File:', receiptFile)
-
     try {
       setSubmitting(true)
       
@@ -239,8 +234,6 @@ const Payments: NextPage = () => {
         selectedOrder.id,
         receiptFile || undefined
       )
-
-      console.log('Result:', result)
 
       if (result.success) {
         setNotifications(['Сдача успешно отправлена на проверку'])
@@ -253,7 +246,6 @@ const Payments: NextPage = () => {
         setNotifications([result.error || 'Ошибка отправки сдачи'])
       }
     } catch (error) {
-      console.error('Ошибка отправки сдачи:', error)
       setNotifications(['Ошибка отправки сдачи'])
     } finally {
       setSubmitting(false)

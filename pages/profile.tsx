@@ -38,20 +38,14 @@ const Profile: NextPage = () => {
     const fetchProfile = async () => {
       try {
         setLoading(true)
-        console.log('Загружаем профиль мастера...')
         const response = await apiClient.getMasterProfile()
         
-        console.log('Ответ API профиля:', response)
-        
         if (response.success && response.data) {
-          console.log('Профиль загружен:', response.data)
           setProfileData(response.data)
         } else {
-          console.error('Ошибка загрузки профиля:', response.error)
           setError(response.error || 'Ошибка загрузки профиля')
         }
       } catch (error: any) {
-        console.error('Ошибка при загрузке профиля:', error)
         setError(error.message || 'Ошибка загрузки профиля')
         // Если ошибка авторизации, перенаправляем на логин
         if (error.message?.includes('401') || error.message?.includes('токен')) {

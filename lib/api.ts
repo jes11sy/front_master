@@ -60,9 +60,8 @@ class ApiClient {
 
           // Если токен истекает через 2 минуты или меньше, обновляем его проактивно
           if (timeUntilExpiry > 0 && timeUntilExpiry < 2 * 60 * 1000) {
-            console.log('⏰ Токен скоро истечет, проактивно обновляем...')
-            this.refreshAccessToken().catch(err => {
-              console.error('Ошибка проактивного обновления токена:', err)
+            this.refreshAccessToken().catch(() => {
+              // Тихо обрабатываем ошибку проактивного обновления токена
             })
           }
         }
@@ -149,7 +148,6 @@ class ApiClient {
 
       return null
     } catch (error) {
-      console.error('Error refreshing token:', error)
       return null
     }
   }
@@ -201,7 +199,6 @@ class ApiClient {
 
         // Обрабатываем 401 ошибку - пытаемся обновить токен
         if (response.status === 401 && !isRetryAfterRefresh && endpoint !== '/auth/refresh' && endpoint !== '/auth/login') {
-          console.log('🔄 Получена 401 ошибка, пытаемся обновить токен...')
           
           // Если уже идет процесс обновления, ждем его завершения
           if (this.isRefreshing) {
@@ -221,14 +218,12 @@ class ApiClient {
             const newToken = await this.refreshAccessToken()
             
             if (newToken) {
-              console.log('✅ Токен успешно обновлен')
               this.isRefreshing = false
               this.onTokenRefreshed(newToken)
               
               // Повторяем оригинальный запрос с новым токеном
               return this.request<T>(endpoint, options, retries, true)
             } else {
-              console.log('❌ Не удалось обновить токен, перенаправляем на логин')
               this.isRefreshing = false
               this.clearToken()
               
@@ -241,7 +236,6 @@ class ApiClient {
               throw new Error('SESSION_EXPIRED')
             }
           } catch (refreshError: any) {
-            console.log('❌ Ошибка обновления токена:', refreshError?.message || refreshError)
             this.isRefreshing = false
             this.clearToken()
             
@@ -260,14 +254,9 @@ class ApiClient {
 
         return data
       } catch (error: any) {
-        // Если это ошибка истечения сессии, сразу выбрасываем её без повторов и логирования
+        // Если это ошибка истечения сессии, сразу выбрасываем её без повторов
         if (error.message === 'SESSION_EXPIRED') {
           throw error
-        }
-        
-        // Не логируем ошибки на последующих попытках
-        if (attempt === 1) {
-          console.error(`API Error (попытка ${attempt}/${retries}):`, error)
         }
         
         // Если это последняя попытка, выбрасываем ошибку
@@ -290,7 +279,6 @@ class ApiClient {
         
         // Если это не последняя попытка, ждем перед повтором
         const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000) // Exponential backoff, max 5s
-        console.log(`⏳ Повтор через ${delay}ms...`)
         await new Promise(resolve => setTimeout(resolve, delay))
       }
     }
@@ -353,9 +341,8 @@ class ApiClient {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         }
-      }).catch((error) => {
+      }).catch(() => {
         // Игнорируем ошибки сервера при выходе - токен уже удален локально
-        console.warn('Ошибка при выходе на сервере (игнорируется):', error)
       })
     }
   }
@@ -495,24 +482,14 @@ class ApiClient {
 
   async submitCashForReview(orderId: number, receiptFile?: File) {
     try {
-      console.log('=== submitCashForReview START ===')
-      console.log('Order ID:', orderId)
-      console.log('Receipt File:', receiptFile)
-      
       let cashReceiptDoc: string | undefined
 
       // Если есть файл - загружаем его в S3 через files-service
       if (receiptFile) {
-        console.log('Uploading file to S3...')
-        console.log('File name:', receiptFile.name)
-        console.log('File size:', receiptFile.size)
-        console.log('File type:', receiptFile.type)
-        
         const formData = new FormData()
         formData.append('file', receiptFile)
 
         const uploadUrl = `${this.baseURL}/files/upload?folder=director/cash/cashreceipt_doc`
-        console.log('Upload URL:', uploadUrl)
 
         // Указываем кастомную папку для чеков
         const uploadResponse = await fetch(uploadUrl, {
@@ -523,31 +500,18 @@ class ApiClient {
           body: formData,
         })
 
-        console.log('Upload response status:', uploadResponse.status)
-
         if (!uploadResponse.ok) {
-          const errorText = await uploadResponse.text()
-          console.error('Upload failed:', errorText)
           throw new Error(`Ошибка загрузки файла: ${uploadResponse.status}`)
         }
 
         const uploadResult = await uploadResponse.json()
-        console.log('Upload result:', uploadResult)
         
         if (uploadResult.success && uploadResult.data?.key) {
           cashReceiptDoc = uploadResult.data.key
-          console.log('✅ File uploaded to S3:', cashReceiptDoc)
-        } else {
-          console.warn('⚠️ No key in upload result')
         }
-      } else {
-        console.log('No file to upload')
       }
 
       // Отправляем запрос на обновление статуса в orders-service
-      console.log('Submitting cash to orders-service...')
-      console.log('cashReceiptDoc:', cashReceiptDoc)
-      
       const result = await this.request(`/orders/${orderId}/submit-cash`, {
         method: 'PATCH',
         body: JSON.stringify({
@@ -555,12 +519,8 @@ class ApiClient {
         }),
       })
       
-      console.log('Submit result:', result)
-      console.log('=== submitCashForReview END ===')
-      
       return result
     } catch (error) {
-      console.error('❌ Error in submitCashForReview:', error)
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Ошибка отправки сдачи'

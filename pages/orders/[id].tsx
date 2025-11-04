@@ -108,7 +108,7 @@ const OrderDetail: NextPage = () => {
         setCalls(response.data)
       }
     } catch (error) {
-      console.error('Ошибка загрузки звонков:', error)
+      // Тихо обрабатываем ошибку загрузки звонков
     }
   }
 
@@ -185,7 +185,6 @@ const OrderDetail: NextPage = () => {
         }
       }
     } catch (error) {
-      console.error('Ошибка загрузки файла:', error)
       setNotifications(['Ошибка загрузки файла'])
       setTimeout(() => setNotifications([]), 3000)
     } finally {
@@ -344,7 +343,6 @@ const OrderDetail: NextPage = () => {
         setTimeout(() => setNotifications([]), 4000)
       }
     } catch (error) {
-      console.error('Ошибка при сохранении данных модерна:', error)
       setNotifications(['Ошибка при сохранении данных модерна'])
       setTimeout(() => setNotifications([]), 4000)
     } finally {
@@ -358,7 +356,6 @@ const OrderDetail: NextPage = () => {
     
     try {
       setIsUpdating(true)
-      console.log('Обновляем статус заказа:', order.id, 'на:', newStatus)
       
       // Подготавливаем данные для отправки
       const updateData: any = {
@@ -390,16 +387,11 @@ const OrderDetail: NextPage = () => {
         updateData.clean = clean
         updateData.masterChange = masterChange
         updateData.cashSubmissionStatus = 'Не отправлено'
-        
-        console.log('Отправляем финансовые данные:', updateData)
       }
       
       const response = await apiClient.updateOrder(order.id.toString(), updateData)
       
-      console.log('Ответ от API:', response)
-      
       if (response.success && response.data) {
-        console.log('Статус успешно обновлен:', response.data)
         setOrder(response.data)
         
         if (newStatus === 'Модерн') {
@@ -437,11 +429,9 @@ const OrderDetail: NextPage = () => {
         //   router.push('/orders')
         // }
       } else {
-        console.error('Ошибка обновления статуса:', response.error)
         setError(response.error || 'Ошибка обновления заказа')
       }
     } catch (error: any) {
-      console.error('Исключение при обновлении статуса:', error)
       setError(error.message || 'Ошибка обновления заказа')
     } finally {
       setIsUpdating(false)

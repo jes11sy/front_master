@@ -37,23 +37,17 @@ const Statistics: NextPage = () => {
     const fetchStatistics = async () => {
       try {
         setLoading(true)
-        console.log('Загружаем статистику мастера...')
         const response = await apiClient.getMasterStatistics({
           startDate: startDate || undefined,
           endDate: endDate || undefined
         })
         
-        console.log('Ответ API статистики:', response)
-        
         if (response.success && response.data) {
-          console.log('Статистика загружена:', response.data.length, 'городов')
           setCityStatistics(response.data)
         } else {
-          console.error('Ошибка загрузки статистики:', response.error)
           setError(response.error || 'Ошибка загрузки статистики')
         }
       } catch (error: any) {
-        console.error('Ошибка при загрузке статистики:', error)
         setError(error.message || 'Ошибка загрузки статистики')
         // Если ошибка авторизации, перенаправляем на логин
         if (error.message?.includes('401') || error.message?.includes('токен')) {

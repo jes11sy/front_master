@@ -104,11 +104,10 @@ export default function AvitoChat() {
       try {
         await apiClient.markAvitoChatAsReadNew(chatId, avitoAccountName)
       } catch (err) {
-        console.error('Error marking chat as read:', err)
+        // Тихо обрабатываем ошибку отметки как прочитанного
       }
 
     } catch (err) {
-      console.error('Error loading chat:', err)
       setError(err instanceof Error ? err.message : 'Ошибка загрузки чата')
     } finally {
       setLoading(false)
@@ -145,7 +144,6 @@ export default function AvitoChat() {
       setNewMessage('')
 
     } catch (err) {
-      console.error('Error sending message:', err)
       alert(err instanceof Error ? err.message : 'Ошибка отправки сообщения')
     } finally {
       setSending(false)
