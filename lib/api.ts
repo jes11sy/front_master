@@ -1,7 +1,7 @@
 // API клиент для работы с бэкендом
 import { logger } from './logger'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.test-shem.ru/api/v1'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.lead-schem.ru/api/v1'
 
 interface ApiResponse<T> {
   success: boolean
