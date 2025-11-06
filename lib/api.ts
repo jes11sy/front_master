@@ -676,6 +676,25 @@ class ApiClient {
     }
   }
 
+  async getAvitoVoiceUrlsNew(avitoAccountName: string, voiceIds: string[]): Promise<{ [key: string]: string }> {
+    const response = await fetch(`${this.baseURL}/avito-messenger/voice-files?avitoAccountName=${avitoAccountName}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ voiceIds }),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Ошибка получения URL голосовых сообщений')
+    }
+
+    const result = await response.json()
+    return result.data || {}
+  }
+
   async uploadFile(file: File, folder?: string): Promise<any> {
     const formData = new FormData()
     formData.append('file', file)

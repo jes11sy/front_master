@@ -4,16 +4,37 @@ import { apiClient } from '@/lib/api'
 
 interface Message {
   id: string
-  type: string
+  type: 'text' | 'image' | 'voice' | 'link' | 'item' | 'location' | 'call' | 'deleted' | 'system'
   direction: 'in' | 'out'
   content: {
     text?: string
+    image?: {
+      sizes: {
+        [key: string]: string // e.g., "640x480": "https://..."
+      }
+    }
+    voice?: {
+      voice_id: string
+    }
+    item?: {
+      title: string
+      price_string?: string
+      image_url: string
+      item_url: string
+    }
+    location?: {
+      lat: number
+      lon: number
+      title: string
+      text: string
+    }
     [key: string]: any
   }
   author_id: string
   created: string
   read: boolean
   is_read?: boolean
+  voiceUrl?: string
 }
 
 interface Order {
@@ -59,6 +80,29 @@ export default function AvitoChat() {
     }
   }, [messages])
 
+  const loadVoiceUrls = async (messages: Message[], avitoAccountName: string) => {
+    const voiceMessages = messages.filter(msg => msg.type === 'voice' && msg.content?.voice?.voice_id)
+    if (voiceMessages.length === 0) return messages
+
+    try {
+      const voiceIds = voiceMessages.map(msg => msg.content?.voice?.voice_id).filter(Boolean)
+      const response = await apiClient.getAvitoVoiceUrlsNew(avitoAccountName, voiceIds)
+      
+      return messages.map(msg => {
+        if (msg.type === 'voice' && msg.content?.voice?.voice_id) {
+          return {
+            ...msg,
+            voiceUrl: response[msg.content.voice.voice_id]
+          }
+        }
+        return msg
+      })
+    } catch (error) {
+      console.error('Error loading voice URLs:', error)
+      return messages
+    }
+  }
+
   const loadChat = async () => {
     if (!id) return
 
@@ -98,7 +142,10 @@ export default function AvitoChat() {
         Number(a.created) - Number(b.created)
       )
 
-      setMessages(sortedMessages)
+      // Загружаем URL для голосовых сообщений
+      const messagesWithVoice = await loadVoiceUrls(sortedMessages, avitoAccountName)
+
+      setMessages(messagesWithVoice)
 
       // Отмечаем чат как прочитанный
       try {
@@ -244,17 +291,90 @@ export default function AvitoChat() {
                   className={`flex ${msg.direction === 'out' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[85%] md:max-w-[70%] rounded-lg px-3 py-2 shadow-md ${
+                    className={`max-w-[85%] md:max-w-[70%] rounded-lg shadow-md ${
+                      msg.type === 'image' ? 'p-1' : 'px-3 py-2'
+                    } ${
                       msg.direction === 'out'
                         ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white'
                         : 'bg-gray-100 text-gray-800'
                     }`}
                   >
-                    <p className="whitespace-pre-wrap break-words text-sm">
-                      {msg.content.text || '[Не текстовое сообщение]'}
-                    </p>
+                    {/* Изображение */}
+                    {msg.type === 'image' && msg.content?.image?.sizes ? (
+                      <div className="space-y-2">
+                        <img
+                          src={msg.content.image.sizes['640x480'] || msg.content.image.sizes['1280x960'] || Object.values(msg.content.image.sizes)[0]}
+                          alt="Image"
+                          className="rounded-lg max-w-full w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => {
+                            const fullSizeUrl = msg.content?.image?.sizes['1280x960'] || Object.values(msg.content?.image?.sizes || {})[0]
+                            if (fullSizeUrl) window.open(fullSizeUrl, '_blank')
+                          }}
+                        />
+                        {msg.content.text && (
+                          <p className="whitespace-pre-wrap break-words text-sm px-2 pb-1">
+                            {msg.content.text}
+                          </p>
+                        )}
+                      </div>
+                    ) : msg.type === 'voice' && msg.voiceUrl ? (
+                      /* Голосовое сообщение */
+                      <div className="space-y-2">
+                        <audio 
+                          controls 
+                          className="w-full max-w-sm"
+                          style={{ height: '40px' }}
+                        >
+                          <source src={msg.voiceUrl} type="audio/mpeg" />
+                          Ваш браузер не поддерживает аудио
+                        </audio>
+                        {msg.content.text && (
+                          <p className="whitespace-pre-wrap break-words text-sm">
+                            {msg.content.text}
+                          </p>
+                        )}
+                      </div>
+                    ) : msg.type === 'item' && msg.content?.item ? (
+                      /* Объявление */
+                      <div className="flex gap-2">
+                        {msg.content.item.image_url && (
+                          <img 
+                            src={msg.content.item.image_url} 
+                            alt={msg.content.item.title} 
+                            className="w-16 h-16 rounded object-cover" 
+                          />
+                        )}
+                        <div className="flex-1">
+                          <div className="font-semibold text-sm">{msg.content.item.title}</div>
+                          {msg.content.item.price_string && (
+                            <div className="text-xs opacity-70">{msg.content.item.price_string}</div>
+                          )}
+                        </div>
+                      </div>
+                    ) : msg.type === 'location' && msg.content?.location ? (
+                      /* Геолокация */
+                      <div className="space-y-2">
+                        <p className="text-sm">{msg.content.location.title || msg.content.location.text}</p>
+                        <a 
+                          href={`https://maps.google.com/?q=${msg.content.location.lat},${msg.content.location.lon}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-400 hover:underline text-xs"
+                        >
+                          Открыть на карте
+                        </a>
+                      </div>
+                    ) : (
+                      /* Текстовое сообщение */
+                      <p className="whitespace-pre-wrap break-words text-sm">
+                        {msg.content.text || '[Не текстовое сообщение]'}
+                      </p>
+                    )}
+
                     <p
                       className={`text-xs mt-1 ${
+                        msg.type === 'image' ? 'px-2 pb-1' : ''
+                      } ${
                         msg.direction === 'out' ? 'text-teal-100' : 'text-gray-500'
                       }`}
                     >
