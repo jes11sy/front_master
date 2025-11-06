@@ -441,6 +441,10 @@ function OrdersContent() {
                       <span className="text-gray-800">{order.city}</span>
                     </div>
                     <div className="flex justify-between">
+                      <span className="text-gray-600">Дата встречи:</span>
+                      <span className="text-gray-800">{order.dateMeeting ? new Date(order.dateMeeting).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</span>
+                    </div>
+                    <div className="flex justify-between">
                       <span className="text-gray-600">Мастер:</span>
                       <span className="text-gray-800">{order.master?.name || '-'}</span>
                     </div>
