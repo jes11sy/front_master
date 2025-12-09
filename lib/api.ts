@@ -720,6 +720,14 @@ class ApiClient {
     const result = await response.json()
     return result
   }
+
+  // Инициация callback звонка через Mango Office
+  async initiateCallback(orderId: number, masterPhone: string) {
+    return this.request<any>('/calls/initiate-callback', {
+      method: 'POST',
+      body: JSON.stringify({ orderId, masterPhone }),
+    })
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL)

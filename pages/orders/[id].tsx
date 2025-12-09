@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Phone, MapPin, Calendar, User, Wrench, AlertTriangle, FileText, MessageSquare, Plus, Upload, Loader2, AlertCircle } from 'lucide-react'
 import apiClient from '@/lib/api'
+import { CallButton } from '@/components/CallButton'
 
 interface Order {
   id: number
@@ -863,6 +864,15 @@ const OrderDetail: NextPage = () => {
                             <p className="text-sm text-gray-600">Адрес</p>
                             <p className="text-gray-800 font-medium">{order.address}</p>
                           </div>
+                        </div>
+
+                        {/* Кнопка позвонить клиенту */}
+                        <div className="pt-3">
+                          <CallButton 
+                            orderId={order.id}
+                            clientPhone={order.phone}
+                            clientName={order.clientName}
+                          />
                         </div>
                       </div>
                     </div>
