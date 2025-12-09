@@ -745,10 +745,15 @@ const OrderDetail: NextPage = () => {
               
               {/* Заголовок */}
               <div className="mb-8">
-                <div className="text-center">
-                  <h1 className="text-4xl font-bold text-gray-800 mb-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <h1 className="text-3xl sm:text-4xl font-bold text-gray-800">
                     Заказ №{order.id}
                   </h1>
+                  <CallButton 
+                    orderId={order.id}
+                    clientPhone={order.phone}
+                    clientName={order.clientName}
+                  />
                 </div>
               </div>
 
@@ -864,15 +869,6 @@ const OrderDetail: NextPage = () => {
                             <p className="text-sm text-gray-600">Адрес</p>
                             <p className="text-gray-800 font-medium">{order.address}</p>
                           </div>
-                        </div>
-
-                        {/* Кнопка позвонить клиенту */}
-                        <div className="pt-3">
-                          <CallButton 
-                            orderId={order.id}
-                            clientPhone={order.phone}
-                            clientName={order.clientName}
-                          />
                         </div>
                       </div>
                     </div>
