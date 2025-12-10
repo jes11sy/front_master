@@ -1,8 +1,10 @@
+'use client'
+
 import { useEffect } from 'react'
-import { useRouter } from 'next/router'
+import { useRouter } from 'next/navigation'
 import apiClient from '@/lib/api'
 
-const Logout: React.FC = () => {
+export default function LogoutPage() {
   const router = useRouter()
 
   useEffect(() => {
@@ -15,5 +17,3 @@ const Logout: React.FC = () => {
   // Возвращаем null для мгновенного редиректа
   return null
 }
-
-export default Logout

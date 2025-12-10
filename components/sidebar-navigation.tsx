@@ -1,5 +1,7 @@
+'use client'
+
 import Link from 'next/link'
-import { useRouter } from 'next/router'
+import { useRouter, usePathname } from 'next/navigation'
 import { useState } from 'react'
 import apiClient from '@/lib/api'
 
@@ -18,7 +20,7 @@ const navigationItems = [
 
 export function SidebarNavigation() {
   const router = useRouter()
-  const pathname = router.pathname
+  const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [expandedDropdown, setExpandedDropdown] = useState<string | null>(null)
 

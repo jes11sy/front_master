@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import { SidebarNavigation } from '@/components/sidebar-navigation'
+import { useLayout } from '@/components/layout-context'
 import React, { useEffect, useLayoutEffect } from 'react'
 
 interface MasterLayoutProps {
@@ -10,6 +11,7 @@ interface MasterLayoutProps {
 
 const MasterLayout = React.memo<MasterLayoutProps>(({ children }) => {
   const pathname = usePathname()
+  const { hideLayout } = useLayout()
   const isLoginPage = pathname === '/login'
   const isLogoutPage = pathname === '/logout'
 
@@ -28,8 +30,8 @@ const MasterLayout = React.memo<MasterLayoutProps>(({ children }) => {
     return () => clearTimeout(timer)
   }, [pathname])
 
-  // Не показываем layout на странице логина и logout
-  if (isLoginPage || isLogoutPage) {
+  // Не показываем layout на странице логина, logout и когда hideLayout = true
+  if (isLoginPage || isLogoutPage || hideLayout) {
     return <>{children}</>
   }
 

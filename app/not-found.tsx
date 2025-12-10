@@ -1,10 +1,18 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { useLayout } from '@/components/layout-context'
 
 export default function NotFound() {
   const router = useRouter()
+  const { setHideLayout } = useLayout()
+
+  useEffect(() => {
+    setHideLayout(true)
+    return () => setHideLayout(false)
+  }, [setHideLayout])
 
   return (
     <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#114643'}}>
@@ -41,4 +49,3 @@ export default function NotFound() {
     </div>
   )
 }
-
