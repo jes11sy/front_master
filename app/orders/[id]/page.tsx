@@ -720,24 +720,22 @@ export default function OrderDetailPage() {
 
   return (
     <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
-        
-        <div className="container mx-auto px-2 sm:px-4 py-8 pt-4 md:pt-8 pb-24 md:pb-8">
-          <div className="max-w-none mx-auto">
-            <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in" style={{borderColor: '#114643'}}>
-              
-              {/* Заголовок */}
-              <div className="mb-8">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <h1 className="text-3xl sm:text-4xl font-bold text-gray-800">
-                    Заказ №{order.id}
-                  </h1>
-                  <CallButton 
-                    orderId={order.id}
-                    clientPhone={order.phone}
-                    clientName={order.clientName}
-                  />
-                </div>
+      <div className="container mx-auto px-2 sm:px-4 py-8 pt-4 md:pt-8 pb-24 md:pb-8">
+        <div className="max-w-none mx-auto">
+          <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in" style={{borderColor: '#114643'}}>
+            {/* Заголовок */}
+            <div className="mb-8">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <h1 className="text-3xl sm:text-4xl font-bold text-gray-800">
+                  Заказ №{order.id}
+                </h1>
+                <CallButton 
+                  orderId={order.id}
+                  clientPhone={order.phone}
+                  clientName={order.clientName}
+                />
               </div>
+            </div>
 
               {/* Вкладки */}
               <Card className="bg-white border-gray-200 shadow-lg">
@@ -1227,6 +1225,7 @@ export default function OrderDetailPage() {
               {renderActionButtons()}
             </div>
           </div>
+          </div>
         </div>
         
         {/* Фиксированные кнопки на мобильных устройствах */}
@@ -1254,8 +1253,6 @@ export default function OrderDetailPage() {
               {renderActionButtons()}
             </div>
           </div>
-        </div>
-      </div>
         </div>
       </div>
     </div>
