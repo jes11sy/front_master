@@ -1,6 +1,6 @@
+'use client'
+
 import React, { useState, useEffect } from 'react'
-import { NextPage } from 'next'
-import Head from 'next/head'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -64,7 +64,7 @@ interface CashSubmission {
   }
 }
 
-const Payments: NextPage = () => {
+export default function PaymentsPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [cashSubmissions, setCashSubmissions] = useState<CashSubmission[]>([])
   const [loading, setLoading] = useState(true)
@@ -285,15 +285,7 @@ const Payments: NextPage = () => {
 
 
   return (
-    <>
-      <Head>
-        <title>Новые схемы</title>
-        <meta name="description" content="CRM Мастера - Сдача на проверку" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/images/logo.png" />
-      </Head>
-      
-      <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
+    <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
         <div className="container mx-auto px-2 sm:px-4 py-8 pt-4 md:pt-8">
           <div className="max-w-none mx-auto">
           {/* Суммы */}
@@ -632,8 +624,6 @@ const Payments: NextPage = () => {
           </div>
         </div>
       </div>
-    </>
   )
 }
 
-export default Payments

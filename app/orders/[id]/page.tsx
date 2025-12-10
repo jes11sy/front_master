@@ -1,7 +1,7 @@
-import { NextPage } from 'next'
-import { useRouter } from 'next/router'
+'use client'
+
+import { useRouter, useParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import Head from 'next/head'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
@@ -58,9 +58,10 @@ interface Call {
   }
 }
 
-const OrderDetail: NextPage = () => {
+export default function OrderDetailPage() {
   const router = useRouter()
-  const { id } = router.query
+  const params = useParams()
+  const id = params.id as string
   const [order, setOrder] = useState<Order | null>(null)
   const [calls, setCalls] = useState<Call[]>([])
   const [recordingUrls, setRecordingUrls] = useState<{ [key: number]: string }>({})
@@ -674,11 +675,7 @@ const OrderDetail: NextPage = () => {
 
   if (loading) {
     return (
-      <div>
-        <Head>
-          <title>Загрузка заказа...</title>
-        </Head>
-        <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
+      <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
           <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
             <div className="flex items-center space-x-2">
               <div className="text-white text-lg">Загрузка заказа...</div>
@@ -691,11 +688,7 @@ const OrderDetail: NextPage = () => {
 
   if (error) {
     return (
-      <div>
-        <Head>
-          <title>Ошибка загрузки заказа</title>
-        </Head>
-        <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
+      <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
           <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
             <div className="text-center">
               <div className="text-red-300 text-lg mb-4">{error}</div>
@@ -714,11 +707,7 @@ const OrderDetail: NextPage = () => {
 
   if (!order) {
     return (
-      <div>
-        <Head>
-          <title>Новые схемы</title>
-        </Head>
-        <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
+      <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
           <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
             <div className="text-center">
               <div className="text-white text-xl mb-4">Заказ не найден</div>
@@ -733,11 +722,7 @@ const OrderDetail: NextPage = () => {
   }
 
   return (
-    <div>
-      <Head>
-        <title>Новые схемы</title>
-      </Head>
-      <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
+    <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
         
         <div className="container mx-auto px-2 sm:px-4 py-8 pt-4 md:pt-8 pb-24 md:pb-8">
           <div className="max-w-none mx-auto">
@@ -1280,4 +1265,3 @@ const OrderDetail: NextPage = () => {
   )
 }
 
-export default OrderDetail

@@ -11,7 +11,7 @@ interface MasterLayoutProps {
 const MasterLayout = React.memo<MasterLayoutProps>(({ children }) => {
   const pathname = usePathname()
   const isLoginPage = pathname === '/login'
-  const is404Page = pathname === '/404'
+  const isLogoutPage = pathname === '/logout'
 
   // Принудительно скроллим в начало при смене страницы
   useLayoutEffect(() => {
@@ -28,8 +28,8 @@ const MasterLayout = React.memo<MasterLayoutProps>(({ children }) => {
     return () => clearTimeout(timer)
   }, [pathname])
 
-  // Не показываем layout на странице логина и 404
-  if (isLoginPage || is404Page) {
+  // Не показываем layout на странице логина и logout
+  if (isLoginPage || isLogoutPage) {
     return <>{children}</>
   }
 

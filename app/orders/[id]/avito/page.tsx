@@ -1,5 +1,7 @@
+'use client'
+
 import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/router'
+import { useRouter, useParams } from 'next/navigation'
 import { apiClient } from '@/lib/api'
 
 interface Message {
@@ -47,7 +49,8 @@ interface Order {
 
 export default function AvitoChat() {
   const router = useRouter()
-  const { id } = router.query
+  const params = useParams()
+  const id = params.id as string
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [chatData, setChatData] = useState<any>(null)

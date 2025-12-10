@@ -1,13 +1,12 @@
+'use client'
+
 import React, { useState, useEffect } from 'react'
-import { NextPage } from 'next'
-import Head from 'next/head'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-// Убрали все иконки из lucide-react
 import apiClient from '@/lib/api'
-import { useRouter } from 'next/router'
+import { useRouter } from 'next/navigation'
 
 // Интерфейс профиля мастера
 interface MasterProfile {
@@ -26,7 +25,7 @@ interface MasterProfile {
   updatedAt: string
 }
 
-const Profile: NextPage = () => {
+export default function ProfilePage() {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -92,15 +91,7 @@ const Profile: NextPage = () => {
   }
 
   return (
-    <>
-      <Head>
-        <title>Новые схемы</title>
-        <meta name="description" content="CRM Мастера - Профиль" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/images/logo.png" />
-      </Head>
-      
-      <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
+    <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
         <div className="container mx-auto px-2 sm:px-4 py-8 pt-4 md:pt-8">
           <div className="max-w-4xl mx-auto">
 
@@ -262,8 +253,6 @@ const Profile: NextPage = () => {
           </div>
         </div>
       </div>
-    </>
   )
 }
 
-export default Profile

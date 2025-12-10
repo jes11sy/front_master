@@ -1,6 +1,6 @@
+'use client'
+
 import React, { useState, useEffect } from 'react'
-import { NextPage } from 'next'
-import Head from 'next/head'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 // Убрали все иконки из lucide-react
 import apiClient from '@/lib/api'
-import { useRouter } from 'next/router'
+import { useRouter } from 'next/navigation'
 
 // Интерфейс статистики
 interface CityStatistics {
@@ -22,7 +22,7 @@ interface CityStatistics {
 }
 
 
-const Statistics: NextPage = () => {
+export default function StatisticsPage() {
   const router = useRouter()
   const [period, setPeriod] = useState('custom')
   const [startDate, setStartDate] = useState('')
@@ -122,15 +122,7 @@ const Statistics: NextPage = () => {
 
 
   return (
-    <>
-      <Head>
-        <title>Новые схемы</title>
-        <meta name="description" content="CRM Мастера - Статистика" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/images/logo.png" />
-      </Head>
-      
-      <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
+    <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
         <div className="container mx-auto px-2 sm:px-4 py-8 pt-4 md:pt-8">
           <div className="max-w-none mx-auto">
           {/* Statistics Table with Filter */}
@@ -316,8 +308,6 @@ const Statistics: NextPage = () => {
           </div>
         </div>
       </div>
-    </>
   )
 }
 
-export default Statistics
