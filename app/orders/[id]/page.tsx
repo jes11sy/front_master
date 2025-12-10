@@ -676,10 +676,9 @@ export default function OrderDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
-          <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
-            <div className="flex items-center space-x-2">
-              <div className="text-white text-lg">Загрузка заказа...</div>
-            </div>
+        <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
+          <div className="flex items-center space-x-2">
+            <div className="text-white text-lg">Загрузка заказа...</div>
           </div>
         </div>
       </div>
@@ -689,16 +688,15 @@ export default function OrderDetailPage() {
   if (error) {
     return (
       <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
-          <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
-            <div className="text-center">
-              <div className="text-red-300 text-lg mb-4">{error}</div>
-              <Button 
-                onClick={() => router.push('/orders')}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                Вернуться к списку заказов
-              </Button>
-            </div>
+        <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
+          <div className="text-center">
+            <div className="text-red-300 text-lg mb-4">{error}</div>
+            <Button 
+              onClick={() => router.push('/orders')}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              Вернуться к списку заказов
+            </Button>
           </div>
         </div>
       </div>
@@ -708,13 +706,12 @@ export default function OrderDetailPage() {
   if (!order) {
     return (
       <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
-          <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
-            <div className="text-center">
-              <div className="text-white text-xl mb-4">Заказ не найден</div>
-              <Button onClick={() => router.push('/orders')} className="bg-green-600 hover:bg-green-700">
-                Вернуться к заказам
-              </Button>
-            </div>
+        <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
+          <div className="text-center">
+            <div className="text-white text-xl mb-4">Заказ не найден</div>
+            <Button onClick={() => router.push('/orders')} className="bg-green-600 hover:bg-green-700">
+              Вернуться к заказам
+            </Button>
           </div>
         </div>
       </div>

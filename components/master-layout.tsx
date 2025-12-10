@@ -15,6 +15,24 @@ const MasterLayout = React.memo<MasterLayoutProps>(({ children }) => {
   const isLoginPage = pathname === '/login'
   const isLogoutPage = pathname === '/logout'
 
+  // Список валидных путей приложения
+  const validPaths = [
+    '/',
+    '/orders',
+    '/profile',
+    '/schedule',
+    '/statistics',
+    '/payments',
+  ]
+  
+  // Проверяем, является ли путь валидным (начинается с валидного пути)
+  const isValidPath = validPaths.some(path => 
+    pathname === path || pathname.startsWith(path + '/')
+  )
+  
+  // Не показываем layout на странице логина, logout, невалидных путях и когда hideLayout = true
+  const shouldHideLayout = isLoginPage || isLogoutPage || hideLayout || !isValidPath
+
   // Принудительно скроллим в начало при смене страницы
   useLayoutEffect(() => {
     window.scrollTo(0, 0)
@@ -30,8 +48,7 @@ const MasterLayout = React.memo<MasterLayoutProps>(({ children }) => {
     return () => clearTimeout(timer)
   }, [pathname])
 
-  // Не показываем layout на странице логина, logout и когда hideLayout = true
-  if (isLoginPage || isLogoutPage || hideLayout) {
+  if (shouldHideLayout) {
     return <>{children}</>
   }
 

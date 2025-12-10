@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useLayoutEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { useLayout } from '@/components/layout-context'
@@ -9,7 +9,8 @@ export default function NotFound() {
   const router = useRouter()
   const { setHideLayout } = useLayout()
 
-  useEffect(() => {
+  // useLayoutEffect срабатывает синхронно ДО рендера, предотвращая мигание
+  useLayoutEffect(() => {
     setHideLayout(true)
     return () => setHideLayout(false)
   }, [setHideLayout])
