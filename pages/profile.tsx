@@ -94,10 +94,10 @@ const Profile: NextPage = () => {
   return (
     <>
       <Head>
-        <title>Профиль - Новые Схемы</title>
-        <meta name="description" content="Профиль мастера" />
+        <title>Новые схемы</title>
+        <meta name="description" content="CRM Мастера - Профиль" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/images/logo.png" />
       </Head>
       
       <div className="min-h-screen" style={{backgroundColor: '#114643'}}>

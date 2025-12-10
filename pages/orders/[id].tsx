@@ -716,7 +716,7 @@ const OrderDetail: NextPage = () => {
     return (
       <div>
         <Head>
-          <title>Заказ не найден</title>
+          <title>Новые схемы</title>
         </Head>
         <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
           <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
@@ -735,7 +735,7 @@ const OrderDetail: NextPage = () => {
   return (
     <div>
       <Head>
-        <title>Заказ №{order.id}</title>
+        <title>Новые схемы</title>
       </Head>
       <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
         

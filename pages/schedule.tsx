@@ -37,9 +37,9 @@ const Schedule: NextPage = () => {
   return (
     <>
       <Head>
-        <title>Расписание - Новые Схемы</title>
-        <meta name="description" content="Управление расписанием мастера" />
-        <link rel="icon" href="/favicon.ico" />
+        <title>Новые схемы</title>
+        <meta name="description" content="CRM Мастера - Расписание" />
+        <link rel="icon" href="/images/logo.png" />
       </Head>
       
       <div className="min-h-screen" style={{backgroundColor: '#114643'}}>

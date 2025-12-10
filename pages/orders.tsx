@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
+import Head from 'next/head'
 import AuthGuard from "@/components/auth-guard"
 import { apiClient } from '@/lib/api'
 import { logger } from '@/lib/logger'
@@ -572,9 +573,17 @@ function OrdersContent() {
 
 const Orders: React.FC = () => {
   return (
-    <AuthGuard>
-      <OrdersContent />
-    </AuthGuard>
+    <>
+      <Head>
+        <title>Новые схемы</title>
+        <meta name="description" content="CRM Мастера" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/images/logo.png" />
+      </Head>
+      <AuthGuard>
+        <OrdersContent />
+      </AuthGuard>
+    </>
   )
 }
 

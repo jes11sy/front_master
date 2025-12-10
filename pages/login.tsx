@@ -71,10 +71,10 @@ const Login: NextPage = () => {
   return (
     <>
       <Head>
-        <title>Вход в Новые Схемы</title>
-        <meta name="description" content="Войдите в систему Новые Схемы" />
+        <title>Новые схемы</title>
+        <meta name="description" content="CRM Мастера - Вход" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/images/logo.png" />
       </Head>
       
       <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#114643'}}>

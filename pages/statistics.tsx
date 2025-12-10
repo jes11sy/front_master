@@ -124,10 +124,10 @@ const Statistics: NextPage = () => {
   return (
     <>
       <Head>
-        <title>Статистика - Новые Схемы</title>
-        <meta name="description" content="Аналитика и статистика Новые Схемы" />
+        <title>Новые схемы</title>
+        <meta name="description" content="CRM Мастера - Статистика" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/images/logo.png" />
       </Head>
       
       <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
