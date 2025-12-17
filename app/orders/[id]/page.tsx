@@ -10,6 +10,8 @@ import { Label } from '@/components/ui/label'
 import { Phone, MapPin, Calendar, User, Wrench, AlertTriangle, FileText, MessageSquare, Plus, Upload, Loader2, AlertCircle } from 'lucide-react'
 import apiClient from '@/lib/api'
 import { CallButton } from '@/components/CallButton'
+import { useMultipleFileUpload } from '@/hooks/useMultipleFileUpload'
+import { MultipleFileUpload } from '@/components/MultipleFileUpload'
 
 interface Order {
   id: number
@@ -28,8 +30,8 @@ interface Order {
   problem: string
   note: string | null
   callId?: string | null
-  bsoDoc?: string | null
-  expenditureDoc?: string | null
+  bsoDoc?: string[] | null
+  expenditureDoc?: string[] | null
   operator?: {
     id: number
     name: string
@@ -85,9 +87,9 @@ export default function OrderDetailPage() {
   const [dateClosmod, setDateClosmod] = useState('')
   const [comment, setComment] = useState('')
 
-  // Состояния для файлов
-  const [bsoFile, setBsoFile] = useState<File | null>(null)
-  const [expenditureFile, setExpenditureFile] = useState<File | null>(null)
+  // Хуки для множественной загрузки файлов (до 10 файлов каждого типа)
+  const bsoUpload = useMultipleFileUpload(10)
+  const expenditureUpload = useMultipleFileUpload(10)
 
   // Функция для извлечения имени файла из URL
   const getFileNameFromUrl = (url: string): string => {
@@ -135,64 +137,6 @@ export default function OrderDetailPage() {
     }
   }, [calls])
 
-  // Функция для обработки выбора файла
-  const handleFileSelect = async (file: File, type: 'bso' | 'expenditure') => {
-    if (!order) return
-
-    try {
-      setIsUpdating(true)
-      
-      // Определяем папку на S3 в зависимости от типа файла
-      const folder = type === 'bso' ? 'director/orders/bso_doc' : 'director/orders/expenditure_doc'
-      
-      // Загружаем файл на S3 в указанную папку
-      const response = await apiClient.uploadFile(file, folder)
-      
-      if (response.success && response.data?.url) {
-        // Обновляем заказ с путём к файлу
-        const updateData: any = {}
-        if (type === 'bso') {
-          updateData.bsoDoc = response.data.url
-          setBsoFile(file)
-        } else {
-          updateData.expenditureDoc = response.data.url
-          setExpenditureFile(file)
-        }
-        
-        const updateResponse = await apiClient.updateOrder(order.id.toString(), updateData)
-        
-        if (updateResponse.success && updateResponse.data) {
-          setOrder(updateResponse.data)
-          
-          // Перепроверяем валидацию с обновленными данными
-          const newNotifications: string[] = []
-          const total = parseFloat(totalAmount) || 0
-          const expense = parseFloat(expenseAmount) || 0
-          
-          if (total > 5000 && !updateResponse.data.bsoDoc) {
-            newNotifications.push('Итог больше 5000₽ - необходимо прикрепить Договор')
-          }
-          
-          if (expense > 1001 && !updateResponse.data.expenditureDoc) {
-            newNotifications.push('Расход больше 1001₽ - необходимо прикрепить чек расхода')
-          }
-          
-          // Если нет уведомлений о валидации, показываем успех
-          if (newNotifications.length === 0) {
-            setNotifications([`Файл успешно загружен`])
-            setTimeout(() => setNotifications([]), 3000)
-          } else {
-            setNotifications(newNotifications)
-          }
-        }
-      }
-    } catch (error) {
-      setNotifications(['Ошибка загрузки файла'])
-      setTimeout(() => setNotifications([]), 3000)
-    } finally {
-      setIsUpdating(false)
-    }
-  }
 
   // Загружаем заказ из API
   useEffect(() => {
@@ -232,6 +176,14 @@ export default function OrderDetailPage() {
               
               // Устанавливаем showModernBlock в зависимости от статуса
               setShowModernBlock(response.data.statusOrder === 'Модерн')
+              
+              // Загружаем существующие файлы документов (массивы)
+              if (response.data.bsoDoc && Array.isArray(response.data.bsoDoc) && response.data.bsoDoc.length > 0) {
+                bsoUpload.setExistingPreviews(response.data.bsoDoc)
+              }
+              if (response.data.expenditureDoc && Array.isArray(response.data.expenditureDoc) && response.data.expenditureDoc.length > 0) {
+                expenditureUpload.setExistingPreviews(response.data.expenditureDoc)
+              }
           
           // Валидация при загрузке
           const newNotifications: string[] = []
@@ -239,12 +191,12 @@ export default function OrderDetailPage() {
           const expenseNum = parseFloat(expense) || 0
           
           // Проверяем, нужен ли договор и прикреплен ли он
-          if (totalNum > 5000 && !response.data.bsoDoc) {
+          if (totalNum > 5000 && (!response.data.bsoDoc || response.data.bsoDoc.length === 0)) {
             newNotifications.push('Итог больше 5000₽ - необходимо прикрепить Договор')
           }
           
           // Проверяем, нужен ли чек расхода и прикреплен ли он
-          if (expenseNum > 1001 && !response.data.expenditureDoc) {
+          if (expenseNum > 1001 && (!response.data.expenditureDoc || response.data.expenditureDoc.length === 0)) {
             newNotifications.push('Расход больше 1001₽ - необходимо прикрепить чек расхода')
           }
           
@@ -278,6 +230,14 @@ export default function OrderDetailPage() {
       setActiveTab('info')
     }
   }, [order, activeTab])
+
+  // Очистка blob URL при размонтировании компонента
+  useEffect(() => {
+    return () => {
+      bsoUpload.cleanup()
+      expenditureUpload.cleanup()
+    }
+  }, [])
 
   // Функция для принятия заказа
   const handleAcceptOrder = async () => {
@@ -352,12 +312,86 @@ export default function OrderDetailPage() {
     }
   }
 
+  // Функция для сохранения файлов
+  const saveFiles = async () => {
+    if (!order) return
+    
+    try {
+      // Загружаем новые BSO файлы
+      const newBsoFiles = bsoUpload.files.filter(f => f.file !== null).map(f => f.file!);
+      let bsoDocPaths: string[] = [];
+      
+      if (newBsoFiles.length > 0) {
+        const bsoResults = await Promise.all(
+          newBsoFiles.map(file => apiClient.uploadFile(file, 'director/orders/bso_doc'))
+        );
+        const newBsoPaths = bsoResults
+          .filter(res => res.success && res.data?.url)
+          .map(res => res.data!.url);
+        
+        // Получаем существующие пути
+        const existingBsoPaths = bsoUpload.files
+          .filter(f => f.file === null)
+          .map(f => f.preview);
+        
+        bsoDocPaths = [...existingBsoPaths, ...newBsoPaths];
+      } else {
+        bsoDocPaths = bsoUpload.files
+          .filter(f => f.file === null)
+          .map(f => f.preview);
+      }
+      
+      // Загружаем новые файлы расходов
+      const newExpenditureFiles = expenditureUpload.files.filter(f => f.file !== null).map(f => f.file!);
+      let expenditureDocPaths: string[] = [];
+      
+      if (newExpenditureFiles.length > 0) {
+        const expenditureResults = await Promise.all(
+          newExpenditureFiles.map(file => apiClient.uploadFile(file, 'director/orders/expenditure_doc'))
+        );
+        const newExpenditurePaths = expenditureResults
+          .filter(res => res.success && res.data?.url)
+          .map(res => res.data!.url);
+        
+        const existingExpenditurePaths = expenditureUpload.files
+          .filter(f => f.file === null)
+          .map(f => f.preview);
+        
+        expenditureDocPaths = [...existingExpenditurePaths, ...newExpenditurePaths];
+      } else {
+        expenditureDocPaths = expenditureUpload.files
+          .filter(f => f.file === null)
+          .map(f => f.preview);
+      }
+      
+      // Обновляем заказ с массивами путей только если есть изменения
+      if (bsoDocPaths.length > 0 || expenditureDocPaths.length > 0 || 
+          newBsoFiles.length > 0 || newExpenditureFiles.length > 0) {
+        const updateData: any = {
+          bsoDoc: bsoDocPaths,
+          expenditureDoc: expenditureDocPaths,
+        };
+        
+        const response = await apiClient.updateOrder(order.id.toString(), updateData);
+        if (response.success && response.data) {
+          setOrder(response.data);
+        }
+      }
+    } catch (error) {
+      console.error('Error saving files:', error);
+      throw error;
+    }
+  }
+
   // Универсальная функция для обновления статуса
   const handleUpdateStatus = async (newStatus: string) => {
     if (!order) return
     
     try {
       setIsUpdating(true)
+      
+      // Сначала сохраняем файлы если есть новые
+      await saveFiles()
       
       // Подготавливаем данные для отправки
       const updateData: any = {
@@ -450,12 +484,12 @@ export default function OrderDetailPage() {
     const expense = parseFloat(expenseAmount) || 0
     
     // Проверяем, нужен ли договор и прикреплен ли он
-    if (total > 5000 && !order.bsoDoc) {
+    if (total > 5000 && (!order.bsoDoc || order.bsoDoc.length === 0)) {
       newNotifications.push('Итог больше 5000₽ - необходимо прикрепить Договор')
     }
     
     // Проверяем, нужен ли чек расхода и прикреплен ли он
-    if (expense > 1001 && !order.expenditureDoc) {
+    if (expense > 1001 && (!order.expenditureDoc || order.expenditureDoc.length === 0)) {
       newNotifications.push('Расход больше 1001₽ - необходимо прикрепить чек расхода')
     }
     
@@ -1040,87 +1074,29 @@ export default function OrderDetailPage() {
                       <h3 className="text-lg font-semibold text-gray-800">Документы</h3>
                       <div className="space-y-3">
                         <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center space-x-3">
-                              <span className="text-gray-800 font-medium">Договор</span>
-                            </div>
-                            {order.statusOrder !== 'Готово' && order.statusOrder !== 'Незаказ' && order.statusOrder !== 'Отказ' && (
-                              <div className="relative">
-                                <input
-                                  type="file"
-                                  id="bso-upload"
-                                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0]
-                                    if (file) handleFileSelect(file, 'bso')
-                                  }}
-                                />
-                                <label htmlFor="bso-upload">
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline" 
-                                    className="bg-teal-600 border-teal-600 text-white hover:bg-teal-700"
-                                    onClick={(e) => {
-                                      e.preventDefault()
-                                      document.getElementById('bso-upload')?.click()
-                                    }}
-                                  >
-                                    Прикрепить
-                                  </Button>
-                                </label>
-                              </div>
-                            )}
-                          </div>
-                          <div className="text-sm text-gray-600">
-                            {order.bsoDoc ? (
-                              <span className="text-green-600">Файл прикреплен: {bsoFile?.name || getFileNameFromUrl(order.bsoDoc)}</span>
-                            ) : (
-                              'Файл не прикреплен'
-                            )}
-                          </div>
+                          <MultipleFileUpload
+                            label="Договор БСО"
+                            files={bsoUpload.files}
+                            dragOver={bsoUpload.dragOver}
+                            setDragOver={bsoUpload.setDragOver}
+                            handleFiles={bsoUpload.handleFiles}
+                            removeFile={bsoUpload.removeFile}
+                            disabled={order.statusOrder === 'Готово' || order.statusOrder === 'Незаказ' || order.statusOrder === 'Отказ'}
+                            canAddMore={bsoUpload.canAddMore}
+                          />
                         </div>
                         
                         <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center space-x-3">
-                              <span className="text-gray-800 font-medium">Чек расхода</span>
-                            </div>
-                            {order.statusOrder !== 'Готово' && order.statusOrder !== 'Незаказ' && order.statusOrder !== 'Отказ' && (
-                              <div className="relative">
-                                <input
-                                  type="file"
-                                  id="expenditure-upload"
-                                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0]
-                                    if (file) handleFileSelect(file, 'expenditure')
-                                  }}
-                                />
-                                <label htmlFor="expenditure-upload">
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline" 
-                                    className="bg-teal-600 border-teal-600 text-white hover:bg-teal-700"
-                                    onClick={(e) => {
-                                      e.preventDefault()
-                                      document.getElementById('expenditure-upload')?.click()
-                                    }}
-                                  >
-                                    Прикрепить
-                                  </Button>
-                                </label>
-                              </div>
-                            )}
-                          </div>
-                          <div className="text-sm text-gray-600">
-                            {order.expenditureDoc ? (
-                              <span className="text-green-600">Файл прикреплен: {expenditureFile?.name || getFileNameFromUrl(order.expenditureDoc)}</span>
-                            ) : (
-                              'Файл не прикреплен'
-                            )}
-                          </div>
+                          <MultipleFileUpload
+                            label="Чеки расходов"
+                            files={expenditureUpload.files}
+                            dragOver={expenditureUpload.dragOver}
+                            setDragOver={expenditureUpload.setDragOver}
+                            handleFiles={expenditureUpload.handleFiles}
+                            removeFile={expenditureUpload.removeFile}
+                            disabled={order.statusOrder === 'Готово' || order.statusOrder === 'Незаказ' || order.statusOrder === 'Отказ'}
+                            canAddMore={expenditureUpload.canAddMore}
+                          />
                         </div>
                       </div>
                     </div>
