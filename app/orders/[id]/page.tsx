@@ -483,13 +483,17 @@ export default function OrderDetailPage() {
     const total = parseFloat(totalAmount) || 0
     const expense = parseFloat(expenseAmount) || 0
     
+    // Проверяем наличие прикрепленных файлов (как сохраненных, так и новых)
+    const hasBsoFiles = (order.bsoDoc && order.bsoDoc.length > 0) || bsoUpload.files.length > 0
+    const hasExpenditureFiles = (order.expenditureDoc && order.expenditureDoc.length > 0) || expenditureUpload.files.length > 0
+    
     // Проверяем, нужен ли договор и прикреплен ли он
-    if (total > 5000 && (!order.bsoDoc || order.bsoDoc.length === 0)) {
+    if (total > 5000 && !hasBsoFiles) {
       newNotifications.push('Итог больше 5000₽ - необходимо прикрепить Договор')
     }
     
     // Проверяем, нужен ли чек расхода и прикреплен ли он
-    if (expense > 1001 && (!order.expenditureDoc || order.expenditureDoc.length === 0)) {
+    if (expense > 1001 && !hasExpenditureFiles) {
       newNotifications.push('Расход больше 1001₽ - необходимо прикрепить чек расхода')
     }
     
