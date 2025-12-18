@@ -514,14 +514,14 @@ export default function OrderDetailPage() {
     return true
   }
 
-  // Проверяем валидацию при изменении сумм
+  // Проверяем валидацию при изменении сумм или файлов
   useEffect(() => {
     if (totalAmount || expenseAmount) {
       validateAmounts()
     } else {
       setNotifications([])
     }
-  }, [totalAmount, expenseAmount])
+  }, [totalAmount, expenseAmount, bsoUpload.files, expenditureUpload.files])
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, string> = {
