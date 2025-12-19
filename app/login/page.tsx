@@ -20,16 +20,21 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
-  // Проверяем авторизацию при загрузке
+  // 🍪 Проверяем авторизацию при загрузке через API (cookies)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // Проверяем, есть ли уже токен авторизации
-      const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token')
-      if (token) {
-        // Если есть токен, перенаправляем на главную страницу
-        router.push('/orders')
+    const checkAuth = async () => {
+      try {
+        const response = await apiClient.getProfile()
+        if (response.success && response.data) {
+          // Если уже авторизован, перенаправляем на главную страницу
+          router.push('/orders')
+        }
+      } catch (error) {
+        // Если не авторизован - остаемся на странице логина
       }
     }
+
+    checkAuth()
   }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {

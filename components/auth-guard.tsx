@@ -8,29 +8,38 @@ interface AuthGuardProps {
   children: React.ReactNode
 }
 
+/**
+ * 🍪 AuthGuard с поддержкой httpOnly cookies
+ * Проверяет сессию через API вместо чтения localStorage
+ */
 const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const router = useRouter()
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
 
   useEffect(() => {
-    // Проверяем авторизацию только на клиенте
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token')
-      const refreshToken = localStorage.getItem('refresh_token') || sessionStorage.getItem('refresh_token')
-      
-      if (!token && !refreshToken) {
-        // Если нет ни access, ни refresh токена - перенаправляем на логин
+    // 🍪 Проверяем сессию через API - токены в httpOnly cookies
+    const checkAuth = async () => {
+      try {
+        // Пытаемся получить профиль - если cookies валидны, получим данные
+        const response = await apiClient.getProfile()
+        
+        if (response.success && response.data) {
+          setIsAuthenticated(true)
+        } else {
+          setIsAuthenticated(false)
+          router.push('/login')
+        }
+      } catch (error) {
+        // Если ошибка (включая 401) - перенаправляем на логин
         setIsAuthenticated(false)
         router.push('/login')
-      } else {
-        // Есть хотя бы один токен - считаем пользователя аутентифицированным
-        // API клиент автоматически обновит access токен при необходимости
-        setIsAuthenticated(true)
       }
     }
+
+    checkAuth()
   }, [router])
 
-  // Показываем loading состояние пока проверяем токен
+  // Показываем loading состояние пока проверяем сессию
   if (isAuthenticated === null) {
     return (
       <div className="min-h-screen flex items-center justify-center">
