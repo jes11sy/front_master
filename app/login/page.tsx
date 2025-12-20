@@ -20,22 +20,9 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
-  // 🍪 Проверяем авторизацию при загрузке через API (cookies)
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await apiClient.getProfile()
-        if (response.success && response.data) {
-          // Если уже авторизован, перенаправляем на главную страницу
-          router.push('/orders')
-        }
-      } catch (error) {
-        // Если не авторизован - остаемся на странице логина
-      }
-    }
-
-    checkAuth()
-  }, [router])
+  // ✅ УДАЛЕНО: Не проверяем авторизацию на странице логина
+  // Если пользователь открыл /login - значит хочет залогиниться
+  // Проверка авторизации происходит на защищенных страницах через middleware
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
