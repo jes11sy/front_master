@@ -223,9 +223,18 @@ class ApiClient {
    * Используется для проверки валидности сессии в cookies
    */
   async getProfile() {
-    return this.request<any>('/auth/profile', {
-      method: 'GET',
-    })
+    try {
+      return await this.request<any>('/auth/profile', {
+        method: 'GET',
+      })
+    } catch (error: any) {
+      // Если ошибка SESSION_EXPIRED, не перенаправляем повторно
+      // (перенаправление уже произошло в request())
+      if (error.message === 'SESSION_EXPIRED') {
+        return { success: false, error: 'Session expired' }
+      }
+      throw error
+    }
   }
 
   /**
@@ -325,23 +334,11 @@ class ApiClient {
   
   async getCurrentUser() {
     try {
-      // Декодируем JWT токен, чтобы получить информацию о пользователе
-      if (!this.token) return null
-      
-      const base64Url = this.token.split('.')[1]
-      if (!base64Url) return null
-      
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
-      )
-      
-      return JSON.parse(jsonPayload)
+      // 🍪 С httpOnly cookies получаем данные через API
+      const response = await this.getProfile()
+      return response.data || null
     } catch (error) {
-      logger.error('Error decoding token', error)
+      logger.error('Error getting current user', error)
       return null
     }
   }
@@ -395,12 +392,13 @@ class ApiClient {
 
         const uploadUrl = `${this.baseURL}/files/upload?folder=director/cash/cashreceipt_doc`
 
-        // Указываем кастомную папку для чеков
+        // 🍪 Используем credentials: 'include' для отправки httpOnly cookies
         const uploadResponse = await fetch(uploadUrl, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${this.token}`,
+            'X-Use-Cookies': 'true',
           },
+          credentials: 'include',
           body: formData,
         })
 
@@ -528,9 +526,10 @@ class ApiClient {
     const response = await fetch(`${this.baseURL}/avito-messenger/chats/${chatId}/messages?avitoAccountName=${avitoAccountName}&limit=${limit}`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${this.token}`,
         'Content-Type': 'application/json',
+        'X-Use-Cookies': 'true',
       },
+      credentials: 'include',
     })
 
     if (!response.ok) {
@@ -546,9 +545,10 @@ class ApiClient {
     const response = await fetch(`${this.baseURL}/avito-messenger/chats/${chatId}/messages`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.token}`,
         'Content-Type': 'application/json',
+        'X-Use-Cookies': 'true',
       },
+      credentials: 'include',
       body: JSON.stringify({ text, avitoAccountName }),
     })
 
@@ -565,9 +565,10 @@ class ApiClient {
     const response = await fetch(`${this.baseURL}/avito-messenger/chats/${chatId}/read`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.token}`,
         'Content-Type': 'application/json',
+        'X-Use-Cookies': 'true',
       },
+      credentials: 'include',
       body: JSON.stringify({ avitoAccountName }),
     })
 
@@ -581,9 +582,10 @@ class ApiClient {
     const response = await fetch(`${this.baseURL}/avito-messenger/voice-files?avitoAccountName=${avitoAccountName}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.token}`,
         'Content-Type': 'application/json',
+        'X-Use-Cookies': 'true',
       },
+      credentials: 'include',
       body: JSON.stringify({ voiceIds }),
     })
 
@@ -608,8 +610,9 @@ class ApiClient {
     const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.token}`,
+        'X-Use-Cookies': 'true',
       },
+      credentials: 'include',
       body: formData,
     })
 
