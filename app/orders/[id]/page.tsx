@@ -325,9 +325,10 @@ export default function OrderDetailPage() {
         const bsoResults = await Promise.all(
           newBsoFiles.map(file => apiClient.uploadFile(file, 'director/orders/bso_doc'))
         );
+        // ВАЖНО: Используем KEY, а не URL!
         const newBsoPaths = bsoResults
-          .filter(res => res.success && res.data?.url)
-          .map(res => res.data!.url);
+          .filter(res => res.success && res.data?.key)
+          .map(res => res.data!.key);
         
         // Получаем существующие пути
         const existingBsoPaths = bsoUpload.files
@@ -349,9 +350,10 @@ export default function OrderDetailPage() {
         const expenditureResults = await Promise.all(
           newExpenditureFiles.map(file => apiClient.uploadFile(file, 'director/orders/expenditure_doc'))
         );
+        // ВАЖНО: Используем KEY, а не URL!
         const newExpenditurePaths = expenditureResults
-          .filter(res => res.success && res.data?.url)
-          .map(res => res.data!.url);
+          .filter(res => res.success && res.data?.key)
+          .map(res => res.data!.key);
         
         const existingExpenditurePaths = expenditureUpload.files
           .filter(f => f.file === null)
