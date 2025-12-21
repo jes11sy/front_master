@@ -6,11 +6,14 @@ import { useState, useEffect } from 'react'
  * Хук для определения онлайн/оффлайн статуса
  */
 export function useOnlineStatus() {
-  const [isOnline, setIsOnline] = useState(true)
+  // Инициализируем сразу правильным значением, чтобы избежать мерцания
+  const [isOnline, setIsOnline] = useState(() => 
+    typeof window !== 'undefined' ? navigator.onLine : true
+  )
   const [wasOffline, setWasOffline] = useState(false)
 
   useEffect(() => {
-    // Устанавливаем начальное состояние
+    // Дополнительно проверяем при монтировании
     setIsOnline(navigator.onLine)
 
     const handleOnline = () => {

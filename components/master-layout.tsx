@@ -49,20 +49,47 @@ const MasterLayout = React.memo<MasterLayoutProps>(({ children }) => {
         return
       }
 
-      try {
-        // Проверяем сессию через API - токены в httpOnly cookies
-        const response = await apiClient.getProfile()
-        
-        if (response.success && response.data) {
-          setIsAuthChecked(true)
-          setIsChecking(false)
-        } else {
-          // Профиль не получен - редирект на логин
+      const isOnline = navigator.onLine
+
+      if (isOnline) {
+        // ОНЛАЙН - проверяем через API
+        try {
+          const response = await apiClient.getProfile()
+          
+          if (response.success && response.data) {
+            setIsAuthChecked(true)
+            setIsChecking(false)
+          } else {
+            // Профиль не получен - редирект на логин
+            router.replace('/login')
+          }
+        } catch (error) {
+          // Ошибка при проверке - редирект на логин
           router.replace('/login')
         }
-      } catch (error) {
-        // Ошибка при проверке - редирект на логин
-        router.replace('/login')
+      } else {
+        // ОФФЛАЙН - проверяем локальные данные
+        try {
+          const { getProfile: getOfflineProfile } = await import('@/lib/offline-db')
+          const { getSavedCredentials } = await import('@/lib/remember-me')
+          
+          const profile = await getOfflineProfile()
+          const credentials = await getSavedCredentials()
+          
+          if (profile && credentials) {
+            // Есть локальные данные - пропускаем
+            console.log('[MasterLayout] Offline mode - found local data')
+            setIsAuthChecked(true)
+            setIsChecking(false)
+          } else {
+            // Нет локальных данных - редирект
+            console.log('[MasterLayout] Offline mode - no local data')
+            router.replace('/login')
+          }
+        } catch (error) {
+          console.error('[MasterLayout] Offline check error:', error)
+          router.replace('/login')
+        }
       }
     }
 
