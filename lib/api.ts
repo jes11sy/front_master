@@ -242,9 +242,6 @@ class ApiClient {
    * Очищает httpOnly cookies на сервере и локальные данные
    */
   async logout() {
-    // Сначала очищаем локальные данные НАПРЯМУЮ и СИНХРОННО
-    this.clearToken()
-    
     // Уведомляем сервер (cookies будут очищены)
     try {
       await fetch(`${this.baseURL}/auth/logout`, {
@@ -254,9 +251,13 @@ class ApiClient {
           'X-Use-Cookies': 'true',
         },
         credentials: 'include', // Отправляем cookies для идентификации
+        body: JSON.stringify({}), // Пустой объект для POST запроса
       })
     } catch (error) {
-      // Игнорируем ошибки сервера при выходе - данные уже удалены локально
+      // Игнорируем ошибки сервера при выходе
+    } finally {
+      // Очищаем локальные данные ПОСЛЕ запроса
+      this.clearToken()
     }
   }
 

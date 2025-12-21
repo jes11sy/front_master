@@ -24,10 +24,10 @@ export function SidebarNavigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [expandedDropdown, setExpandedDropdown] = useState<string | null>(null)
 
-  const handleLogout = () => {
-    // Выполняем logout синхронно
-    apiClient.logout()
-    // Сразу перенаправляем на логин
+  const handleLogout = async () => {
+    // Выполняем logout асинхронно и ждем завершения
+    await apiClient.logout()
+    // Перенаправляем на логин только после очистки cookies
     router.push('/login')
   }
 
