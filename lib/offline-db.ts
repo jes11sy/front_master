@@ -200,11 +200,24 @@ export async function cacheOrders(orders: any[]): Promise<void> {
       const store = transaction.objectStore(STORES.ORDERS)
 
       orders.forEach(order => {
+        // Проверяем разные варианты ID
+        const orderId = order.id || order._id || order.orderId
+        
+        if (!orderId && orderId !== 0) {
+          console.warn('[OfflineDB] Order without ID:', order)
+          return
+        }
+
+        // ВСЕГДА преобразуем в строку для единообразия
+        const orderIdStr = String(orderId)
+
         const cachedOrder: CachedOrder = {
-          id: order.id,
+          id: orderIdStr,
           data: order,
           cachedAt: Date.now(),
         }
+        
+        console.log('[OfflineDB] Caching order with ID:', orderIdStr, '(original:', orderId, 'type:', typeof orderId, ')')
         store.put(cachedOrder)
       })
 
@@ -213,7 +226,10 @@ export async function cacheOrders(orders: any[]): Promise<void> {
         db.close()
         resolve()
       }
-      transaction.onerror = () => reject(transaction.error)
+      transaction.onerror = () => {
+        console.error('[OfflineDB] Transaction error:', transaction.error)
+        reject(transaction.error)
+      }
     })
   } catch (error) {
     console.error('[OfflineDB] Failed to cache orders:', error)
@@ -252,20 +268,40 @@ export async function getCachedOrders(): Promise<any[]> {
 /**
  * Получает один закешированный заказ по ID
  */
-export async function getCachedOrder(orderId: string): Promise<any | null> {
+export async function getCachedOrder(orderId: string | number): Promise<any | null> {
+  const orderIdStr = String(orderId) // ВСЕГДА преобразуем в строку
+  console.log('[OfflineDB] Getting cached order:', orderIdStr, '(original:', orderId, 'type:', typeof orderId, ')')
+  
   try {
     const db = await openDB()
 
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(STORES.ORDERS, 'readonly')
       const store = transaction.objectStore(STORES.ORDERS)
-      const request = store.get(orderId)
+      const request = store.get(orderIdStr)
 
       request.onsuccess = () => {
         const cachedOrder = request.result as CachedOrder | undefined
-        resolve(cachedOrder ? cachedOrder.data : null)
+        if (cachedOrder) {
+          console.log('[OfflineDB] ✅ Found cached order:', orderIdStr)
+          resolve(cachedOrder.data)
+        } else {
+          console.log('[OfflineDB] ❌ Order not found in cache:', orderIdStr)
+          // Попробуем найти среди всех заказов для отладки
+          const getAllRequest = store.getAll()
+          getAllRequest.onsuccess = () => {
+            const allOrders = getAllRequest.result as CachedOrder[]
+            console.log('[OfflineDB] 📊 Total cached orders:', allOrders.length)
+            console.log('[OfflineDB] 📋 Cached order IDs:', allOrders.map(o => `${o.id} (${typeof o.id})`).join(', '))
+            resolve(null)
+          }
+          getAllRequest.onerror = () => resolve(null)
+        }
       }
-      request.onerror = () => reject(request.error)
+      request.onerror = () => {
+        console.error('[OfflineDB] Error getting order:', request.error)
+        reject(request.error)
+      }
       transaction.oncomplete = () => db.close()
     })
   } catch (error) {
