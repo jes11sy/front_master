@@ -23,7 +23,10 @@ export function SidebarNavigation() {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [expandedDropdown, setExpandedDropdown] = useState<string | null>(null)
-  const [isOnline, setIsOnline] = useState(true)
+  // Инициализируем с navigator.onLine для быстрого первого рендера
+  const [isOnline, setIsOnline] = useState(() => 
+    typeof window !== 'undefined' ? navigator.onLine : true
+  )
 
   // Проверка онлайн статуса
   useEffect(() => {
@@ -46,7 +49,10 @@ export function SidebarNavigation() {
       }
     }
 
+    // Первая проверка сразу при монтировании
     checkConnection()
+    
+    // Периодическая проверка каждые 10 секунд
     const interval = setInterval(checkConnection, 10000)
 
     const handleOnline = () => checkConnection()
