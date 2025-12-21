@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { apiClient } from '@/lib/api'
 import { logger } from '@/lib/logger'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { sortOrders as sortOrdersUtil } from '@/lib/order-sort'
 
 interface Order {
   id: number
@@ -35,7 +36,9 @@ interface Order {
   }
 }
 
+/*
 // Функция для сортировки заказов по статусам и датам (вынесена за пределы компонента)
+// ЗАМЕНЕНА НА УТИЛИТУ @/lib/order-sort
 const sortOrders = (orders: Order[]) => {
   // Порядок статусов
   const statusOrder: Record<string, number> = {
@@ -73,6 +76,7 @@ const sortOrders = (orders: Order[]) => {
     return new Date(dateA).getTime() - new Date(dateB).getTime()
   })
 }
+*/
 
 function OrdersContent() {
   const router = useRouter()
@@ -116,7 +120,7 @@ function OrdersContent() {
       
       // Сортируем заказы на клиенте (для согласованности онлайн/оффлайн)
       const ordersData = Array.isArray(response.data?.orders) ? response.data.orders : []
-      const sortedOrders = sortOrders(ordersData)
+      const sortedOrders = sortOrdersUtil(ordersData)
       
       setOrders(sortedOrders)
       setAllStatuses(['Ожидает', 'Принял', 'В пути', 'В работе', 'Готово', 'Отказ', 'Модерн', 'Незаказ'])
