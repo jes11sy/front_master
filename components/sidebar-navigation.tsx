@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import apiClient from '@/lib/api'
 
 const navigationItems = [
@@ -23,6 +23,44 @@ export function SidebarNavigation() {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [expandedDropdown, setExpandedDropdown] = useState<string | null>(null)
+  const [isOnline, setIsOnline] = useState(true)
+
+  // Проверка онлайн статуса
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 3000)
+        
+        await fetch('https://api.lead-schem.ru/api/auth/profile', { 
+          method: 'HEAD',
+          signal: controller.signal,
+          cache: 'no-store',
+          credentials: 'include'
+        })
+        
+        clearTimeout(timeoutId)
+        setIsOnline(true)
+      } catch {
+        setIsOnline(false)
+      }
+    }
+
+    checkConnection()
+    const interval = setInterval(checkConnection, 10000)
+
+    const handleOnline = () => checkConnection()
+    const handleOffline = () => setIsOnline(false)
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
 
   const handleLogout = async () => {
     // Выполняем logout асинхронно и ждем завершения
@@ -43,22 +81,33 @@ export function SidebarNavigation() {
         }}
       >
         <div className="flex items-center justify-between px-4 py-4">
-          <Link 
-            href="/orders" 
-            className="text-lg font-bold transition-colors duration-200"
-            style={{
-              color: '#374151',
-              textDecoration: 'none'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#14b8a6'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = '#374151'
-            }}
-          >
-            Новые Схемы
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link 
+              href="/orders" 
+              className="text-lg font-bold transition-colors duration-200"
+              style={{
+                color: '#374151',
+                textDecoration: 'none'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#14b8a6'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#374151'
+              }}
+            >
+              Новые Схемы
+            </Link>
+            {/* Индикатор онлайн/оффлайн */}
+            <div 
+              className="w-2 h-2 rounded-full transition-colors duration-300"
+              style={{ 
+                backgroundColor: isOnline ? '#10b981' : '#ef4444',
+                boxShadow: isOnline ? '0 0 6px #10b981' : '0 0 6px #ef4444'
+              }}
+              title={isOnline ? 'Онлайн' : 'Оффлайн'}
+            />
+          </div>
           
           <button
             className="p-2 rounded-lg transition-all duration-200"

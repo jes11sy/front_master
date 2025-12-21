@@ -3,7 +3,6 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { SidebarNavigation } from '@/components/sidebar-navigation'
 import { useLayout } from '@/components/layout-context'
-import { OfflineIndicator } from '@/components/offline-indicator'
 import React, { useEffect, useLayoutEffect, useState } from 'react'
 import apiClient from '@/lib/api'
 
@@ -126,17 +125,11 @@ const MasterLayout = React.memo<MasterLayoutProps>(({ children }) => {
   }
 
   if (shouldHideLayout) {
-    return (
-      <>
-        <OfflineIndicator />
-        {children}
-      </>
-    )
+    return <>{children}</>
   }
 
   return (
     <>
-      <OfflineIndicator />
       <SidebarNavigation />
       <main className="pt-16 md:pt-0 md:ml-64">{children}</main>
     </>
