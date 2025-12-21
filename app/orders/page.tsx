@@ -176,8 +176,8 @@ function OrdersContent() {
 
   // Получаем уникальные значения для фильтров из загруженных данных
   const safeOrders = Array.isArray(orders) ? orders : []
-  // Применяем сортировку
-  const sortedOrders = sortOrders(safeOrders)
+  // Применяем сортировку (данные уже отсортированы при загрузке, но на всякий случай)
+  const sortedOrders = sortOrdersUtil(safeOrders)
   const uniqueCities = Array.from(new Set(safeOrders.map(order => order.city)))
 
   // Сброс фильтров
