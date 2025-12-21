@@ -289,9 +289,8 @@ class ApiClient {
     search?: string
     master?: string
   }) {
-    // Реальная проверка онлайн статуса
-    const { isReallyOnline } = await import('./network-status')
-    const isOnline = await isReallyOnline()
+    // Простая проверка онлайн статуса
+    const isOnline = typeof navigator !== 'undefined' && navigator.onLine
 
     // Если оффлайн - возвращаем данные из кеша
     if (!isOnline) {
@@ -343,9 +342,8 @@ class ApiClient {
   }
 
   async getOrderById(id: string) {
-    // Реальная проверка онлайн статуса
-    const { isReallyOnline } = await import('./network-status')
-    const isOnline = await isReallyOnline()
+    // Простая проверка онлайн статуса
+    const isOnline = typeof navigator !== 'undefined' && navigator.onLine
 
     // Если оффлайн - возвращаем из кеша
     if (!isOnline) {

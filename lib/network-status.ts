@@ -19,6 +19,13 @@ export async function isReallyOnline(): Promise<boolean> {
     return lastCheckResult
   }
 
+  // Быстрая проверка через navigator.onLine
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    lastCheckTime = now
+    lastCheckResult = false
+    return false
+  }
+
   try {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 3000)
