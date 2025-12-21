@@ -237,8 +237,51 @@ export async function cacheOrders(orders: any[]): Promise<void> {
   }
 }
 
+// Порядок статусов для сортировки
+const STATUS_ORDER: Record<string, number> = {
+  'Ожидает': 1,
+  'Принял': 2,
+  'В пути': 3,
+  'В работе': 4,
+  'Модерн': 5,
+  'Готово': 6,
+  'Отказ': 7,
+  'Незаказ': 8
+}
+
 /**
- * Получает закешированные заказы
+ * Сортирует заказы по статусу и дате (как на фронте)
+ */
+function sortOrdersOffline(orders: any[]): any[] {
+  return [...orders].sort((a, b) => {
+    // Сначала по статусу
+    const statusA = STATUS_ORDER[a.statusOrder] || 999
+    const statusB = STATUS_ORDER[b.statusOrder] || 999
+    
+    if (statusA !== statusB) {
+      return statusA - statusB
+    }
+
+    // Внутри статуса по дате
+    const useClosingDate = ['Готово', 'Отказ', 'Незаказ'].includes(a.statusOrder)
+    
+    const dateA = useClosingDate 
+      ? (a.closingData || a.dateMeeting || '')
+      : (a.dateMeeting || '')
+    const dateB = useClosingDate 
+      ? (b.closingData || b.dateMeeting || '')
+      : (b.dateMeeting || '')
+
+    if (!dateA && !dateB) return 0
+    if (!dateA) return 1
+    if (!dateB) return -1
+
+    return new Date(dateA).getTime() - new Date(dateB).getTime()
+  })
+}
+
+/**
+ * Получает закешированные заказы (уже отсортированные!)
  */
 export async function getCachedOrders(): Promise<any[]> {
   console.log('[OfflineDB] Getting cached orders...')
@@ -254,7 +297,12 @@ export async function getCachedOrders(): Promise<any[]> {
         const cachedOrders = request.result as CachedOrder[]
         const orders = cachedOrders.map(co => co.data)
         console.log('[OfflineDB] Found', orders.length, 'cached orders')
-        resolve(orders)
+        
+        // Сортируем как на фронте!
+        const sortedOrders = sortOrdersOffline(orders)
+        console.log('[OfflineDB] Orders sorted by status and date')
+        
+        resolve(sortedOrders)
       }
       request.onerror = () => reject(request.error)
       transaction.oncomplete = () => db.close()
