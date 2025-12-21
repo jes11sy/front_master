@@ -17,7 +17,7 @@ export default function LoginPage() {
   const router = useRouter()
   const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
-  const [rememberMe, setRememberMe] = useState(false)
+  const [rememberMe, setRememberMe] = useState(true) // По умолчанию включено для оффлайн режима
   const [isLoading, setIsLoading] = useState(false)
   const [isCheckingAutoLogin, setIsCheckingAutoLogin] = useState(true)
 
@@ -249,7 +249,7 @@ export default function LoginPage() {
                   style={{accentColor: '#114643'}}
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-600 hover:text-gray-800 transition-colors duration-200 cursor-pointer">
-                  Запомнить меня
+                  Запомнить меня (для оффлайн работы)
                 </label>
               </div>
               
