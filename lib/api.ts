@@ -297,19 +297,22 @@ class ApiClient {
     if (!isOnline) {
       try {
         const { getCachedOrders } = await import('./offline-db')
+        const { sortOrders } = await import('./order-sort')
         const cachedOrders = await getCachedOrders()
-        console.log('[API] Offline mode: returning cached orders')
+        
+        // Сортируем заказы как в онлайн режиме
+        const sortedOrders = sortOrders(cachedOrders)
+        
         return {
           success: true,
           data: {
-            orders: cachedOrders,
-            total: cachedOrders.length,
+            orders: sortedOrders,
+            total: sortedOrders.length,
             page: 1,
-            limit: cachedOrders.length,
+            limit: sortedOrders.length,
           },
         }
       } catch (error) {
-        console.error('[API] Failed to get cached orders:', error)
         return {
           success: false,
           error: 'Не удалось загрузить заказы из кеша',
