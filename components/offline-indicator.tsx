@@ -56,7 +56,32 @@ export function OfflineIndicator() {
     }
   }, [])
 
-  // Всегда показываем индикатор в оффлайн режиме
+  // ТЕСТ: Показываем ВСЕГДА чтобы проверить рендеринг
+  return (
+    <div 
+      className="fixed top-0 left-0 right-0 py-3 px-4 text-center text-sm font-medium transition-all duration-300 text-white shadow-lg"
+      style={{ 
+        zIndex: 9999,
+        backgroundColor: isOnline ? '#10b981' : '#ea580c'
+      }}
+    >
+      <div className="flex items-center justify-center gap-2">
+        {isOnline ? (
+          <>
+            <Wifi className="h-5 w-5" />
+            <span className="font-semibold">ОНЛАЙН</span>
+          </>
+        ) : (
+          <>
+            <CloudOff className="h-5 w-5" />
+            <span className="font-semibold">ОФФЛАЙН РЕЖИМ</span>
+          </>
+        )}
+      </div>
+    </div>
+  )
+
+  /* СТАРАЯ ЛОГИКА - ЗАКОММЕНТИРОВАНА ДЛЯ ТЕСТА
   if (!isOnline) {
     return (
       <div 
@@ -71,7 +96,6 @@ export function OfflineIndicator() {
     )
   }
 
-  // Показываем зеленый индикатор на 3 секунды после восстановления соединения
   if (wasOffline) {
     return (
       <div className="fixed top-0 left-0 right-0 z-50 py-2 px-4 text-center text-sm font-medium transition-all duration-300 bg-green-600 text-white">
@@ -83,7 +107,7 @@ export function OfflineIndicator() {
     )
   }
 
-  // Онлайн и не было оффлайна - не показываем
   return null
+  */
 }
 
