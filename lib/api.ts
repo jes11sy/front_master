@@ -1,5 +1,6 @@
 // API клиент для работы с бэкендом
 import { logger } from './logger'
+import { sortOrders } from './order-sort'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.lead-schem.ru/api/v1'
 
@@ -295,14 +296,35 @@ class ApiClient {
         const { getCachedOrders } = await import('./offline-db')
         const cachedOrders = await getCachedOrders()
         if (cachedOrders && Array.isArray(cachedOrders) && cachedOrders.length > 0) {
+          // Применяем сортировку как на фронте
+          const sortedOrders = sortOrders(cachedOrders)
+          
+          // Применяем фильтры если есть
+          let filteredOrders = sortedOrders
+          if (params?.status) {
+            filteredOrders = filteredOrders.filter(o => o.statusOrder === params.status)
+          }
+          if (params?.city) {
+            filteredOrders = filteredOrders.filter(o => o.city === params.city)
+          }
+          if (params?.search) {
+            const searchLower = params.search.toLowerCase()
+            filteredOrders = filteredOrders.filter(o => 
+              String(o.id).includes(searchLower) ||
+              (o.phone && o.phone.toLowerCase().includes(searchLower)) ||
+              (o.address && o.address.toLowerCase().includes(searchLower)) ||
+              (o.clientName && o.clientName.toLowerCase().includes(searchLower))
+            )
+          }
+          
           return {
             success: true,
             data: {
-              orders: cachedOrders,
+              orders: filteredOrders,
               pagination: {
                 page: 1,
-                limit: cachedOrders.length,
-                total: cachedOrders.length,
+                limit: filteredOrders.length,
+                total: filteredOrders.length,
                 totalPages: 1
               }
             }
@@ -341,14 +363,35 @@ class ApiClient {
         const cachedOrders = await getCachedOrders()
         
         if (cachedOrders && Array.isArray(cachedOrders) && cachedOrders.length > 0) {
+          // Применяем сортировку как на фронте
+          const sortedOrders = sortOrders(cachedOrders)
+          
+          // Применяем фильтры если есть
+          let filteredOrders = sortedOrders
+          if (params?.status) {
+            filteredOrders = filteredOrders.filter(o => o.statusOrder === params.status)
+          }
+          if (params?.city) {
+            filteredOrders = filteredOrders.filter(o => o.city === params.city)
+          }
+          if (params?.search) {
+            const searchLower = params.search.toLowerCase()
+            filteredOrders = filteredOrders.filter(o => 
+              String(o.id).includes(searchLower) ||
+              (o.phone && o.phone.toLowerCase().includes(searchLower)) ||
+              (o.address && o.address.toLowerCase().includes(searchLower)) ||
+              (o.clientName && o.clientName.toLowerCase().includes(searchLower))
+            )
+          }
+          
           return {
             success: true,
             data: {
-              orders: cachedOrders,
+              orders: filteredOrders,
               pagination: {
                 page: 1,
-                limit: cachedOrders.length,
-                total: cachedOrders.length,
+                limit: filteredOrders.length,
+                total: filteredOrders.length,
                 totalPages: 1
               }
             }
