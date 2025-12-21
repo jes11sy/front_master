@@ -215,6 +215,17 @@ class ApiClient {
     // 🍪 Токены устанавливаются автоматически в httpOnly cookies на сервере
     // Не нужно ничего сохранять в localStorage
 
+    // Если включен "Запомнить меня" - сохраняем учетные данные в IndexedDB
+    if (remember && response.success) {
+      try {
+        const { saveCredentials } = await import('./remember-me')
+        await saveCredentials(login, password)
+      } catch (error) {
+        console.error('[Login] Failed to save credentials:', error)
+        // Не прерываем процесс логина, если не удалось сохранить
+      }
+    }
+
     return response
   }
 
@@ -242,6 +253,14 @@ class ApiClient {
    * Очищает httpOnly cookies на сервере и локальные данные
    */
   async logout() {
+    // Очищаем сохраненные учетные данные из IndexedDB
+    try {
+      const { clearSavedCredentials } = await import('./remember-me')
+      await clearSavedCredentials()
+    } catch (error) {
+      console.error('[Logout] Failed to clear saved credentials:', error)
+    }
+
     // Уведомляем сервер (cookies будут очищены)
     try {
       await fetch(`${this.baseURL}/auth/logout`, {
