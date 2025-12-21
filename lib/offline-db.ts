@@ -189,9 +189,10 @@ export async function clearProfile(): Promise<void> {
 
 /**
  * Кеширует заказы для оффлайн доступа
+ * ВАЖНО: Сначала очищает старый кэш, потом записывает новый!
  */
 export async function cacheOrders(orders: any[]): Promise<void> {
-  console.log('[OfflineDB] Caching', orders.length, 'orders')
+  console.log('[OfflineDB] Caching', orders.length, 'orders (will clear old cache first)')
   try {
     const db = await openDB()
 
@@ -199,27 +200,34 @@ export async function cacheOrders(orders: any[]): Promise<void> {
       const transaction = db.transaction(STORES.ORDERS, 'readwrite')
       const store = transaction.objectStore(STORES.ORDERS)
 
-      orders.forEach(order => {
-        // Проверяем разные варианты ID
-        const orderId = order.id || order._id || order.orderId
+      // СНАЧАЛА очищаем старый кэш заказов!
+      const clearRequest = store.clear()
+      
+      clearRequest.onsuccess = () => {
+        console.log('[OfflineDB] Old orders cache cleared')
         
-        if (!orderId && orderId !== 0) {
-          console.warn('[OfflineDB] Order without ID:', order)
-          return
-        }
+        // Теперь записываем новые заказы
+        orders.forEach(order => {
+          const orderId = order.id || order._id || order.orderId
+          
+          if (!orderId && orderId !== 0) {
+            console.warn('[OfflineDB] Order without ID:', order)
+            return
+          }
 
-        // ВСЕГДА преобразуем в строку для единообразия
-        const orderIdStr = String(orderId)
+          const orderIdStr = String(orderId)
 
-        const cachedOrder: CachedOrder = {
-          id: orderIdStr,
-          data: order,
-          cachedAt: Date.now(),
-        }
+          const cachedOrder: CachedOrder = {
+            id: orderIdStr,
+            data: order,
+            cachedAt: Date.now(),
+          }
+          
+          store.put(cachedOrder)
+        })
         
-        console.log('[OfflineDB] Caching order with ID:', orderIdStr, '(original:', orderId, 'type:', typeof orderId, ')')
-        store.put(cachedOrder)
-      })
+        console.log('[OfflineDB] New orders written to cache')
+      }
 
       transaction.oncomplete = () => {
         console.log('[OfflineDB] Orders cached successfully')

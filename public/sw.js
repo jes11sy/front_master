@@ -1,8 +1,8 @@
 // Service Worker для Master Front
 // Умное кэширование с обновлением в фоне
 
-const CACHE_NAME = 'master-front-v16'
-const API_CACHE = 'master-api-cache-v1'
+const CACHE_NAME = 'master-front-v17'
+const API_CACHE = 'master-api-cache-v2'
 
 // Файлы для обязательного кэширования при установке
 const PRECACHE_URLS = [
