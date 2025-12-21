@@ -371,7 +371,20 @@ class ApiClient {
     }
 
     // Онлайн - запрос к серверу
-    return this.request<any>(`/orders/${id}`)
+    const response = await this.request<any>(`/orders/${id}`)
+
+    // Кешируем детальные данные заказа
+    if (response.success && response.data) {
+      try {
+        const { cacheOrders } = await import('./offline-db')
+        await cacheOrders([response.data])
+        console.log('[API] Cached order details for', id)
+      } catch (error) {
+        console.error('[API] Failed to cache order details:', error)
+      }
+    }
+
+    return response
   }
 
   async getCallsByOrderId(orderId: string) {
