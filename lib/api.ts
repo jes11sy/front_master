@@ -93,7 +93,7 @@ class ApiClient {
       try {
         // Создаем AbortController для таймаута (совместимо со старыми браузерами)
         const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 секунд
+        const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 секунд
 
         const response = await fetch(url, {
           ...options,
@@ -289,29 +289,56 @@ class ApiClient {
     search?: string
     master?: string
   }) {
-    // Service Worker сам обработает оффлайн/онлайн, не нужно дублировать логику
-    const searchParams = new URLSearchParams()
-    if (params?.page) searchParams.append('page', params.page.toString())
-    if (params?.limit) searchParams.append('limit', params.limit.toString())
-    if (params?.status) searchParams.append('status', params.status)
-    if (params?.city) searchParams.append('city', params.city)
-    if (params?.search) searchParams.append('search', params.search)
-    if (params?.master) searchParams.append('master', params.master)
+    try {
+      // Service Worker сам обработает оффлайн/онлайн
+      const searchParams = new URLSearchParams()
+      if (params?.page) searchParams.append('page', params.page.toString())
+      if (params?.limit) searchParams.append('limit', params.limit.toString())
+      if (params?.status) searchParams.append('status', params.status)
+      if (params?.city) searchParams.append('city', params.city)
+      if (params?.search) searchParams.append('search', params.search)
+      if (params?.master) searchParams.append('master', params.master)
 
-    const query = searchParams.toString()
-    const response = await this.request<any>(`/orders${query ? `?${query}` : ''}`)
+      const query = searchParams.toString()
+      const response = await this.request<any>(`/orders${query ? `?${query}` : ''}`)
 
-    // Кешируем заказы для оффлайн доступа (только в онлайн)
-    if (response.success && response.data?.orders && typeof navigator !== 'undefined' && navigator.onLine) {
-      try {
-        const { cacheOrders } = await import('./offline-db')
-        await cacheOrders(response.data.orders)
-      } catch (error) {
-        // Игнорируем ошибки кеширования
+      // Сохраняем в localStorage как fallback для оффлайн
+      if (response.success && response.data?.orders && typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('last_orders_cache', JSON.stringify(response.data))
+        } catch (e) {
+          // Игнорируем ошибки localStorage
+        }
       }
-    }
 
-    return response
+      // Кешируем заказы для оффлайн доступа (только в онлайн)
+      if (response.success && response.data?.orders && typeof navigator !== 'undefined' && navigator.onLine) {
+        try {
+          const { cacheOrders } = await import('./offline-db')
+          await cacheOrders(response.data.orders)
+        } catch (error) {
+          // Игнорируем ошибки кеширования
+        }
+      }
+
+      return response
+    } catch (error) {
+      // Если запрос упал (оффлайн) - пробуем вернуть из localStorage
+      if (typeof window !== 'undefined') {
+        try {
+          const cached = localStorage.getItem('last_orders_cache')
+          if (cached) {
+            return {
+              success: true,
+              data: JSON.parse(cached)
+            }
+          }
+        } catch (e) {
+          // Игнорируем ошибки
+        }
+      }
+      throw error
+    }
   }
 
   async getOrderById(id: string) {
