@@ -28,51 +28,47 @@ export default function LoginPage() {
   // Проверяем автовход при загрузке страницы логина
   useEffect(() => {
     const tryAutoLogin = async () => {
-      const isOnline = navigator.onLine
-
-      if (!isOnline) {
-        // ОФФЛАЙН - проверяем локальные данные
-        console.log('[Login] Offline mode detected')
-        
+      try {
         const { getSavedCredentials } = await import('@/lib/remember-me')
         const { getProfile: getOfflineProfile } = await import('@/lib/offline-db')
         
         const credentials = await getSavedCredentials()
         const profile = await getOfflineProfile()
         
+        // Если есть сохраненные данные - пробуем войти
         if (!credentials || !profile) {
-          // Нет локальных данных - показываем сообщение
-          setIsCheckingAutoLogin(false)
+          // Нет данных - показываем форму
           if (typeof window !== 'undefined') {
-            localStorage.setItem('auto_login_debug', 'Оффлайн: нет данных для входа')
+            localStorage.setItem('auto_login_debug', 'Нет данных для автовхода')
           }
-          toast.error('Для первого входа требуется подключение к интернету')
+          setIsCheckingAutoLogin(false)
           return
         }
-        
-        // Есть локальные данные - пропускаем в приложение
-        console.log('[Login] Offline mode - found local data, redirecting...')
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('auto_login_debug', 'Оффлайн вход успешен')
-          localStorage.setItem('auto_login_last_success', new Date().toISOString())
-        }
-        router.replace('/orders')
-        return
-      }
 
-      // ОНЛАЙН - обычный автовход
-      try {
-        const { getSavedCredentials } = await import('@/lib/remember-me')
-        const credentials = await getSavedCredentials()
-        
-        if (credentials) {
-          console.log('[Login] Found saved credentials, attempting auto-login...')
+        // Есть данные - проверяем онлайн/оффлайн
+        const isOnline = navigator.onLine
+
+        if (!isOnline) {
+          // ОФФЛАЙН - сразу пускаем по локальным данным
+          console.log('[Login] Offline mode - using local data')
           if (typeof window !== 'undefined') {
-            localStorage.setItem('auto_login_debug', 'Попытка автовхода на странице логина')
-            localStorage.setItem('auto_login_last_attempt', new Date().toISOString())
+            localStorage.setItem('auto_login_debug', 'Оффлайн вход по локальным данным')
+            localStorage.setItem('auto_login_last_success', new Date().toISOString())
           }
-          
-          setIsLoading(true)
+          router.replace('/orders')
+          return
+        }
+
+        // ОНЛАЙН - пробуем логин через API
+        console.log('[Login] Online mode - attempting auto-login via API')
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('auto_login_debug', 'Попытка автовхода через API')
+          localStorage.setItem('auto_login_last_attempt', new Date().toISOString())
+        }
+        
+        setIsLoading(true)
+        
+        try {
           const loginResponse = await apiClient.login(
             credentials.login,
             credentials.password,
@@ -95,32 +91,31 @@ export default function LoginPage() {
               localStorage.setItem('auto_login_debug', 'Автовход успешен!')
               localStorage.setItem('auto_login_last_success', new Date().toISOString())
             }
-            // Сразу редиректим БЕЗ изменения isCheckingAutoLogin чтобы не было мигания
             router.replace('/orders')
             return
           } else {
-            console.warn('[Login] Auto-login failed')
+            console.warn('[Login] Auto-login failed - invalid credentials')
             if (typeof window !== 'undefined') {
               localStorage.setItem('auto_login_debug', 'Автовход не удался: неверные данные')
             }
-            // Только если автовход не удался - показываем форму
             setIsLoading(false)
             setIsCheckingAutoLogin(false)
           }
-        } else {
-          console.log('[Login] No saved credentials found')
+        } catch (error) {
+          // Ошибка API - возможно оффлайн, пускаем по локальным данным
+          console.log('[Login] API error, using local data:', error)
           if (typeof window !== 'undefined') {
-            localStorage.setItem('auto_login_debug', 'Нет сохраненных данных для автовхода')
+            localStorage.setItem('auto_login_debug', 'Ошибка API, вход по локальным данным')
+            localStorage.setItem('auto_login_last_success', new Date().toISOString())
           }
-          // Нет сохраненных данных - показываем форму
-          setIsCheckingAutoLogin(false)
+          router.replace('/orders')
+          return
         }
       } catch (error) {
         console.error('[Login] Auto-login error:', error)
         if (typeof window !== 'undefined') {
           localStorage.setItem('auto_login_debug', 'Ошибка автовхода: ' + String(error))
         }
-        // Ошибка - показываем форму
         setIsLoading(false)
         setIsCheckingAutoLogin(false)
       }

@@ -13,8 +13,11 @@ export function useOnlineStatus() {
   const [wasOffline, setWasOffline] = useState(false)
 
   useEffect(() => {
-    // Дополнительно проверяем при монтировании
-    setIsOnline(navigator.onLine)
+    // Дополнительно проверяем при монтировании и устанавливаем правильное значение
+    const currentStatus = navigator.onLine
+    if (currentStatus !== isOnline) {
+      setIsOnline(currentStatus)
+    }
 
     const handleOnline = () => {
       console.log('[OnlineStatus] Connection restored')
@@ -39,7 +42,7 @@ export function useOnlineStatus() {
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)
     }
-  }, [])
+  }, [isOnline])
 
   return { isOnline, wasOffline }
 }
