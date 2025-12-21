@@ -35,14 +35,10 @@ export function ServiceWorkerRegistration() {
                   newWorker.state === 'installed' &&
                   navigator.serviceWorker.controller
                 ) {
-                  // Новая версия доступна
-                  console.log('[SW] New version available')
-                  
-                  // Можно показать уведомление пользователю
-                  if (confirm('Доступна новая версия приложения. Обновить?')) {
-                    newWorker.postMessage({ type: 'SKIP_WAITING' })
-                    window.location.reload()
-                  }
+                  // Новая версия доступна - обновляем автоматически
+                  console.log('[SW] New version available, updating automatically...')
+                  newWorker.postMessage({ type: 'SKIP_WAITING' })
+                  // Перезагрузка произойдёт автоматически через controllerchange
                 }
               })
             }

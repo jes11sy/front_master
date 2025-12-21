@@ -54,6 +54,14 @@ self.addEventListener('activate', (event) => {
   return self.clients.claim()
 })
 
+// Обработка сообщений от клиента
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('[SW] Received SKIP_WAITING message, activating new version...')
+    self.skipWaiting()
+  }
+})
+
 // Обработка fetch запросов
 self.addEventListener('fetch', (event) => {
   const { request } = event
