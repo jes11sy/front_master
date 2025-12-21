@@ -35,9 +35,7 @@ interface Order {
   }
 }
 
-/*
-// Функция для сортировки заказов по статусам и датам (вынесена за пределы компонента)
-// ЗАМЕНЕНА НА УТИЛИТУ @/lib/order-sort
+// Функция для сортировки заказов по статусам и датам
 const sortOrders = (orders: Order[]) => {
   // Порядок статусов
   const statusOrder: Record<string, number> = {
@@ -75,7 +73,6 @@ const sortOrders = (orders: Order[]) => {
     return new Date(dateA).getTime() - new Date(dateB).getTime()
   })
 }
-*/
 
 function OrdersContent() {
   const router = useRouter()
@@ -174,8 +171,8 @@ function OrdersContent() {
 
   // Получаем уникальные значения для фильтров из загруженных данных
   const safeOrders = Array.isArray(orders) ? orders : []
-  // Данные уже отсортированы бэкендом
-  const sortedOrders = safeOrders
+  // Применяем сортировку на клиенте
+  const sortedOrders = sortOrders(safeOrders)
   const uniqueCities = Array.from(new Set(safeOrders.map(order => order.city)))
 
   // Сброс фильтров
