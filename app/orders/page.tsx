@@ -114,7 +114,11 @@ function OrdersContent() {
         search: searchTerm || undefined,
       } as any)
       
-      setOrders(Array.isArray(response.data?.orders) ? response.data.orders : [])
+      // Сортируем заказы на клиенте (для согласованности онлайн/оффлайн)
+      const ordersData = Array.isArray(response.data?.orders) ? response.data.orders : []
+      const sortedOrders = sortOrders(ordersData)
+      
+      setOrders(sortedOrders)
       setAllStatuses(['Ожидает', 'Принял', 'В пути', 'В работе', 'Готово', 'Отказ', 'Модерн', 'Незаказ'])
       setPagination(response.data?.pagination || {
         page: 1,

@@ -297,19 +297,15 @@ class ApiClient {
     if (!isOnline) {
       try {
         const { getCachedOrders } = await import('./offline-db')
-        const { sortOrders } = await import('./order-sort')
         const cachedOrders = await getCachedOrders()
-        
-        // Сортируем заказы как в онлайн режиме
-        const sortedOrders = sortOrders(cachedOrders)
         
         return {
           success: true,
           data: {
-            orders: sortedOrders,
-            total: sortedOrders.length,
+            orders: cachedOrders,
+            total: cachedOrders.length,
             page: 1,
-            limit: sortedOrders.length,
+            limit: cachedOrders.length,
           },
         }
       } catch (error) {
