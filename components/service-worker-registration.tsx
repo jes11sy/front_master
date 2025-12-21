@@ -3,11 +3,35 @@
 import { useEffect } from 'react'
 
 /**
+ * Проверка, является ли устройство мобильным (Android/iOS)
+ */
+function isMobileDevice(): boolean {
+  if (typeof window === 'undefined') return false
+  
+  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera
+  
+  // Проверка на Android
+  const isAndroid = /android/i.test(userAgent)
+  
+  // Проверка на iOS
+  const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream
+  
+  return isAndroid || isIOS
+}
+
+/**
  * Компонент для регистрации Service Worker
  * Должен быть добавлен в root layout
+ * Работает ТОЛЬКО на мобильных устройствах (Android/iOS)
  */
 export function ServiceWorkerRegistration() {
   useEffect(() => {
+    // Проверяем, что это мобильное устройство
+    if (!isMobileDevice()) {
+      console.log('[SW] Desktop detected, Service Worker disabled')
+      return
+    }
+
     if (
       typeof window !== 'undefined' &&
       'serviceWorker' in navigator &&

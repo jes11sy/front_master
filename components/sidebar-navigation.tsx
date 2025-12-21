@@ -27,9 +27,23 @@ export function SidebarNavigation() {
   const [isOnline, setIsOnline] = useState(() => 
     typeof window !== 'undefined' ? navigator.onLine : true
   )
+  const [isMobile, setIsMobile] = useState(false)
 
-  // Проверка онлайн статуса
+  // Определяем, мобильное ли устройство
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera
+      const isAndroid = /android/i.test(userAgent)
+      const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream
+      setIsMobile(isAndroid || isIOS)
+    }
+  }, [])
+
+  // Проверка онлайн статуса (только для мобильных)
+  useEffect(() => {
+    // Если не мобильное устройство - не проверяем
+    if (!isMobile) return
+
     const checkConnection = async () => {
       try {
         const controller = new AbortController()
@@ -66,7 +80,7 @@ export function SidebarNavigation() {
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)
     }
-  }, [])
+  }, [isMobile])
 
   const handleLogout = async () => {
     // Выполняем logout асинхронно и ждем завершения
@@ -104,15 +118,17 @@ export function SidebarNavigation() {
             >
               Новые Схемы
             </Link>
-            {/* Индикатор онлайн/оффлайн */}
-            <div 
-              className="w-2 h-2 rounded-full transition-colors duration-300"
-              style={{ 
-                backgroundColor: isOnline ? '#10b981' : '#ef4444',
-                boxShadow: isOnline ? '0 0 6px #10b981' : '0 0 6px #ef4444'
-              }}
-              title={isOnline ? 'Онлайн' : 'Оффлайн'}
-            />
+            {/* Индикатор онлайн/оффлайн - только для мобильных */}
+            {isMobile && (
+              <div 
+                className="w-2 h-2 rounded-full transition-colors duration-300"
+                style={{ 
+                  backgroundColor: isOnline ? '#10b981' : '#ef4444',
+                  boxShadow: isOnline ? '0 0 6px #10b981' : '0 0 6px #ef4444'
+                }}
+                title={isOnline ? 'Онлайн' : 'Оффлайн'}
+              />
+            )}
           </div>
           
           <button
