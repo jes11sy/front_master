@@ -289,36 +289,12 @@ class ApiClient {
     search?: string
     master?: string
   }) {
-    const searchParams = new URLSearchParams()
-    if (params?.page) searchParams.append('page', params.page.toString())
-    if (params?.limit) searchParams.append('limit', params.limit.toString())
-    if (params?.status) searchParams.append('status', params.status)
-    if (params?.city) searchParams.append('city', params.city)
-    if (params?.search) searchParams.append('search', params.search)
-    if (params?.master) searchParams.append('master', params.master)
-
-    const query = searchParams.toString()
-    
-    try {
-      const response = await this.request<any>(`/orders${query ? `?${query}` : ''}`)
-
-      // Кешируем заказы в IndexedDB
-      if (response.success && response.data?.orders) {
-        try {
-          const { cacheOrders } = await import('./offline-db')
-          await cacheOrders(response.data.orders)
-        } catch (error) {
-          // Игнорируем ошибки кеширования
-        }
-      }
-
-      return response
-    } catch (error) {
-      // При ошибке возвращаем из IndexedDB
+    // Если точно оффлайн - сразу из кеша, без запроса
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
       try {
         const { getCachedOrders } = await import('./offline-db')
         const cachedOrders = await getCachedOrders()
-        if (cachedOrders && cachedOrders.length > 0) {
+        if (cachedOrders && Array.isArray(cachedOrders) && cachedOrders.length > 0) {
           return {
             success: true,
             data: {
@@ -333,24 +309,83 @@ class ApiClient {
           }
         }
       } catch (e) {
-        // Игнорируем ошибки
+        // Продолжаем попытку запроса
+      }
+    }
+
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.append('page', params.page.toString())
+    if (params?.limit) searchParams.append('limit', params.limit.toString())
+    if (params?.status) searchParams.append('status', params.status)
+    if (params?.city) searchParams.append('city', params.city)
+    if (params?.search) searchParams.append('search', params.search)
+    if (params?.master) searchParams.append('master', params.master)
+
+    const query = searchParams.toString()
+    
+    try {
+      const response = await this.request<any>(`/orders${query ? `?${query}` : ''}`)
+
+      // Кешируем заказы в IndexedDB (в фоне)
+      if (response.success && response.data?.orders) {
+        import('./offline-db').then(({ cacheOrders }) => {
+          cacheOrders(response.data.orders).catch(() => {})
+        }).catch(() => {})
+      }
+
+      return response
+    } catch (error) {
+      // При ошибке пробуем IndexedDB
+      try {
+        const { getCachedOrders } = await import('./offline-db')
+        const cachedOrders = await getCachedOrders()
+        
+        if (cachedOrders && Array.isArray(cachedOrders) && cachedOrders.length > 0) {
+          return {
+            success: true,
+            data: {
+              orders: cachedOrders,
+              pagination: {
+                page: 1,
+                limit: cachedOrders.length,
+                total: cachedOrders.length,
+                totalPages: 1
+              }
+            }
+          }
+        }
+      } catch (cacheError) {
+        // Игнорируем
       }
       throw error
     }
   }
 
   async getOrderById(id: string) {
+    // Если точно оффлайн - сразу из кеша
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      try {
+        const { getCachedOrder } = await import('./offline-db')
+        const cachedOrder = await getCachedOrder(id)
+        if (cachedOrder) {
+          return {
+            success: true,
+            data: cachedOrder
+          }
+        }
+      } catch (e) {
+        // Продолжаем попытку запроса
+      }
+    }
+
     try {
       const response = await this.request<any>(`/orders/${id}`)
 
-      // Кешируем в IndexedDB
+      // Кешируем в IndexedDB (в фоне)
       if (response.success && response.data) {
-        try {
-          const { cacheOrders } = await import('./offline-db')
-          await cacheOrders([response.data])
-        } catch (error) {
-          // Игнорируем ошибки кеширования
-        }
+        import('./offline-db').then(({ cacheOrders }) => {
+          cacheOrders([response.data]).catch(() => {})
+        }).catch(() => {})
       }
 
       return response
@@ -366,7 +401,7 @@ class ApiClient {
           }
         }
       } catch (e) {
-        // Игнорируем ошибки
+        // Игнорируем
       }
       throw error
     }

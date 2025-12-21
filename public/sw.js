@@ -1,8 +1,8 @@
 // Service Worker для Master Front
 // Кеширование статических файлов и оффлайн работа
 
-const CACHE_NAME = 'master-front-v13'
-const RUNTIME_CACHE = 'master-front-runtime-v13'
+const CACHE_NAME = 'master-front-v15'
+const RUNTIME_CACHE = 'master-front-runtime-v15'
 
 // Файлы для кеширования при установке
 const PRECACHE_URLS = [
