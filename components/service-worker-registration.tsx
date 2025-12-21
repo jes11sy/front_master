@@ -28,7 +28,28 @@ export function ServiceWorkerRegistration() {
   useEffect(() => {
     // Проверяем, что это мобильное устройство
     if (!isMobileDevice()) {
-      console.log('[SW] Desktop detected, Service Worker disabled')
+      console.log('[SW] Desktop detected, unregistering Service Worker...')
+      
+      // Удаляем Service Worker на десктопе, если он был зарегистрирован ранее
+      if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          registrations.forEach((registration) => {
+            registration.unregister()
+            console.log('[SW] Service Worker unregistered')
+          })
+        })
+        
+        // Очищаем все кеши
+        if ('caches' in window) {
+          caches.keys().then((cacheNames) => {
+            cacheNames.forEach((cacheName) => {
+              caches.delete(cacheName)
+              console.log('[SW] Cache deleted:', cacheName)
+            })
+          })
+        }
+      }
+      
       return
     }
 
