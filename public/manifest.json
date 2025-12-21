@@ -1,0 +1,62 @@
+{
+  "name": "Новые Схемы - Мастер",
+  "short_name": "Мастер CRM",
+  "description": "CRM для мастеров - управление заказами",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#114643",
+  "theme_color": "#114643",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/images/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Заказы",
+      "short_name": "Заказы",
+      "description": "Список заказов",
+      "url": "/orders",
+      "icons": [
+        {
+          "src": "/images/logo.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Профиль",
+      "short_name": "Профиль",
+      "description": "Мой профиль",
+      "url": "/profile",
+      "icons": [
+        {
+          "src": "/images/logo.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "screenshots": [],
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
+}
+

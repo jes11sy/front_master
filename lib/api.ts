@@ -289,6 +289,33 @@ class ApiClient {
     search?: string
     master?: string
   }) {
+    const isOnline = typeof navigator !== 'undefined' && navigator.onLine
+
+    // Если оффлайн - возвращаем данные из кеша
+    if (!isOnline) {
+      try {
+        const { getCachedOrders } = await import('./offline-db')
+        const cachedOrders = await getCachedOrders()
+        console.log('[API] Offline mode: returning cached orders')
+        return {
+          success: true,
+          data: {
+            orders: cachedOrders,
+            total: cachedOrders.length,
+            page: 1,
+            limit: cachedOrders.length,
+          },
+        }
+      } catch (error) {
+        console.error('[API] Failed to get cached orders:', error)
+        return {
+          success: false,
+          error: 'Не удалось загрузить заказы из кеша',
+        }
+      }
+    }
+
+    // Онлайн - запрос к серверу
     const searchParams = new URLSearchParams()
     if (params?.page) searchParams.append('page', params.page.toString())
     if (params?.limit) searchParams.append('limit', params.limit.toString())
@@ -298,10 +325,52 @@ class ApiClient {
     if (params?.master) searchParams.append('master', params.master)
 
     const query = searchParams.toString()
-    return this.request<any>(`/orders${query ? `?${query}` : ''}`)
+    const response = await this.request<any>(`/orders${query ? `?${query}` : ''}`)
+
+    // Кешируем заказы для оффлайн доступа
+    if (response.success && response.data?.orders) {
+      try {
+        const { cacheOrders } = await import('./offline-db')
+        await cacheOrders(response.data.orders)
+        console.log('[API] Cached', response.data.orders.length, 'orders for offline access')
+      } catch (error) {
+        console.error('[API] Failed to cache orders:', error)
+      }
+    }
+
+    return response
   }
 
   async getOrderById(id: string) {
+    const isOnline = typeof navigator !== 'undefined' && navigator.onLine
+
+    // Если оффлайн - возвращаем из кеша
+    if (!isOnline) {
+      try {
+        const { getCachedOrder } = await import('./offline-db')
+        const cachedOrder = await getCachedOrder(id)
+        if (cachedOrder) {
+          console.log('[API] Offline mode: returning cached order', id)
+          return {
+            success: true,
+            data: cachedOrder,
+          }
+        } else {
+          return {
+            success: false,
+            error: 'Заказ не найден в кеше',
+          }
+        }
+      } catch (error) {
+        console.error('[API] Failed to get cached order:', error)
+        return {
+          success: false,
+          error: 'Не удалось загрузить заказ из кеша',
+        }
+      }
+    }
+
+    // Онлайн - запрос к серверу
     return this.request<any>(`/orders/${id}`)
   }
 

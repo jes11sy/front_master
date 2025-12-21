@@ -28,6 +28,39 @@ export default function LoginPage() {
   // Проверяем автовход при загрузке страницы логина
   useEffect(() => {
     const tryAutoLogin = async () => {
+      const isOnline = navigator.onLine
+
+      if (!isOnline) {
+        // ОФФЛАЙН - проверяем локальные данные
+        console.log('[Login] Offline mode detected')
+        
+        const { getSavedCredentials } = await import('@/lib/remember-me')
+        const { getProfile: getOfflineProfile } = await import('@/lib/offline-db')
+        
+        const credentials = await getSavedCredentials()
+        const profile = await getOfflineProfile()
+        
+        if (!credentials || !profile) {
+          // Нет локальных данных - показываем сообщение
+          setIsCheckingAutoLogin(false)
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('auto_login_debug', 'Оффлайн: нет данных для входа')
+          }
+          toast.error('Для первого входа требуется подключение к интернету')
+          return
+        }
+        
+        // Есть локальные данные - пропускаем в приложение
+        console.log('[Login] Offline mode - found local data, redirecting...')
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('auto_login_debug', 'Оффлайн вход успешен')
+          localStorage.setItem('auto_login_last_success', new Date().toISOString())
+        }
+        router.replace('/orders')
+        return
+      }
+
+      // ОНЛАЙН - обычный автовход
       try {
         const { getSavedCredentials } = await import('@/lib/remember-me')
         const credentials = await getSavedCredentials()
@@ -47,6 +80,17 @@ export default function LoginPage() {
           )
           
           if (loginResponse && loginResponse.success) {
+            // Сохраняем профиль для оффлайн доступа
+            if (loginResponse.data) {
+              const { saveProfile } = await import('@/lib/offline-db')
+              await saveProfile({
+                id: loginResponse.data.id,
+                login: loginResponse.data.login,
+                name: loginResponse.data.name || loginResponse.data.login,
+                role: 'master',
+              })
+            }
+            
             if (typeof window !== 'undefined') {
               localStorage.setItem('auto_login_debug', 'Автовход успешен!')
               localStorage.setItem('auto_login_last_success', new Date().toISOString())
@@ -103,6 +147,21 @@ export default function LoginPage() {
       const response = await apiClient.login(sanitizedLogin, sanitizedPassword, rememberMe)
       
       if (response.success) {
+        // Сохраняем профиль для оффлайн доступа
+        if (response.data) {
+          try {
+            const { saveProfile } = await import('@/lib/offline-db')
+            await saveProfile({
+              id: response.data.id,
+              login: response.data.login,
+              name: response.data.name || response.data.login,
+              role: 'master',
+            })
+          } catch (error) {
+            console.error('[Login] Failed to save profile for offline:', error)
+          }
+        }
+        
         logger.info('Пользователь успешно авторизован')
         
         // Перенаправляем на страницу заказов

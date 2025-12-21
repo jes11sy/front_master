@@ -3,6 +3,7 @@ import '../styles/globals.css'
 import { ToastProvider } from '@/components/ui/toast'
 import MasterLayout from '@/components/master-layout'
 import { LayoutProvider } from '@/components/layout-context'
+import { ServiceWorkerRegistration } from '@/components/service-worker-registration'
 
 export const metadata: Metadata = {
   title: 'Новые схемы',
@@ -12,6 +13,7 @@ export const metadata: Metadata = {
     shortcut: '/images/logo.png',
     apple: '/images/logo.png',
   },
+  manifest: '/manifest.json',
 }
 
 export default function RootLayout({
@@ -22,6 +24,7 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body>
+        <ServiceWorkerRegistration />
         <LayoutProvider>
           <ToastProvider>
             <MasterLayout>
