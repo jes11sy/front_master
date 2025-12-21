@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react'
 import { apiClient } from '@/lib/api'
 import { logger } from '@/lib/logger'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { sortOrders as sortOrdersUtil } from '@/lib/order-sort'
 
 interface Order {
   id: number
@@ -118,11 +117,10 @@ function OrdersContent() {
         search: searchTerm || undefined,
       } as any)
       
-      // Сортируем заказы на клиенте (для согласованности онлайн/оффлайн)
+      // Устанавливаем заказы как есть (бэкенд уже сортирует)
       const ordersData = Array.isArray(response.data?.orders) ? response.data.orders : []
-      const sortedOrders = sortOrdersUtil(ordersData)
       
-      setOrders(sortedOrders)
+      setOrders(ordersData)
       setAllStatuses(['Ожидает', 'Принял', 'В пути', 'В работе', 'Готово', 'Отказ', 'Модерн', 'Незаказ'])
       setPagination(response.data?.pagination || {
         page: 1,
@@ -176,8 +174,8 @@ function OrdersContent() {
 
   // Получаем уникальные значения для фильтров из загруженных данных
   const safeOrders = Array.isArray(orders) ? orders : []
-  // Применяем сортировку (данные уже отсортированы при загрузке, но на всякий случай)
-  const sortedOrders = sortOrdersUtil(safeOrders)
+  // Данные уже отсортированы бэкендом
+  const sortedOrders = safeOrders
   const uniqueCities = Array.from(new Set(safeOrders.map(order => order.city)))
 
   // Сброс фильтров
