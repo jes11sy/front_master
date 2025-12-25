@@ -61,9 +61,13 @@ interface Call {
 }
 
 export default function OrderDetailPage() {
+  console.log('[OrderDetailPage] Component render started')
+  
   const router = useRouter()
   const params = useParams()
   const id = params.id as string
+  
+  console.log('[OrderDetailPage] Order ID:', id)
   const [order, setOrder] = useState<Order | null>(null)
   const [calls, setCalls] = useState<Call[]>([])
   const [recordingUrls, setRecordingUrls] = useState<{ [key: number]: string }>({})
@@ -110,20 +114,25 @@ export default function OrderDetailPage() {
 
   // Функция для загрузки звонков
   const fetchCalls = async (orderId: string) => {
+    console.log('[OrderDetail] fetchCalls called for order:', orderId)
+    
     // Предотвращаем дублирующиеся запросы (для React Strict Mode)
     if (callsFetchedRef.current.has(orderId)) {
       console.log('[OrderDetail] Calls already fetched for order', orderId, '- skipping duplicate request')
       return
     }
     
+    console.log('[OrderDetail] Making API call to /calls/order/' + orderId)
     callsFetchedRef.current.add(orderId)
     
     try {
       const response = await apiClient.getCallsByOrderId(orderId)
       if (response.success && response.data) {
+        console.log('[OrderDetail] Calls fetched successfully:', response.data.length, 'calls')
         setCalls(response.data)
       }
     } catch (error) {
+      console.error('[OrderDetail] Error fetching calls:', error)
       // Тихо обрабатываем ошибку загрузки звонков
       // Убираем из set при ошибке, чтобы можно было повторить
       callsFetchedRef.current.delete(orderId)
