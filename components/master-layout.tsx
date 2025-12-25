@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { SidebarNavigation } from '@/components/sidebar-navigation'
 import { useLayout } from '@/components/layout-context'
-import React, { useEffect, useLayoutEffect, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useState, useRef } from 'react'
 import apiClient from '@/lib/api'
 
 interface MasterLayoutProps {
@@ -20,6 +20,9 @@ const MasterLayout = React.memo<MasterLayoutProps>(({ children }) => {
   const [isChecking, setIsChecking] = useState(!isPublicPage)
   const [isAuthChecked, setIsAuthChecked] = useState(false)
   const [isOfflineNoData, setIsOfflineNoData] = useState(false)
+  
+  // Ref для предотвращения дублирующихся проверок auth
+  const authCheckInProgress = useRef(false)
 
   // Список валидных путей приложения
   const validPaths = [
@@ -59,6 +62,14 @@ const MasterLayout = React.memo<MasterLayoutProps>(({ children }) => {
         setIsAuthChecked(true)
         return
       }
+      
+      // Предотвращаем дублирующиеся проверки
+      if (authCheckInProgress.current) {
+        console.log('[MasterLayout] Auth check already in progress - skipping')
+        return
+      }
+      
+      authCheckInProgress.current = true
 
       const isOnline = navigator.onLine
 
@@ -77,6 +88,8 @@ const MasterLayout = React.memo<MasterLayoutProps>(({ children }) => {
         } catch (error) {
           // Ошибка при проверке - редирект на логин
           router.replace('/login')
+        } finally {
+          authCheckInProgress.current = false
         }
       } else {
         // ОФФЛАЙН - проверяем локальные данные
@@ -103,6 +116,8 @@ const MasterLayout = React.memo<MasterLayoutProps>(({ children }) => {
           // При ошибке тоже показываем оффлайн экран
           setIsOfflineNoData(true)
           setIsChecking(false)
+        } finally {
+          authCheckInProgress.current = false
         }
       }
     }
