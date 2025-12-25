@@ -189,10 +189,11 @@ export async function clearProfile(): Promise<void> {
 
 /**
  * Кеширует заказы для оффлайн доступа
- * ВАЖНО: Сначала очищает старый кэш, потом записывает новый!
+ * Обновляет/добавляет заказы без полной очистки кэша
+ * Автоматически удаляет устаревшие заказы (старше 7 дней)
  */
 export async function cacheOrders(orders: any[]): Promise<void> {
-  console.log('[OfflineDB] Caching', orders.length, 'orders (will clear old cache first)')
+  console.log('[OfflineDB] Caching', orders.length, 'orders (updating existing cache)')
   try {
     const db = await openDB()
 
@@ -200,13 +201,32 @@ export async function cacheOrders(orders: any[]): Promise<void> {
       const transaction = db.transaction(STORES.ORDERS, 'readwrite')
       const store = transaction.objectStore(STORES.ORDERS)
 
-      // СНАЧАЛА очищаем старый кэш заказов!
-      const clearRequest = store.clear()
+      const now = Date.now()
+      const MAX_AGE = 7 * 24 * 60 * 60 * 1000 // 7 дней
       
-      clearRequest.onsuccess = () => {
-        console.log('[OfflineDB] Old orders cache cleared')
+      // Сначала удаляем устаревшие заказы
+      const getAllRequest = store.getAll()
+      
+      getAllRequest.onsuccess = () => {
+        const allCachedOrders = getAllRequest.result as CachedOrder[]
+        let deletedCount = 0
         
-        // Теперь записываем новые заказы
+        // Удаляем старые заказы
+        allCachedOrders.forEach(cachedOrder => {
+          if (now - cachedOrder.cachedAt > MAX_AGE) {
+            store.delete(cachedOrder.id)
+            deletedCount++
+          }
+        })
+        
+        if (deletedCount > 0) {
+          console.log('[OfflineDB] Removed', deletedCount, 'outdated orders (>7 days)')
+        }
+        
+        // Теперь обновляем/добавляем новые заказы
+        let updatedCount = 0
+        let addedCount = 0
+        
         orders.forEach(order => {
           const orderId = order.id || order._id || order.orderId
           
@@ -223,10 +243,18 @@ export async function cacheOrders(orders: any[]): Promise<void> {
             cachedAt: Date.now(),
           }
           
+          // Проверяем, есть ли уже такой заказ
+          const existingOrder = allCachedOrders.find(co => co.id === orderIdStr)
+          if (existingOrder) {
+            updatedCount++
+          } else {
+            addedCount++
+          }
+          
           store.put(cachedOrder)
         })
         
-        console.log('[OfflineDB] New orders written to cache')
+        console.log(`[OfflineDB] Cache updated: ${addedCount} added, ${updatedCount} updated, ${deletedCount} removed`)
       }
 
       transaction.oncomplete = () => {
@@ -363,6 +391,39 @@ export async function getCachedOrder(orderId: string | number): Promise<any | nu
   } catch (error) {
     console.error('[OfflineDB] Failed to get cached order:', error)
     return null
+  }
+}
+
+/**
+ * Очищает кэш заказов (используется при logout или явном запросе)
+ */
+export async function clearOrdersCache(): Promise<void> {
+  console.log('[OfflineDB] Clearing orders cache...')
+  try {
+    const db = await openDB()
+
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORES.ORDERS, 'readwrite')
+      const store = transaction.objectStore(STORES.ORDERS)
+      
+      const clearRequest = store.clear()
+      
+      clearRequest.onsuccess = () => {
+        console.log('[OfflineDB] Orders cache cleared')
+      }
+
+      transaction.oncomplete = () => {
+        db.close()
+        resolve()
+      }
+      transaction.onerror = () => {
+        console.error('[OfflineDB] Failed to clear orders cache:', transaction.error)
+        reject(transaction.error)
+      }
+    })
+  } catch (error) {
+    console.error('[OfflineDB] Failed to clear orders cache:', error)
+    throw error
   }
 }
 
