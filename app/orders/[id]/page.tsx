@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useParams } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
@@ -90,6 +90,10 @@ export default function OrderDetailPage() {
   // Хуки для множественной загрузки файлов (до 10 файлов каждого типа)
   const bsoUpload = useMultipleFileUpload(10)
   const expenditureUpload = useMultipleFileUpload(10)
+  
+  // Ref для предотвращения дублирующихся запросов (для React Strict Mode)
+  const callsFetchedRef = useRef<Set<string>>(new Set())
+  const orderFetchedRef = useRef(false)
 
   // Функция для извлечения имени файла из URL
   const getFileNameFromUrl = (url: string): string => {
@@ -106,6 +110,14 @@ export default function OrderDetailPage() {
 
   // Функция для загрузки звонков
   const fetchCalls = async (orderId: string) => {
+    // Предотвращаем дублирующиеся запросы (для React Strict Mode)
+    if (callsFetchedRef.current.has(orderId)) {
+      console.log('[OrderDetail] Calls already fetched for order', orderId, '- skipping duplicate request')
+      return
+    }
+    
+    callsFetchedRef.current.add(orderId)
+    
     try {
       const response = await apiClient.getCallsByOrderId(orderId)
       if (response.success && response.data) {
@@ -113,6 +125,8 @@ export default function OrderDetailPage() {
       }
     } catch (error) {
       // Тихо обрабатываем ошибку загрузки звонков
+      // Убираем из set при ошибке, чтобы можно было повторить
+      callsFetchedRef.current.delete(orderId)
     }
   }
 
@@ -142,6 +156,14 @@ export default function OrderDetailPage() {
   useEffect(() => {
     const fetchOrder = async () => {
       if (!id) return
+      
+      // Предотвращаем дублирующиеся запросы (для React Strict Mode)
+      if (orderFetchedRef.current) {
+        console.log('[OrderDetail] Order already fetched - skipping duplicate request')
+        return
+      }
+      
+      orderFetchedRef.current = true
       
       try {
         setLoading(true)
@@ -203,9 +225,11 @@ export default function OrderDetailPage() {
           setNotifications(newNotifications)
         } else {
           setError(response.error || 'Заказ не найден')
+          orderFetchedRef.current = false // Сбрасываем при ошибке
         }
       } catch (error: any) {
         setError(error.message || 'Ошибка загрузки заказа')
+        orderFetchedRef.current = false // Сбрасываем при ошибке
         // Если ошибка авторизации, перенаправляем на логин
         if (error.message?.includes('401') || error.message?.includes('токен')) {
           router.push('/login')
