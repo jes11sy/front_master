@@ -1,8 +1,8 @@
 // Service Worker для Master Front
 // Умное кэширование с обновлением в фоне
 
-const CACHE_NAME = 'master-front-v17'
-const API_CACHE = 'master-api-cache-v2'
+const CACHE_NAME = 'master-front-v18'
+const API_CACHE = 'master-api-cache-v3'
 
 // Файлы для обязательного кэширования при установке
 const PRECACHE_URLS = [
@@ -85,9 +85,9 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // API запросы - Stale-While-Revalidate (показать кэш, обновить в фоне)
+  // API запросы - Network First (сначала сеть, если ошибка - кэш)
   if (url.pathname.startsWith('/api/') || url.origin !== self.location.origin) {
-    event.respondWith(staleWhileRevalidate(request, API_CACHE))
+    event.respondWith(networkFirst(request, API_CACHE))
     return
   }
 
@@ -132,6 +132,40 @@ async function cacheFirst(request) {
     return response
   } catch (error) {
     console.log('[SW] Network failed for:', request.url)
+    return fallbackResponse(request)
+  }
+}
+
+/**
+ * Network First стратегия
+ * Сначала пытаемся получить из сети, если ошибка - берём из кэша
+ * Результат: ТОЛЬКО 1 запрос к серверу
+ */
+async function networkFirst(request, cacheName) {
+  const cache = await caches.open(cacheName)
+  
+  try {
+    // Пытаемся получить свежие данные из сети
+    const response = await fetch(request)
+    
+    if (response.ok) {
+      // Сохраняем в кэш для оффлайн
+      cache.put(request, response.clone())
+      console.log('[SW] Network response cached:', request.url)
+    }
+    
+    return response
+  } catch (error) {
+    // Сеть недоступна - пробуем кэш
+    console.log('[SW] Network failed, trying cache:', request.url)
+    const cached = await cache.match(request)
+    
+    if (cached) {
+      console.log('[SW] Serving from cache (offline):', request.url)
+      return cached
+    }
+    
+    // Ни сети, ни кэша нет
     return fallbackResponse(request)
   }
 }
@@ -318,4 +352,4 @@ self.addEventListener('message', (event) => {
   }
 })
 
-console.log('[SW] Service Worker v17 loaded')
+console.log('[SW] Service Worker v18 loaded')

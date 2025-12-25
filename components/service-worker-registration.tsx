@@ -33,21 +33,23 @@ export function ServiceWorkerRegistration() {
       // Удаляем Service Worker на десктопе, если он был зарегистрирован ранее
       if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then((registrations) => {
-          registrations.forEach((registration) => {
-            registration.unregister()
-            console.log('[SW] Service Worker unregistered')
-          })
-        })
-        
-        // Очищаем все кеши
-        if ('caches' in window) {
-          caches.keys().then((cacheNames) => {
-            cacheNames.forEach((cacheName) => {
-              caches.delete(cacheName)
-              console.log('[SW] Cache deleted:', cacheName)
+          if (registrations.length > 0) {
+            console.log('[SW] Found', registrations.length, 'Service Workers, unregistering...')
+            registrations.forEach((registration) => {
+              registration.unregister()
             })
-          })
-        }
+            
+            // Очищаем все кеши
+            if ('caches' in window) {
+              caches.keys().then((cacheNames) => {
+                cacheNames.forEach((cacheName) => {
+                  caches.delete(cacheName)
+                  console.log('[SW] Cache deleted:', cacheName)
+                })
+              })
+            }
+          }
+        })
       }
       
       return
