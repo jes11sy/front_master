@@ -11,7 +11,7 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   
-  reactStrictMode: true,
+  reactStrictMode: false, // ⚠️ Отключено чтобы избежать дублирующихся запросов в development
   
   // Оптимизация изображений
   images: {
