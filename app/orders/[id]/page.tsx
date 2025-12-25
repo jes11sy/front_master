@@ -220,7 +220,7 @@ export default function OrderDetailPage() {
     }
 
     fetchOrder()
-  }, [id, router])
+  }, [id]) // ✅ Убрали router из зависимостей - он вызывает лишние рендеры
 
   // Переключаемся на вкладку "Информация" если активна скрытая вкладка
   useEffect(() => {

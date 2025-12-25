@@ -162,7 +162,13 @@ class ApiClient {
           }
         }
 
+        // 🚫 НЕ повторяем запросы с 403/404 ошибками
         if (!response.ok) {
+          // Для 403 и 404 сразу выбрасываем ошибку без retry
+          if (response.status === 403 || response.status === 404) {
+            throw new Error(data.error || data.message || `Ошибка ${response.status}`)
+          }
+          
           throw new Error(data.error || `Ошибка сервера: ${response.status}`)
         }
 

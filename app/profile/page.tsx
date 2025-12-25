@@ -56,7 +56,7 @@ export default function ProfilePage() {
     }
 
     fetchProfile()
-  }, [router])
+  }, []) // ✅ Убрали router - профиль загружается один раз при монтировании
 
   const handleEdit = () => {
     setIsEditing(true)

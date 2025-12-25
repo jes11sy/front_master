@@ -318,4 +318,4 @@ self.addEventListener('message', (event) => {
   }
 })
 
-console.log('[SW] Service Worker v16 loaded')
+console.log('[SW] Service Worker v17 loaded')

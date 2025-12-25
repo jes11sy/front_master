@@ -59,7 +59,7 @@ export default function StatisticsPage() {
     }
 
     fetchStatistics()
-  }, [startDate, endDate, router])
+  }, [startDate, endDate]) // ✅ Убрали router - он используется только в catch блоке
 
   const handlePeriodChange = (value: string) => {
     // Если нажали на уже активную кнопку - сбрасываем фильтр
