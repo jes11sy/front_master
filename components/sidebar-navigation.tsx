@@ -44,6 +44,8 @@ export function SidebarNavigation() {
     // Если не мобильное устройство - не проверяем
     if (!isMobile) return
 
+    let retryInterval: NodeJS.Timeout | null = null
+
     const checkConnection = async () => {
       try {
         const controller = new AbortController()
@@ -57,30 +59,56 @@ export function SidebarNavigation() {
         })
         
         clearTimeout(timeoutId)
+        
+        // ✅ Связь восстановлена
+        if (!isOnline) {
+          console.log('[Sidebar] Connection restored')
+        }
         setIsOnline(true)
+        
+        // 🛑 Останавливаем retry polling
+        if (retryInterval) {
+          clearInterval(retryInterval)
+          retryInterval = null
+          console.log('[Sidebar] Stopped retry polling')
+        }
       } catch {
+        // ❌ Связь потеряна
+        console.log('[Sidebar] Connection lost')
         setIsOnline(false)
+        
+        // 🔄 Запускаем retry polling (если ещё не запущен)
+        if (!retryInterval) {
+          console.log('[Sidebar] Starting retry polling every 30 seconds')
+          retryInterval = setInterval(checkConnection, 30000)
+        }
       }
     }
 
-    // Первая проверка сразу при монтировании
-    checkConnection()
+    const handleOnline = () => {
+      console.log('[Sidebar] Browser reports online')
+      checkConnection()
+    }
     
-    // Периодическая проверка каждые 10 секунд
-    const interval = setInterval(checkConnection, 10000)
-
-    const handleOnline = () => checkConnection()
-    const handleOffline = () => setIsOnline(false)
+    const handleOffline = () => {
+      console.log('[Sidebar] Browser reports offline')
+      setIsOnline(false)
+      if (!retryInterval) {
+        retryInterval = setInterval(checkConnection, 30000)
+      }
+    }
 
     window.addEventListener('online', handleOnline)
     window.addEventListener('offline', handleOffline)
 
     return () => {
-      clearInterval(interval)
+      if (retryInterval) {
+        clearInterval(retryInterval)
+      }
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)
     }
-  }, [isMobile])
+  }, [isMobile, isOnline])
 
   const handleLogout = async () => {
     // Выполняем logout асинхронно и ждем завершения

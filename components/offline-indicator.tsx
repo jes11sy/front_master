@@ -6,15 +6,34 @@ import { useEffect, useState } from 'react'
 export function OfflineIndicator() {
   const [isOnline, setIsOnline] = useState(true)
   const [wasOffline, setWasOffline] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  // Определяем, мобильное ли устройство
+  useEffect(() => {
+    const checkIfMobile = () => {
+      const userAgent = navigator.userAgent.toLowerCase()
+      const isAndroid = userAgent.includes('android')
+      const isIOS = /iphone|ipad|ipod/.test(userAgent)
+      setIsMobile(isAndroid || isIOS)
+    }
+    
+    checkIfMobile()
+  }, [])
 
   useEffect(() => {
-    // Реальная проверка связи (для iOS PWA, где navigator.onLine может врать)
+    // Только для мобильных устройств
+    if (!isMobile) {
+      return
+    }
+
+    let retryInterval: NodeJS.Timeout | null = null
+
+    // Проверка связи с сервером
     const checkRealConnection = async () => {
       try {
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 3000)
         
-        // Проверяем доступность API
         await fetch('https://api.lead-schem.ru/api/auth/profile', { 
           method: 'HEAD',
           signal: controller.signal,
@@ -23,38 +42,75 @@ export function OfflineIndicator() {
         })
         
         clearTimeout(timeoutId)
+        
+        // ✅ Связь восстановлена!
+        if (!isOnline) {
+          console.log('[OfflineIndicator] Connection restored')
+          setWasOffline(true)
+          setTimeout(() => setWasOffline(false), 3000)
+        }
+        
         setIsOnline(true)
+        
+        // 🛑 Останавливаем retry polling, если он был запущен
+        if (retryInterval) {
+          clearInterval(retryInterval)
+          retryInterval = null
+          console.log('[OfflineIndicator] Stopped retry polling - connection is back')
+        }
       } catch {
-        // Любая ошибка = оффлайн (включая таймаут, network error, 401)
+        // ❌ Связь потеряна!
+        console.log('[OfflineIndicator] Connection lost')
         setIsOnline(false)
+        
+        // 🔄 Запускаем retry polling (если ещё не запущен)
+        if (!retryInterval) {
+          console.log('[OfflineIndicator] Starting retry polling every 30 seconds')
+          retryInterval = setInterval(checkRealConnection, 30000)
+        }
       }
     }
 
-    // Начальная проверка
-    checkRealConnection()
-
-    // Периодическая проверка каждые 10 секунд
-    const interval = setInterval(checkRealConnection, 10000)
+    // Слушаем глобальные события fetch/network errors
+    const handleFetchError = () => {
+      console.log('[OfflineIndicator] Global fetch error detected')
+      checkRealConnection()
+    }
 
     const handleOnline = () => {
+      console.log('[OfflineIndicator] Browser reports online')
       checkRealConnection()
-      setWasOffline(true)
-      setTimeout(() => setWasOffline(false), 3000)
     }
 
     const handleOffline = () => {
+      console.log('[OfflineIndicator] Browser reports offline')
       setIsOnline(false)
+      // Запускаем retry polling
+      if (!retryInterval) {
+        retryInterval = setInterval(checkRealConnection, 30000)
+      }
     }
 
+    // Подписываемся на события
     window.addEventListener('online', handleOnline)
     window.addEventListener('offline', handleOffline)
+    
+    // Глобальный обработчик ошибок fetch (для перехвата сетевых ошибок)
+    window.addEventListener('unhandledrejection', (event) => {
+      if (event.reason?.message?.includes('Failed to fetch') || 
+          event.reason?.message?.includes('Network request failed')) {
+        handleFetchError()
+      }
+    })
 
     return () => {
-      clearInterval(interval)
+      if (retryInterval) {
+        clearInterval(retryInterval)
+      }
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)
     }
-  }, [])
+  }, [isMobile, isOnline])
 
   // Всегда показываем индикатор в оффлайн режиме
   if (!isOnline) {
