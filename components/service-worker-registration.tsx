@@ -26,6 +26,37 @@ function isMobileDevice(): boolean {
  */
 export function ServiceWorkerRegistration() {
   useEffect(() => {
+    // 🔴 SERVICE WORKER ВРЕМЕННО ОТКЛЮЧЕН
+    console.log('[SW] Service Worker is temporarily disabled')
+    
+    // Удаляем все существующие Service Workers
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        if (registrations.length > 0) {
+          console.log('[SW] Unregistering all Service Workers...')
+          registrations.forEach((registration) => {
+            registration.unregister()
+          })
+          
+          // Очищаем все кеши
+          if ('caches' in window) {
+            caches.keys().then((cacheNames) => {
+              cacheNames.forEach((cacheName) => {
+                caches.delete(cacheName)
+                console.log('[SW] Cache deleted:', cacheName)
+              })
+            })
+          }
+        }
+      })
+    }
+    
+    return
+
+    /* 
+    // ========== ЗАКОММЕНТИРОВАННЫЙ КОД SERVICE WORKER ==========
+    // Раскомментируйте этот блок, чтобы включить Service Worker обратно
+    
     // Проверяем, что это мобильное устройство
     if (!isMobileDevice()) {
       console.log('[SW] Desktop detected, unregistering Service Worker...')
@@ -106,6 +137,7 @@ export function ServiceWorkerRegistration() {
 
       registerServiceWorker()
     }
+    */
   }, [])
 
   return null
