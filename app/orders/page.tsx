@@ -96,6 +96,7 @@ function OrdersContent() {
   })
   const [isInitialized, setIsInitialized] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [renderError, setRenderError] = useState<string | null>(null)
 
   // Загрузка данных
   const loadOrders = async () => {
@@ -123,6 +124,11 @@ function OrdersContent() {
       } as any)
       
       console.log('[OrdersPage] Response received:', response)
+      
+      // Проверяем успешность ответа
+      if (!response.success) {
+        throw new Error(response.error || 'Ошибка загрузки заказов')
+      }
       
       // Устанавливаем заказы как есть (бэкенд уже сортирует)
       const ordersData = Array.isArray(response.data?.orders) ? response.data.orders : []
@@ -183,10 +189,22 @@ function OrdersContent() {
   }
 
   // Получаем уникальные значения для фильтров из загруженных данных
-  const safeOrders = Array.isArray(orders) ? orders : []
-  // Применяем сортировку на клиенте
-  const sortedOrders = sortOrders(safeOrders)
-  const uniqueCities = Array.from(new Set(safeOrders.map(order => order.city)))
+  // Оборачиваем в try-catch на случай кривых данных
+  let safeOrders: Order[] = []
+  let sortedOrders: Order[] = []
+  let uniqueCities: string[] = []
+  
+  try {
+    safeOrders = Array.isArray(orders) ? orders : []
+    // Применяем сортировку на клиенте
+    sortedOrders = sortOrders(safeOrders)
+    uniqueCities = Array.from(new Set(safeOrders.map(order => order.city || 'Неизвестно')))
+  } catch (err) {
+    console.error('[OrdersPage] Error processing orders:', err)
+    setRenderError('Ошибка обработки данных заказов. Попробуйте обновить страницу.')
+    sortedOrders = []
+    uniqueCities = []
+  }
 
   // Сброс фильтров
   const resetFilters = () => {
@@ -199,37 +217,6 @@ function OrdersContent() {
   const handleOrderClick = (orderId: number) => {
     router.push(`/orders/${orderId}`)
   }
-
-  // Автоматическая очистка кривого кэша при первой загрузке
-  useEffect(() => {
-    const clearBrokenCache = async () => {
-      try {
-        // Очистка Service Worker кэшей
-        if ('caches' in window) {
-          const cacheNames = await caches.keys()
-          if (cacheNames.length > 0) {
-            await Promise.all(cacheNames.map(name => caches.delete(name)))
-            console.log('[OrdersPage] Cleared', cacheNames.length, 'old caches')
-          }
-        }
-
-        // Очистка IndexedDB
-        if ('indexedDB' in window) {
-          try {
-            const { clearAllOfflineData } = await import('@/lib/offline-db')
-            await clearAllOfflineData()
-            console.log('[OrdersPage] Cleared IndexedDB')
-          } catch (e) {
-            // Игнорируем ошибки
-          }
-        }
-      } catch (err) {
-        console.log('[OrdersPage] Cache clear error (ignored):', err)
-      }
-    }
-
-    clearBrokenCache()
-  }, []) // Только при первом монтировании
 
   // Функция для форматирования даты
   const formatDate = (dateString: string) => {
@@ -269,6 +256,27 @@ function OrdersContent() {
     }
   }
 
+  // Если критическая ошибка рендеринга - показываем большой красный экран
+  if (renderError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#114643'}}>
+        <div className="max-w-md mx-4">
+          <div className="bg-red-600 text-white rounded-2xl p-8 shadow-2xl">
+            <div className="text-6xl mb-4 text-center">⚠️</div>
+            <h1 className="text-2xl font-bold mb-4 text-center">Критическая ошибка</h1>
+            <p className="text-lg mb-6 text-center">{renderError}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full bg-white text-red-600 font-bold py-3 px-6 rounded-lg hover:bg-gray-100 transition-all"
+            >
+              🔄 Обновить страницу
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
       <div className="container mx-auto px-2 sm:px-4 py-8 pt-4 md:pt-8">
@@ -287,15 +295,23 @@ function OrdersContent() {
             )}
 
             {/* Ошибка */}
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 animate-slide-in-left">
-                <p className="text-red-600 font-medium mb-2">❌ Ошибка загрузки</p>
-                <p className="text-red-800 text-sm mb-3">{error}</p>
+            {!loading && error && (
+              <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6 mb-6 animate-slide-in-left">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="text-3xl">❌</div>
+                  <div className="flex-1">
+                    <p className="text-red-700 font-bold text-lg mb-2">Ошибка загрузки заказов</p>
+                    <p className="text-red-800 text-base mb-3 font-medium">{error}</p>
+                    <p className="text-red-600 text-sm mb-4">
+                      Если проблема повторяется, обратитесь к администратору
+                    </p>
+                  </div>
+                </div>
                 <button 
                   onClick={loadOrders}
-                  className="mt-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-200 hover:shadow-md"
+                  className="w-full sm:w-auto px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-200 hover:shadow-md font-semibold"
                 >
-                  Попробовать снова
+                  🔄 Попробовать снова
                 </button>
               </div>
             )}
@@ -619,6 +635,43 @@ function OrdersContent() {
   )
 }
 
-export default function OrdersPage() {
+// Wrapper для очистки IndexedDB ДО рендера
+function OrdersPageWrapper() {
+  const [isCleared, setIsCleared] = useState(false)
+
+  useEffect(() => {
+    const clearIndexedDB = async () => {
+      try {
+        if (typeof window !== 'undefined' && 'indexedDB' in window) {
+          console.log('[OrdersPage] 🗑️ Clearing IndexedDB...')
+          const { clearAllOfflineData } = await import('@/lib/offline-db')
+          await clearAllOfflineData()
+          console.log('[OrdersPage] ✅ IndexedDB cleared')
+        }
+      } catch (e) {
+        console.log('[OrdersPage] IndexedDB clear failed (ignored):', e)
+      } finally {
+        setIsCleared(true)
+      }
+    }
+    clearIndexedDB()
+  }, [])
+
+  // Показываем загрузку пока очищаем
+  if (!isCleared) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#114643'}}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-white mx-auto mb-4"></div>
+          <p className="text-white text-lg">Загрузка...</p>
+        </div>
+      </div>
+    )
+  }
+
   return <OrdersContent />
+}
+
+export default function OrdersPage() {
+  return <OrdersPageWrapper />
 }
