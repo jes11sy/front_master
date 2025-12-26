@@ -39,8 +39,12 @@ export async function clearAllCaches(): Promise<void> {
     // 2. Очистка IndexedDB
     if (typeof window !== 'undefined' && 'indexedDB' in window) {
       try {
-        const { clearAllOfflineData } = await import('./offline-db')
-        await clearAllOfflineData()
+        const dbs = await indexedDB.databases()
+        for (const db of dbs) {
+          if (db.name) {
+            indexedDB.deleteDatabase(db.name)
+          }
+        }
         console.log('[CacheCleaner] ✅ Cleared IndexedDB')
       } catch (e) {
         console.log('[CacheCleaner] IndexedDB clear skipped:', e)

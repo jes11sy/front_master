@@ -97,6 +97,21 @@ function OrdersContent() {
   const [isInitialized, setIsInitialized] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [renderError, setRenderError] = useState<string | null>(null)
+  
+  // Таймаут для загрузки - если больше 10 секунд, принудительно показываем контент
+  useEffect(() => {
+    if (loading) {
+      const timeout = setTimeout(() => {
+        console.log('[OrdersPage] Force stop loading after 10s')
+        setLoading(false)
+        if (orders.length === 0) {
+          setError('Не удалось загрузить заказы. Попробуйте обновить страницу.')
+        }
+      }, 10000) // 10 секунд
+      
+      return () => clearTimeout(timeout)
+    }
+  }, [loading, orders.length])
 
   // Загрузка данных
   const loadOrders = async () => {
@@ -134,6 +149,7 @@ function OrdersContent() {
       const ordersData = Array.isArray(response.data?.orders) ? response.data.orders : []
       
       console.log('[OrdersPage] Orders data:', ordersData.length, 'orders')
+      console.log('[OrdersPage] First order:', ordersData[0])
       
       setOrders(ordersData)
       setAllStatuses(['Ожидает', 'Принял', 'В пути', 'В работе', 'Готово', 'Отказ', 'Модерн', 'Незаказ'])
@@ -144,6 +160,11 @@ function OrdersContent() {
         totalPages: 0
       })
       setIsInitialized(true)
+      
+      // Принудительно убираем loading если данные пришли
+      if (ordersData.length >= 0) {
+        setLoading(false)
+      }
     } catch (err) {
       console.error('[OrdersPage] Error loading orders:', err)
       setError(err instanceof Error ? err.message : 'Ошибка загрузки заказов')
@@ -281,7 +302,7 @@ function OrdersContent() {
     <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
       <div className="container mx-auto px-2 sm:px-4 py-8 pt-4 md:pt-8">
         <div className="max-w-none mx-auto">
-          <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl animate-fade-in" style={{borderColor: '#114643'}}>
+          <div className="shadow-2xl rounded-2xl p-6 md:p-16 border" style={{backgroundColor: '#ffffff', borderColor: '#114643'}}>
             
             {/* Заголовок */}
             <h1 className="text-2xl font-bold text-gray-800 mb-6">Мои заказы</h1>

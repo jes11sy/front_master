@@ -296,51 +296,6 @@ class ApiClient {
     search?: string
     master?: string
   }) {
-    // Если точно оффлайн - сразу из кеша, без запроса
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      try {
-        const { getCachedOrders } = await import('./offline-db')
-        const cachedOrders = await getCachedOrders()
-        if (cachedOrders && Array.isArray(cachedOrders) && cachedOrders.length > 0) {
-          // Применяем сортировку как на фронте
-          const sortedOrders = sortOrders(cachedOrders)
-          
-          // Применяем фильтры если есть
-          let filteredOrders = sortedOrders
-          if (params?.status) {
-            filteredOrders = filteredOrders.filter(o => o.statusOrder === params.status)
-          }
-          if (params?.city) {
-            filteredOrders = filteredOrders.filter(o => o.city === params.city)
-          }
-          if (params?.search) {
-            const searchLower = params.search.toLowerCase()
-            filteredOrders = filteredOrders.filter(o => 
-              String(o.id).includes(searchLower) ||
-              (o.phone && o.phone.toLowerCase().includes(searchLower)) ||
-              (o.address && o.address.toLowerCase().includes(searchLower)) ||
-              (o.clientName && o.clientName.toLowerCase().includes(searchLower))
-            )
-          }
-          
-          return {
-            success: true,
-            data: {
-              orders: filteredOrders,
-              pagination: {
-                page: 1,
-                limit: filteredOrders.length,
-                total: filteredOrders.length,
-                totalPages: 1
-              }
-            }
-          }
-        }
-      } catch (e) {
-        // Продолжаем попытку запроса
-      }
-    }
-
     const searchParams = new URLSearchParams()
     if (params?.page) searchParams.append('page', params.page.toString())
     if (params?.limit) searchParams.append('limit', params.limit.toString())
@@ -353,107 +308,14 @@ class ApiClient {
     
     try {
       const response = await this.request<any>(`/orders${query ? `?${query}` : ''}`)
-
-      // Кешируем заказы в IndexedDB (в фоне)
-      if (response.success && response.data?.orders) {
-        import('./offline-db').then(({ cacheOrders }) => {
-          cacheOrders(response.data.orders).catch(() => {})
-        }).catch(() => {})
-      }
-
       return response
     } catch (error) {
-      // При ошибке пробуем IndexedDB
-      try {
-        const { getCachedOrders } = await import('./offline-db')
-        const cachedOrders = await getCachedOrders()
-        
-        if (cachedOrders && Array.isArray(cachedOrders) && cachedOrders.length > 0) {
-          // Применяем сортировку как на фронте
-          const sortedOrders = sortOrders(cachedOrders)
-          
-          // Применяем фильтры если есть
-          let filteredOrders = sortedOrders
-          if (params?.status) {
-            filteredOrders = filteredOrders.filter(o => o.statusOrder === params.status)
-          }
-          if (params?.city) {
-            filteredOrders = filteredOrders.filter(o => o.city === params.city)
-          }
-          if (params?.search) {
-            const searchLower = params.search.toLowerCase()
-            filteredOrders = filteredOrders.filter(o => 
-              String(o.id).includes(searchLower) ||
-              (o.phone && o.phone.toLowerCase().includes(searchLower)) ||
-              (o.address && o.address.toLowerCase().includes(searchLower)) ||
-              (o.clientName && o.clientName.toLowerCase().includes(searchLower))
-            )
-          }
-          
-          return {
-            success: true,
-            data: {
-              orders: filteredOrders,
-              pagination: {
-                page: 1,
-                limit: filteredOrders.length,
-                total: filteredOrders.length,
-                totalPages: 1
-              }
-            }
-          }
-        }
-      } catch (cacheError) {
-        // Игнорируем
-      }
       throw error
     }
   }
 
   async getOrderById(id: string) {
-    // Если точно оффлайн - сразу из кеша
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      try {
-        const { getCachedOrder } = await import('./offline-db')
-        const cachedOrder = await getCachedOrder(id)
-        if (cachedOrder) {
-          return {
-            success: true,
-            data: cachedOrder
-          }
-        }
-      } catch (e) {
-        // Продолжаем попытку запроса
-      }
-    }
-
-    try {
-      const response = await this.request<any>(`/orders/${id}`)
-
-      // Кешируем в IndexedDB (в фоне)
-      if (response.success && response.data) {
-        import('./offline-db').then(({ cacheOrders }) => {
-          cacheOrders([response.data]).catch(() => {})
-        }).catch(() => {})
-      }
-
-      return response
-    } catch (error) {
-      // При ошибке пробуем IndexedDB
-      try {
-        const { getCachedOrder } = await import('./offline-db')
-        const cachedOrder = await getCachedOrder(id)
-        if (cachedOrder) {
-          return {
-            success: true,
-            data: cachedOrder
-          }
-        }
-      } catch (e) {
-        // Игнорируем
-      }
-      throw error
-    }
+    return this.request<any>(`/orders/${id}`)
   }
 
   async getCallsByOrderId(orderId: string) {

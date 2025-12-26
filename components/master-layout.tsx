@@ -92,33 +92,10 @@ const MasterLayout = React.memo<MasterLayoutProps>(({ children }) => {
           authCheckInProgress.current = false
         }
       } else {
-        // ОФФЛАЙН - проверяем локальные данные
-        try {
-          const { getProfile: getOfflineProfile } = await import('@/lib/offline-db')
-          const { getSavedCredentials } = await import('@/lib/remember-me')
-          
-          const profile = await getOfflineProfile()
-          const credentials = await getSavedCredentials()
-          
-          if (profile && credentials) {
-            // Есть локальные данные - пропускаем
-            console.log('[MasterLayout] Offline mode - found local data')
-            setIsAuthChecked(true)
-            setIsChecking(false)
-          } else {
-            // Нет локальных данных - показываем оффлайн экран
-            console.log('[MasterLayout] Offline mode - no local data, showing offline screen')
-            setIsOfflineNoData(true)
-            setIsChecking(false)
-          }
-        } catch (error) {
-          console.error('[MasterLayout] Offline check error:', error)
-          // При ошибке тоже показываем оффлайн экран
-          setIsOfflineNoData(true)
-          setIsChecking(false)
-        } finally {
-          authCheckInProgress.current = false
-        }
+        // ОФФЛАЙН - редирект на логин
+        console.log('[MasterLayout] Offline mode - redirecting to login')
+        router.replace('/login')
+        authCheckInProgress.current = false
       }
     }
 

@@ -30,13 +30,11 @@ export default function LoginPage() {
     const tryAutoLogin = async () => {
       try {
         const { getSavedCredentials } = await import('@/lib/remember-me')
-        const { getProfile: getOfflineProfile } = await import('@/lib/offline-db')
         
         const credentials = await getSavedCredentials()
-        const profile = await getOfflineProfile()
         
         // Если есть сохраненные данные - пробуем войти
-        if (!credentials || !profile) {
+        if (!credentials) {
           // Нет данных - показываем форму
           if (typeof window !== 'undefined') {
             localStorage.setItem('auto_login_debug', 'Нет данных для автовхода')
@@ -45,22 +43,8 @@ export default function LoginPage() {
           return
         }
 
-        // Есть данные - проверяем онлайн/оффлайн
-        const isOnline = navigator.onLine
-
-        if (!isOnline) {
-          // ОФФЛАЙН - сразу пускаем по локальным данным
-          console.log('[Login] Offline mode - using local data')
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('auto_login_debug', 'Оффлайн вход по локальным данным')
-            localStorage.setItem('auto_login_last_success', new Date().toISOString())
-          }
-          router.replace('/orders')
-          return
-        }
-
-        // ОНЛАЙН - пробуем логин через API
-        console.log('[Login] Online mode - attempting auto-login via API')
+        // Пробуем логин через API
+        console.log('[Login] Attempting auto-login via API')
         if (typeof window !== 'undefined') {
           localStorage.setItem('auto_login_debug', 'Попытка автовхода через API')
           localStorage.setItem('auto_login_last_attempt', new Date().toISOString())
@@ -76,17 +60,6 @@ export default function LoginPage() {
           )
           
           if (loginResponse && loginResponse.success) {
-            // Сохраняем профиль для оффлайн доступа
-            if (loginResponse.data) {
-              const { saveProfile } = await import('@/lib/offline-db')
-              await saveProfile({
-                id: loginResponse.data.id,
-                login: loginResponse.data.login,
-                name: loginResponse.data.name || loginResponse.data.login,
-                role: 'master',
-              })
-            }
-            
             if (typeof window !== 'undefined') {
               localStorage.setItem('auto_login_debug', 'Автовход успешен!')
               localStorage.setItem('auto_login_last_success', new Date().toISOString())
@@ -102,14 +75,12 @@ export default function LoginPage() {
             setIsCheckingAutoLogin(false)
           }
         } catch (error) {
-          // Ошибка API - возможно оффлайн, пускаем по локальным данным
-          console.log('[Login] API error, using local data:', error)
+          console.error('[Login] Auto-login error:', error)
           if (typeof window !== 'undefined') {
-            localStorage.setItem('auto_login_debug', 'Ошибка API, вход по локальным данным')
-            localStorage.setItem('auto_login_last_success', new Date().toISOString())
+            localStorage.setItem('auto_login_debug', 'Ошибка автовхода: ' + String(error))
           }
-          router.replace('/orders')
-          return
+          setIsLoading(false)
+          setIsCheckingAutoLogin(false)
         }
       } catch (error) {
         console.error('[Login] Auto-login error:', error)
@@ -142,21 +113,6 @@ export default function LoginPage() {
       const response = await apiClient.login(sanitizedLogin, sanitizedPassword, rememberMe)
       
       if (response.success) {
-        // Сохраняем профиль для оффлайн доступа
-        if (response.data) {
-          try {
-            const { saveProfile } = await import('@/lib/offline-db')
-            await saveProfile({
-              id: response.data.id,
-              login: response.data.login,
-              name: response.data.name || response.data.login,
-              role: 'master',
-            })
-          } catch (error) {
-            console.error('[Login] Failed to save profile for offline:', error)
-          }
-        }
-        
         logger.info('Пользователь успешно авторизован')
         
         // Перенаправляем на страницу заказов
