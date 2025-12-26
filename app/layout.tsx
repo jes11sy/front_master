@@ -3,7 +3,6 @@ import '../styles/globals.css'
 import { ToastProvider } from '@/components/ui/toast'
 import MasterLayout from '@/components/master-layout'
 import { LayoutProvider } from '@/components/layout-context'
-import { ServiceWorkerRegistration } from '@/components/service-worker-registration'
 
 export const metadata: Metadata = {
   title: 'Новые схемы',
@@ -28,7 +27,6 @@ export default function RootLayout({
         <script src="/unregister-sw.js" />
       </head>
       <body>
-        <ServiceWorkerRegistration />
         <LayoutProvider>
           <ToastProvider>
             <MasterLayout>

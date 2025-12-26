@@ -635,43 +635,6 @@ function OrdersContent() {
   )
 }
 
-// Wrapper для очистки IndexedDB ДО рендера
-function OrdersPageWrapper() {
-  const [isCleared, setIsCleared] = useState(false)
-
-  useEffect(() => {
-    const clearIndexedDB = async () => {
-      try {
-        if (typeof window !== 'undefined' && 'indexedDB' in window) {
-          console.log('[OrdersPage] 🗑️ Clearing IndexedDB...')
-          const { clearAllOfflineData } = await import('@/lib/offline-db')
-          await clearAllOfflineData()
-          console.log('[OrdersPage] ✅ IndexedDB cleared')
-        }
-      } catch (e) {
-        console.log('[OrdersPage] IndexedDB clear failed (ignored):', e)
-      } finally {
-        setIsCleared(true)
-      }
-    }
-    clearIndexedDB()
-  }, [])
-
-  // Показываем загрузку пока очищаем
-  if (!isCleared) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#114643'}}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-white mx-auto mb-4"></div>
-          <p className="text-white text-lg">Загрузка...</p>
-        </div>
-      </div>
-    )
-  }
-
-  return <OrdersContent />
-}
-
 export default function OrdersPage() {
-  return <OrdersPageWrapper />
+  return <OrdersContent />
 }

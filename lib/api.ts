@@ -770,54 +770,62 @@ class ApiClient {
   }
 
   async uploadFile(file: File, folder?: string): Promise<any> {
-    const formData = new FormData()
-    formData.append('file', file)
-
     let url = `/files/upload`
     if (folder) {
       url += `?folder=${encodeURIComponent(folder)}`
     }
 
-    // ✅ ИСПРАВЛЕНИЕ: Используем низкоуровневый fetch с credentials для загрузки файлов
-    // request() не подходит т.к. он добавляет Content-Type: application/json
     const fullUrl = `${this.baseURL}${url}`
     
+    // Функция для создания FormData (нужно пересоздавать при retry)
+    const createFormData = () => {
+      const formData = new FormData()
+      formData.append('file', file)
+      return formData
+    }
+    
+    // ✅ ИСПРАВЛЕНИЕ: Используем низкоуровневый fetch с credentials для загрузки файлов
+    // request() не подходит т.к. он добавляет Content-Type: application/json
     const response = await fetch(fullUrl, {
       method: 'POST',
       headers: {
         'X-Use-Cookies': 'true', // Указываем что используем cookie mode
       },
       credentials: 'include', // 🍪 Отправляем httpOnly cookies с токенами
-      body: formData,
+      body: createFormData(), // Создаем новый FormData
     })
 
     // Обработка 401 - пытаемся обновить токен
     if (response.status === 401) {
+      console.log('[API] Upload failed with 401, refreshing token...')
       const refreshed = await this.refreshAccessToken()
       if (refreshed) {
-        // Повторяем запрос после обновления токена
+        console.log('[API] Token refreshed, retrying upload...')
+        // ✅ ИСПРАВЛЕНИЕ: Создаем НОВЫЙ FormData для retry (старый уже использован)
         const retryResponse = await fetch(fullUrl, {
           method: 'POST',
           headers: {
             'X-Use-Cookies': 'true',
           },
           credentials: 'include',
-          body: formData,
+          body: createFormData(), // Создаем новый FormData
         })
         
         if (!retryResponse.ok) {
-          const error = await retryResponse.json()
-          throw new Error(error.message || 'Ошибка загрузки файла')
+          const error = await retryResponse.json().catch(() => ({ message: 'Unknown error' }))
+          throw new Error(error.message || 'Ошибка загрузки файла после обновления токена')
         }
         
+        console.log('[API] Upload successful after token refresh')
         return retryResponse.json()
       } else {
-        throw new Error('Authentication required')
+        console.error('[API] Token refresh failed')
+        throw new Error('Не удалось обновить токен. Пожалуйста, войдите снова.')
       }
     }
 
     if (!response.ok) {
-      const error = await response.json()
+      const error = await response.json().catch(() => ({ message: 'Unknown error' }))
       throw new Error(error.message || 'Ошибка загрузки файла')
     }
 
