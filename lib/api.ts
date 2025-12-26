@@ -773,19 +773,48 @@ class ApiClient {
     const formData = new FormData()
     formData.append('file', file)
 
-    let url = `${this.baseURL}/files/upload`
+    let url = `/files/upload`
     if (folder) {
       url += `?folder=${encodeURIComponent(folder)}`
     }
 
-    const response = await fetch(url, {
+    // ✅ ИСПРАВЛЕНИЕ: Используем низкоуровневый fetch с credentials для загрузки файлов
+    // request() не подходит т.к. он добавляет Content-Type: application/json
+    const fullUrl = `${this.baseURL}${url}`
+    
+    const response = await fetch(fullUrl, {
       method: 'POST',
       headers: {
-        'X-Use-Cookies': 'true',
+        'X-Use-Cookies': 'true', // Указываем что используем cookie mode
       },
-      credentials: 'include',
+      credentials: 'include', // 🍪 Отправляем httpOnly cookies с токенами
       body: formData,
     })
+
+    // Обработка 401 - пытаемся обновить токен
+    if (response.status === 401) {
+      const refreshed = await this.refreshAccessToken()
+      if (refreshed) {
+        // Повторяем запрос после обновления токена
+        const retryResponse = await fetch(fullUrl, {
+          method: 'POST',
+          headers: {
+            'X-Use-Cookies': 'true',
+          },
+          credentials: 'include',
+          body: formData,
+        })
+        
+        if (!retryResponse.ok) {
+          const error = await retryResponse.json()
+          throw new Error(error.message || 'Ошибка загрузки файла')
+        }
+        
+        return retryResponse.json()
+      } else {
+        throw new Error('Authentication required')
+      }
+    }
 
     if (!response.ok) {
       const error = await response.json()
