@@ -106,6 +106,14 @@ function OrdersContent() {
       setLoading(true)
       setError(null)
       
+      console.log('[OrdersPage] Loading orders with params:', {
+        page: currentPage,
+        limit: itemsPerPage,
+        status: statusFilter,
+        city: cityFilter,
+        search: searchTerm
+      })
+      
       const response = await apiClient.getOrders({
         page: currentPage,
         limit: itemsPerPage,
@@ -114,8 +122,12 @@ function OrdersContent() {
         search: searchTerm || undefined,
       } as any)
       
+      console.log('[OrdersPage] Response received:', response)
+      
       // Устанавливаем заказы как есть (бэкенд уже сортирует)
       const ordersData = Array.isArray(response.data?.orders) ? response.data.orders : []
+      
+      console.log('[OrdersPage] Orders data:', ordersData.length, 'orders')
       
       setOrders(ordersData)
       setAllStatuses(['Ожидает', 'Принял', 'В пути', 'В работе', 'Готово', 'Отказ', 'Модерн', 'Незаказ'])
@@ -127,6 +139,7 @@ function OrdersContent() {
       })
       setIsInitialized(true)
     } catch (err) {
+      console.error('[OrdersPage] Error loading orders:', err)
       setError(err instanceof Error ? err.message : 'Ошибка загрузки заказов')
       logger.error('Error loading orders', err)
     } finally {
@@ -187,6 +200,37 @@ function OrdersContent() {
     router.push(`/orders/${orderId}`)
   }
 
+  // Автоматическая очистка кривого кэша при первой загрузке
+  useEffect(() => {
+    const clearBrokenCache = async () => {
+      try {
+        // Очистка Service Worker кэшей
+        if ('caches' in window) {
+          const cacheNames = await caches.keys()
+          if (cacheNames.length > 0) {
+            await Promise.all(cacheNames.map(name => caches.delete(name)))
+            console.log('[OrdersPage] Cleared', cacheNames.length, 'old caches')
+          }
+        }
+
+        // Очистка IndexedDB
+        if ('indexedDB' in window) {
+          try {
+            const { clearAllOfflineData } = await import('@/lib/offline-db')
+            await clearAllOfflineData()
+            console.log('[OrdersPage] Cleared IndexedDB')
+          } catch (e) {
+            // Игнорируем ошибки
+          }
+        }
+      } catch (err) {
+        console.log('[OrdersPage] Cache clear error (ignored):', err)
+      }
+    }
+
+    clearBrokenCache()
+  }, []) // Только при первом монтировании
+
   // Функция для форматирования даты
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -231,9 +275,11 @@ function OrdersContent() {
         <div className="max-w-none mx-auto">
           <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl animate-fade-in" style={{borderColor: '#114643'}}>
             
+            {/* Заголовок */}
+            <h1 className="text-2xl font-bold text-gray-800 mb-6">Мои заказы</h1>
 
             {/* Состояние загрузки */}
-            {loading && (
+            {loading && !error && (
               <div className="text-center py-8 animate-fade-in">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
                 <p className="text-gray-700 font-medium">Загрузка заказов...</p>
@@ -243,7 +289,8 @@ function OrdersContent() {
             {/* Ошибка */}
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 animate-slide-in-left">
-                <p className="text-red-600 font-medium">{error}</p>
+                <p className="text-red-600 font-medium mb-2">❌ Ошибка загрузки</p>
+                <p className="text-red-800 text-sm mb-3">{error}</p>
                 <button 
                   onClick={loadOrders}
                   className="mt-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-200 hover:shadow-md"
