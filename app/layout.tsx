@@ -23,6 +23,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru">
+      <head>
+        {/* 🔴 АГРЕССИВНОЕ УДАЛЕНИЕ SERVICE WORKER - выполняется ДО загрузки React */}
+        <script src="/unregister-sw.js" />
+      </head>
       <body>
         <ServiceWorkerRegistration />
         <LayoutProvider>
