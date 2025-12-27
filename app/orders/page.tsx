@@ -302,7 +302,7 @@ function OrdersContent() {
     <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
       <div className="container mx-auto px-2 sm:px-4 py-8 pt-4 md:pt-8">
         <div className="max-w-none mx-auto">
-          <div className="shadow-2xl rounded-2xl p-6 md:p-16 border" style={{backgroundColor: '#ffffff', borderColor: '#114643'}}>
+          <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl animate-fade-in" style={{borderColor: '#114643'}}>
             
             {/* Заголовок */}
             <h1 className="text-2xl font-bold text-gray-800 mb-6">Мои заказы</h1>

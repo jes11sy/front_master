@@ -25,42 +25,42 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
         localStorage.setItem('auth_check_start', new Date().toISOString())
       }
 
-      try {
-        const response = await apiClient.getProfile()
-        
-        if (response.success && response.data) {
-          setIsAuthenticated(true)
+        try {
+          const response = await apiClient.getProfile()
           
-          // DEBUG
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('auto_login_debug', 'Профиль получен через cookies (автовход не требуется)')
-            localStorage.setItem('auth_check_result', 'success_with_cookies')
+          if (response.success && response.data) {
+            setIsAuthenticated(true)
+            
+            // DEBUG
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('auto_login_debug', 'Профиль получен через cookies (автовход не требуется)')
+              localStorage.setItem('auth_check_result', 'success_with_cookies')
+            }
+          } else {
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('auth_check_result', 'profile_failed_trying_autologin')
+            }
+            // Пробуем автовход
+            const autoLoginSuccess = await tryAutoLogin()
+            if (!autoLoginSuccess) {
+              setIsAuthenticated(false)
+              router.push('/login')
+            } else {
+              setIsAuthenticated(true)
+            }
           }
-        } else {
+        } catch (error) {
+        // Ошибка - пробуем автовход
           if (typeof window !== 'undefined') {
-            localStorage.setItem('auth_check_result', 'profile_failed_trying_autologin')
+            localStorage.setItem('auth_check_result', 'profile_error_trying_autologin: ' + String(error))
           }
-          // Пробуем автовход
+
           const autoLoginSuccess = await tryAutoLogin()
           if (!autoLoginSuccess) {
             setIsAuthenticated(false)
             router.push('/login')
           } else {
             setIsAuthenticated(true)
-          }
-        }
-      } catch (error) {
-        // Ошибка - пробуем автовход
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('auth_check_result', 'profile_error_trying_autologin: ' + String(error))
-        }
-
-        const autoLoginSuccess = await tryAutoLogin()
-        if (!autoLoginSuccess) {
-          setIsAuthenticated(false)
-          router.push('/login')
-        } else {
-          setIsAuthenticated(true)
         }
       }
     }

@@ -59,21 +59,21 @@ const MasterLayout = React.memo<MasterLayoutProps>(({ children }) => {
       
       authCheckInProgress.current = true
 
-      try {
-        const response = await apiClient.getProfile()
-        
-        if (response.success && response.data) {
-          setIsAuthChecked(true)
-          setIsChecking(false)
-        } else {
-          // Профиль не получен - редирект на логин
+        try {
+          const response = await apiClient.getProfile()
+          
+          if (response.success && response.data) {
+            setIsAuthChecked(true)
+            setIsChecking(false)
+          } else {
+            // Профиль не получен - редирект на логин
+            router.replace('/login')
+          }
+        } catch (error) {
+          // Ошибка при проверке - редирект на логин
           router.replace('/login')
-        }
-      } catch (error) {
-        // Ошибка при проверке - редирект на логин
-        router.replace('/login')
-      } finally {
-        authCheckInProgress.current = false
+        } finally {
+          authCheckInProgress.current = false
       }
     }
 
