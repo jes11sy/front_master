@@ -3,10 +3,12 @@ const nextConfig = {
   // Standalone режим для Docker
   output: 'standalone',
   
-  // Отключаем ESLint и TypeScript проверки во время сборки для Docker
-  eslint: {
-    ignoreDuringBuilds: true,
+  // Генерируем уникальный build ID для cache busting
+  generateBuildId: async () => {
+    return `build-${Date.now()}`
   },
+  
+  // Отключаем TypeScript проверки во время сборки для Docker
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -23,6 +25,9 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-slot', '@radix-ui/react-label', '@radix-ui/react-checkbox', '@radix-ui/react-select'],
   },
+  
+  // Turbopack конфигурация (пустая, чтобы использовать дефолтные настройки)
+  turbopack: {},
   
   // Отключаем x-powered-by заголовок
   poweredByHeader: false,

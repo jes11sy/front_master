@@ -1,5 +1,5 @@
-# Используем официальный Node.js образ как базовый
-FROM node:18-alpine AS base
+# Используем официальный Node.js образ как базовый (Node 20+ для Next.js 16)
+FROM node:20-alpine AS base
 
 # Устанавливаем рабочую директорию
 WORKDIR /app
@@ -11,7 +11,7 @@ COPY package*.json ./
 RUN npm ci --only=production
 
 # Этап сборки
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Копируем package.json и package-lock.json
@@ -33,7 +33,7 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN npm run build
 
 # Продакшн этап
-FROM node:18-alpine AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
 
 # Создаем пользователя для безопасности
