@@ -84,8 +84,6 @@ class ApiClient {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'X-Use-Cookies': 'true', // 🍪 Указываем что используем cookie mode
-      'Cache-Control': 'no-cache, no-store, must-revalidate', // Отключаем кэширование API запросов
-      'Pragma': 'no-cache', // Для старых браузеров
       ...(options.headers as Record<string, string>),
     }
 
