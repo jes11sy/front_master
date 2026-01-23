@@ -20,6 +20,16 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false)
+
+  // Минимум 3 секунды показываем видео загрузки
+  useEffect(() => {
+    const minTimer = setTimeout(() => {
+      setMinTimeElapsed(true)
+    }, 3000)
+
+    return () => clearTimeout(minTimer)
+  }, [])
 
   // Проверяем авторизацию при загрузке
   useEffect(() => {
@@ -71,7 +81,8 @@ export default function LoginPage() {
     }
   }
 
-  if (isCheckingAuth) {
+  // Показываем видео минимум 3 секунды
+  if (isCheckingAuth || !minTimeElapsed) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">

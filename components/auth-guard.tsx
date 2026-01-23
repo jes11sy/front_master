@@ -21,6 +21,16 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     }
     return null
   })
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false)
+
+  useEffect(() => {
+    // Минимум 3 секунды показываем видео загрузки
+    const minTimer = setTimeout(() => {
+      setMinTimeElapsed(true)
+    }, 3000)
+
+    return () => clearTimeout(minTimer)
+  }, [])
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -46,8 +56,8 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     checkAuth()
   }, [router])
 
-  // Показываем loading состояние пока проверяем сессию
-  if (isAuthenticated === null) {
+  // Показываем loading состояние минимум 3 секунды пока проверяем сессию
+  if (isAuthenticated === null || !minTimeElapsed) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
