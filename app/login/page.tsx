@@ -17,127 +17,26 @@ export default function LoginPage() {
   const router = useRouter()
   const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
-  const [rememberMe, setRememberMe] = useState(true) // По умолчанию включено для оффлайн режима
+  const [rememberMe, setRememberMe] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
-  const [isCheckingAutoLogin, setIsCheckingAutoLogin] = useState(true)
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
 
-  // ✅ УДАЛЕНО: Не проверяем авторизацию на странице логина
-  // Если пользователь открыл /login - значит хочет залогиниться
-  // Проверка авторизации происходит на защищенных страницах через middleware
-
-  // Проверяем автовход при загрузке страницы логина
+  // Проверяем авторизацию при загрузке
   useEffect(() => {
-    const tryAutoLogin = async () => {
-      // Минимальное время показа видео загрузки - 3 секунды
-      const minLoadingTime = new Promise(resolve => setTimeout(resolve, 3000))
-      const startTime = Date.now()
-      
-      let shouldShowForm = false
-      
+    const checkAuth = async () => {
       try {
-        // 1. Быстрая проверка - есть ли сохраненный пользователь в storage
-        const savedUser = apiClient.getSavedUser()
-        if (savedUser) {
-          // Есть сохраненный пользователь - проверяем сессию через API (с таймаутом)
-          try {
-            const isAlreadyAuthenticated = await apiClient.isAuthenticated()
-            if (isAlreadyAuthenticated) {
-              console.log('[Login] User already authenticated via cookies, redirecting...')
-              // Ждем минимальное время перед редиректом
-              await minLoadingTime
-              router.replace('/orders')
-              return
-            } else {
-              // Сессия невалидна - очищаем старые данные
-              console.log('[Login] Session invalid, clearing old data...')
-              sessionStorage.removeItem('user')
-              localStorage.removeItem('user')
-              shouldShowForm = true
-            }
-          } catch (error) {
-            console.warn('[Login] Auth check failed, clearing data and showing login form:', error)
-            // Ошибка проверки - очищаем данные и показываем форму
-            sessionStorage.removeItem('user')
-            localStorage.removeItem('user')
-            shouldShowForm = true
-          }
-        }
-        
-        // 2. Если нет активной сессии - пробуем автовход через remember-me
-        const { getSavedCredentials } = await import('@/lib/remember-me')
-        const credentials = await getSavedCredentials()
-        
-        // Если есть сохраненные данные - пробуем войти
-        if (!credentials) {
-          // Нет данных - показываем форму
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('auto_login_debug', 'Нет данных для автовхода')
-          }
-          shouldShowForm = true
+        const isAlreadyAuthenticated = await apiClient.isAuthenticated()
+        if (isAlreadyAuthenticated) {
+          router.replace('/orders')
         } else {
-          // Пробуем логин через API
-          console.log('[Login] Attempting auto-login via API')
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('auto_login_debug', 'Попытка автовхода через API')
-            localStorage.setItem('auto_login_last_attempt', new Date().toISOString())
-          }
-          
-          setIsLoading(true)
-          
-          try {
-            const loginResponse = await apiClient.login(
-              credentials.login,
-              credentials.password,
-              true
-            )
-            
-            if (loginResponse && loginResponse.success) {
-              if (typeof window !== 'undefined') {
-                localStorage.setItem('auto_login_debug', 'Автовход успешен!')
-                localStorage.setItem('auto_login_last_success', new Date().toISOString())
-              }
-              // Ждем минимальное время перед редиректом
-              await minLoadingTime
-              router.replace('/orders')
-              return
-            } else {
-              console.warn('[Login] Auto-login failed - invalid credentials')
-              if (typeof window !== 'undefined') {
-                localStorage.setItem('auto_login_debug', 'Автовход не удался: неверные данные')
-              }
-              setIsLoading(false)
-              shouldShowForm = true
-            }
-          } catch (error) {
-            console.error('[Login] Auto-login error:', error)
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('auto_login_debug', 'Ошибка автовхода: ' + String(error))
-            }
-            setIsLoading(false)
-            shouldShowForm = true
-          }
+          setIsCheckingAuth(false)
         }
       } catch (error) {
-        console.error('[Login] Auto-login error:', error)
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('auto_login_debug', 'Ошибка автовхода: ' + String(error))
-        }
-        setIsLoading(false)
-        shouldShowForm = true
-      }
-      
-      // Если нужно показать форму - ждем минимальное время
-      if (shouldShowForm) {
-        const elapsed = Date.now() - startTime
-        const remaining = 3000 - elapsed
-        if (remaining > 0) {
-          await new Promise(resolve => setTimeout(resolve, remaining))
-        }
-        setIsCheckingAutoLogin(false)
+        setIsCheckingAuth(false)
       }
     }
     
-    tryAutoLogin()
+    checkAuth()
   }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -145,9 +44,8 @@ export default function LoginPage() {
     setIsLoading(true)
     
     try {
-      // Санитизация ввода перед отправкой
       const sanitizedLogin = sanitizeString(login)
-      const sanitizedPassword = password // Пароль не санитизируем, но и не логируем
+      const sanitizedPassword = password 
       
       if (!sanitizedLogin || !sanitizedPassword) {
         toast.error('Пожалуйста, заполните все поля')
@@ -159,14 +57,11 @@ export default function LoginPage() {
       
       if (response.success) {
         logger.info('Пользователь успешно авторизован')
-        
-        // Перенаправляем на страницу заказов
         router.push('/orders')
       } else {
         toast.error(response.error || 'Ошибка авторизации')
       }
     } catch (error: any) {
-      // Не показываем ошибку если это SESSION_EXPIRED (уже перенаправляет на логин)
       const errorMessage = getErrorMessage(error, 'Ошибка авторизации')
       if (errorMessage) {
         toast.error(errorMessage)
@@ -176,20 +71,12 @@ export default function LoginPage() {
     }
   }
 
-  // Показываем видео загрузки во время проверки автовхода (минимум 3 сек)
-  if (isCheckingAutoLogin) {
+  if (isCheckingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
-          <video 
-            autoPlay 
-            muted 
-            loop 
-            playsInline
-            className="w-80 h-80 mx-auto object-contain"
-          >
-            <source src="/video/loading.mp4" type="video/mp4" />
-          </video>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#114643] mx-auto mb-4"></div>
+          <p className="text-[#114643]">Проверка авторизации...</p>
         </div>
       </div>
     )
