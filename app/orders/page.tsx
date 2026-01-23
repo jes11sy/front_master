@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from 'next/navigation'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { apiClient } from '@/lib/api'
 import { logger } from '@/lib/logger'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -130,22 +130,32 @@ function OrdersContent() {
   }
 
   // Получаем уникальные значения для фильтров из загруженных данных
-  // Оборачиваем в try-catch на случай кривых данных
-  let safeOrders: Order[] = []
-  let sortedOrders: Order[] = []
-  let uniqueCities: string[] = []
-  
-  try {
-    safeOrders = Array.isArray(orders) ? orders : []
-    // Применяем сортировку на клиенте
-    sortedOrders = sortOrders(safeOrders)
-    uniqueCities = Array.from(new Set(safeOrders.map(order => order.city || 'Неизвестно')))
-  } catch (err) {
-    console.error('[OrdersPage] Error processing orders:', err)
-    setRenderError('Ошибка обработки данных заказов. Попробуйте обновить страницу.')
-    sortedOrders = []
-    uniqueCities = []
-  }
+  // Используем useMemo для безопасной обработки данных
+  const { sortedOrders, uniqueCities, processingError } = useMemo(() => {
+    try {
+      const safeOrders = Array.isArray(orders) ? orders : []
+      // Применяем сортировку на клиенте
+      const sorted = sortOrders(safeOrders)
+      const cities = Array.from(new Set(safeOrders.map(order => order.city || 'Неизвестно')))
+      return { sortedOrders: sorted, uniqueCities: cities, processingError: null }
+    } catch (err) {
+      console.error('[OrdersPage] Error processing orders:', err)
+      return { 
+        sortedOrders: [] as Order[], 
+        uniqueCities: [] as string[], 
+        processingError: 'Ошибка обработки данных заказов. Попробуйте обновить страницу.' 
+      }
+    }
+  }, [orders])
+
+  // Устанавливаем renderError через useEffect (не во время рендера)
+  useEffect(() => {
+    if (processingError) {
+      setRenderError(processingError)
+    } else {
+      setRenderError(null) // Очищаем ошибку если данные обработались успешно
+    }
+  }, [processingError])
 
   // Сброс фильтров
   const resetFilters = () => {
