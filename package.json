@@ -8,6 +8,10 @@
     "start": "next start -p 3003",
     "lint": "next lint"
   },
+  "overrides": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0"
+  },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-checkbox": "^1.2.5",
