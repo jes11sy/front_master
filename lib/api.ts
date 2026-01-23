@@ -84,6 +84,8 @@ class ApiClient {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'X-Use-Cookies': 'true', // 🍪 Указываем что используем cookie mode
+      'Cache-Control': 'no-cache, no-store, must-revalidate', // Отключаем кэширование API запросов
+      'Pragma': 'no-cache', // Для старых браузеров
       ...(options.headers as Record<string, string>),
     }
 
@@ -101,6 +103,7 @@ class ApiClient {
           headers,
           credentials: 'include', // 🍪 Отправляем cookies с каждым запросом
           signal: controller.signal,
+          cache: 'no-store', // Отключаем кэширование на уровне fetch
         }).finally(() => clearTimeout(timeoutId))
 
         // Проверяем, что ответ является JSON
