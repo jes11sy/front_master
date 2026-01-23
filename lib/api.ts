@@ -225,8 +225,7 @@ class ApiClient {
         body: JSON.stringify({ 
           login, 
           password, 
-          role: 'master', // Master фронтенд всегда использует роль master
-          rememberMe: remember // Передаем флаг на сервер
+          role: 'master' // Master фронтенд всегда использует роль master
         }),
       })
 
