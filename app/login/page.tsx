@@ -29,8 +29,32 @@ export default function LoginPage() {
   useEffect(() => {
     const tryAutoLogin = async () => {
       try {
-        const { getSavedCredentials } = await import('@/lib/remember-me')
+        // 1. Быстрая проверка - есть ли сохраненный пользователь в storage
+        const savedUser = apiClient.getSavedUser()
+        if (savedUser) {
+          // Есть сохраненный пользователь - проверяем сессию через API (с таймаутом)
+          try {
+            const isAlreadyAuthenticated = await apiClient.isAuthenticated()
+            if (isAlreadyAuthenticated) {
+              console.log('[Login] User already authenticated via cookies, redirecting...')
+              router.replace('/orders')
+              return
+            } else {
+              // Сессия невалидна - очищаем старые данные
+              console.log('[Login] Session invalid, clearing old data...')
+              sessionStorage.removeItem('user')
+              localStorage.removeItem('user')
+            }
+          } catch (error) {
+            console.warn('[Login] Auth check failed, clearing data and showing login form:', error)
+            // Ошибка проверки - очищаем данные и показываем форму
+            sessionStorage.removeItem('user')
+            localStorage.removeItem('user')
+          }
+        }
         
+        // 2. Если нет активной сессии - пробуем автовход через remember-me
+        const { getSavedCredentials } = await import('@/lib/remember-me')
         const credentials = await getSavedCredentials()
         
         // Если есть сохраненные данные - пробуем войти
@@ -205,7 +229,7 @@ export default function LoginPage() {
                   style={{accentColor: '#114643'}}
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-600 hover:text-gray-800 transition-colors duration-200 cursor-pointer">
-                  Запомнить меня (для оффлайн работы)
+                  Запомнить меня
                 </label>
               </div>
               

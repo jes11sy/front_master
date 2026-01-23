@@ -376,6 +376,40 @@ class ApiClient {
     }
   }
 
+  /**
+   * Получить сохраненного пользователя из localStorage/sessionStorage
+   * Для быстрой проверки перед запросом к API
+   */
+  getSavedUser(): any | null {
+    if (typeof window === 'undefined') return null
+    const userStr = sessionStorage.getItem('user') || localStorage.getItem('user')
+    if (!userStr) return null
+    try {
+      return JSON.parse(userStr)
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * 🍪 Проверка аутентификации через API
+   * Нельзя проверить httpOnly cookies на клиенте - нужен запрос к серверу
+   * Добавлен таймаут 5 секунд для PWA/мобильных устройств
+   */
+  async isAuthenticated(): Promise<boolean> {
+    try {
+      // Таймаут 5 секунд для проверки авторизации
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Auth check timeout')), 5000)
+      )
+      
+      await Promise.race([this.getProfile(), timeoutPromise])
+      return true
+    } catch {
+      return false
+    }
+  }
+
   async getMasterById(id: string) {
     const response = await this.request<any>(`/masters/${id}`)
     return response.data
