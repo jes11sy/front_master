@@ -17,7 +17,6 @@ export default function LoginPage() {
   const router = useRouter()
   const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
-  const [rememberMe, setRememberMe] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const [minTimeElapsed, setMinTimeElapsed] = useState(false)
@@ -63,7 +62,7 @@ export default function LoginPage() {
         return
       }
       
-      const response = await apiClient.login(sanitizedLogin, sanitizedPassword, rememberMe)
+      const response = await apiClient.login(sanitizedLogin, sanitizedPassword)
       
       if (response.success) {
         logger.info('Пользователь успешно авторизован')
@@ -146,21 +145,6 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   maxLength={100}
                 />
-              </div>
-              
-              <div className="flex items-center animate-fade-in-delayed">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 rounded border-2 border-gray-300 focus:ring-2 transition-all duration-200"
-                  style={{accentColor: '#114643'}}
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-600 hover:text-gray-800 transition-colors duration-200 cursor-pointer">
-                  Запомнить меня
-                </label>
               </div>
               
               <Button 

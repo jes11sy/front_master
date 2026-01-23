@@ -14,39 +14,32 @@ interface AuthGuardProps {
  */
 const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const router = useRouter()
-  // Оптимистичная проверка: если есть данные в localStorage, считаем что авторизован (пока проверяем API)
+  // Оптимистичная проверка: если есть данные в localStorage, показываем контент сразу
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(() => {
     if (typeof window !== 'undefined') {
-      return !!apiClient.getSavedUser()
+      return apiClient.getSavedUser() ? true : null
     }
     return null
   })
-  const [minTimeElapsed, setMinTimeElapsed] = useState(false)
 
   useEffect(() => {
-    // Минимум 3 секунды показываем видео загрузки
-    const minTimer = setTimeout(() => {
-      setMinTimeElapsed(true)
-    }, 3000)
+    let isMounted = true
 
-    return () => clearTimeout(minTimer)
-  }, [])
-
-  useEffect(() => {
     const checkAuth = async () => {
       try {
         const response = await apiClient.getProfile()
+        
+        if (!isMounted) return
         
         if (response.success && response.data) {
           setIsAuthenticated(true)
         } else {
           setIsAuthenticated(false)
-          // Очищаем localStorage, так как сессия невалидна
           apiClient.clearToken()
           router.replace('/login')
         }
-      } catch (error) {
-        console.error('Auth check failed:', error)
+      } catch {
+        if (!isMounted) return
         setIsAuthenticated(false)
         apiClient.clearToken()
         router.replace('/login')
@@ -54,10 +47,14 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     }
 
     checkAuth()
+
+    return () => {
+      isMounted = false
+    }
   }, [router])
 
-  // Показываем loading состояние минимум 3 секунды пока проверяем сессию
-  if (isAuthenticated === null || !minTimeElapsed) {
+  // Показываем loading только если нет сохранённого пользователя
+  if (isAuthenticated === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">

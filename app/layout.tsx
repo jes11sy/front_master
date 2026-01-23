@@ -3,6 +3,7 @@ import '../styles/globals.css'
 import { ToastProvider } from '@/components/ui/toast'
 import MasterLayout from '@/components/master-layout'
 import { LayoutProvider } from '@/components/layout-context'
+import ClientLayout from '@/components/client-layout'
 
 export const metadata: Metadata = {
   title: 'Новые схемы',
@@ -30,7 +31,9 @@ export default function RootLayout({
         <LayoutProvider>
           <ToastProvider>
             <MasterLayout>
-              {children}
+              <ClientLayout>
+                {children}
+              </ClientLayout>
             </MasterLayout>
           </ToastProvider>
         </LayoutProvider>

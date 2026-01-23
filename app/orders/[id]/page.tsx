@@ -61,13 +61,9 @@ interface Call {
 }
 
 function OrderDetailPageContent() {
-  console.log('[OrderDetailPage] Component render started')
-  
   const router = useRouter()
   const params = useParams()
   const id = params.id as string
-  
-  console.log('[OrderDetailPage] Order ID:', id)
   const [order, setOrder] = useState<Order | null>(null)
   const [calls, setCalls] = useState<Call[]>([])
   const [recordingUrls, setRecordingUrls] = useState<{ [key: number]: string }>({})
@@ -114,25 +110,19 @@ function OrderDetailPageContent() {
 
   // Функция для загрузки звонков
   const fetchCalls = async (orderId: string) => {
-    console.log('[OrderDetail] fetchCalls called for order:', orderId)
-    
     // Предотвращаем дублирующиеся запросы (для React Strict Mode)
     if (callsFetchedRef.current.has(orderId)) {
-      console.log('[OrderDetail] Calls already fetched for order', orderId, '- skipping duplicate request')
       return
     }
     
-    console.log('[OrderDetail] Making API call to /calls/order/' + orderId)
     callsFetchedRef.current.add(orderId)
     
     try {
       const response = await apiClient.getCallsByOrderId(orderId)
       if (response.success && response.data) {
-        console.log('[OrderDetail] Calls fetched successfully:', response.data.length, 'calls')
         setCalls(response.data)
       }
-    } catch (error) {
-      console.error('[OrderDetail] Error fetching calls:', error)
+    } catch {
       // Тихо обрабатываем ошибку загрузки звонков
       // Убираем из set при ошибке, чтобы можно было повторить
       callsFetchedRef.current.delete(orderId)
@@ -168,7 +158,6 @@ function OrderDetailPageContent() {
       
       // Предотвращаем дублирующиеся запросы (для React Strict Mode)
       if (orderFetchedRef.current) {
-        console.log('[OrderDetail] Order already fetched - skipping duplicate request')
         return
       }
       
@@ -266,11 +255,14 @@ function OrderDetailPageContent() {
 
   // Очистка blob URL при размонтировании компонента
   useEffect(() => {
+    const bsoCleanup = bsoUpload.cleanup
+    const expenditureCleanup = expenditureUpload.cleanup
+    
     return () => {
-      bsoUpload.cleanup()
-      expenditureUpload.cleanup()
+      bsoCleanup()
+      expenditureCleanup()
     }
-  }, [])
+  }, [bsoUpload.cleanup, expenditureUpload.cleanup])
 
   // Функция для принятия заказа
   const handleAcceptOrder = async () => {
@@ -349,19 +341,30 @@ function OrderDetailPageContent() {
   const saveFiles = async () => {
     if (!order) return
     
+    const failedUploads: string[] = []
+    
     try {
       // Загружаем новые BSO файлы
       const newBsoFiles = bsoUpload.files.filter(f => f.file !== null).map(f => f.file!);
       let bsoDocPaths: string[] = [];
       
       if (newBsoFiles.length > 0) {
-        const bsoResults = await Promise.all(
+        const bsoResults = await Promise.allSettled(
           newBsoFiles.map(file => apiClient.uploadFile(file, 'director/orders/bso_doc'))
         );
+        
+        // Проверяем успешные и неуспешные загрузки
+        bsoResults.forEach((result, index) => {
+          if (result.status === 'rejected' || (result.status === 'fulfilled' && !result.value?.success)) {
+            failedUploads.push(`Договор БСО: ${newBsoFiles[index].name}`)
+          }
+        })
+        
         // ВАЖНО: Используем KEY, а не URL!
         const newBsoPaths = bsoResults
-          .filter(res => res.success && res.data?.key)
-          .map(res => res.data!.key);
+          .filter((res): res is PromiseFulfilledResult<any> => 
+            res.status === 'fulfilled' && res.value?.success && res.value?.data?.key)
+          .map(res => res.value.data.key);
         
         // Получаем существующие пути
         const existingBsoPaths = bsoUpload.files
@@ -380,13 +383,22 @@ function OrderDetailPageContent() {
       let expenditureDocPaths: string[] = [];
       
       if (newExpenditureFiles.length > 0) {
-        const expenditureResults = await Promise.all(
+        const expenditureResults = await Promise.allSettled(
           newExpenditureFiles.map(file => apiClient.uploadFile(file, 'director/orders/expenditure_doc'))
         );
+        
+        // Проверяем успешные и неуспешные загрузки
+        expenditureResults.forEach((result, index) => {
+          if (result.status === 'rejected' || (result.status === 'fulfilled' && !result.value?.success)) {
+            failedUploads.push(`Чек расхода: ${newExpenditureFiles[index].name}`)
+          }
+        })
+        
         // ВАЖНО: Используем KEY, а не URL!
         const newExpenditurePaths = expenditureResults
-          .filter(res => res.success && res.data?.key)
-          .map(res => res.data!.key);
+          .filter((res): res is PromiseFulfilledResult<any> => 
+            res.status === 'fulfilled' && res.value?.success && res.value?.data?.key)
+          .map(res => res.value.data.key);
         
         const existingExpenditurePaths = expenditureUpload.files
           .filter(f => f.file === null)
@@ -397,6 +409,12 @@ function OrderDetailPageContent() {
         expenditureDocPaths = expenditureUpload.files
           .filter(f => f.file === null)
           .map(f => f.preview);
+      }
+      
+      // Показываем ошибки если есть
+      if (failedUploads.length > 0) {
+        setNotifications([`Не удалось загрузить: ${failedUploads.join(', ')}`])
+        setTimeout(() => setNotifications([]), 5000)
       }
       
       // Обновляем заказ с массивами путей только если есть изменения
@@ -413,7 +431,6 @@ function OrderDetailPageContent() {
         }
       }
     } catch (error) {
-      console.error('Error saving files:', error);
       throw error;
     }
   }

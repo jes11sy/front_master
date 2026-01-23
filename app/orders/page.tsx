@@ -1,10 +1,11 @@
 "use client"
 
 import { useRouter } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { apiClient } from '@/lib/api'
 import { logger } from '@/lib/logger'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { sortOrders } from '@/lib/order-sort'
 
 interface Order {
   id: number
@@ -35,49 +36,10 @@ interface Order {
   }
 }
 
-// Функция для сортировки заказов по статусам и датам
-const sortOrders = (orders: Order[]) => {
-  // Порядок статусов
-  const statusOrder: Record<string, number> = {
-    'Ожидает': 1,
-    'Принял': 2,
-    'В пути': 3,
-    'В работе': 4,
-    'Модерн': 5,
-    'Готово': 6,
-    'Отказ': 7,
-    'Незаказ': 8
-  }
-
-  return [...orders].sort((a, b) => {
-    // Сначала сортируем по статусу
-    const statusA = statusOrder[a.statusOrder] || 999
-    const statusB = statusOrder[b.statusOrder] || 999
-    
-    if (statusA !== statusB) {
-      return statusA - statusB
-    }
-
-    // Внутри статуса сортируем по дате
-    // Для статусов Готово, Отказ, Незаказ - по дате закрытия
-    // Для остальных - по дате встречи
-    const useClosingDate = ['Готово', 'Отказ', 'Незаказ'].includes(a.statusOrder)
-    
-    const dateA = useClosingDate 
-      ? (a.closingData || a.dateMeeting)
-      : a.dateMeeting
-    const dateB = useClosingDate 
-      ? (b.closingData || b.dateMeeting)
-      : b.dateMeeting
-
-    return new Date(dateA).getTime() - new Date(dateB).getTime()
-  })
-}
-
 function OrdersContent() {
   const router = useRouter()
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(15)
+  const [itemsPerPage] = useState(15)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [cityFilter, setCityFilter] = useState('')
@@ -85,50 +47,36 @@ function OrdersContent() {
 
   // Состояние для данных
   const [orders, setOrders] = useState<Order[]>([])
-  const [allStatuses, setAllStatuses] = useState<string[]>([])
+  const [allStatuses] = useState<string[]>(['Ожидает', 'Принял', 'В пути', 'В работе', 'Готово', 'Отказ', 'Модерн', 'Незаказ'])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 10,
+    limit: 15,
     total: 0,
-    totalPages: 0
+    totalPages: 1
   })
-  const [isInitialized, setIsInitialized] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
   const [renderError, setRenderError] = useState<string | null>(null)
   
   // Таймаут для загрузки - если больше 10 секунд, принудительно показываем контент
   useEffect(() => {
     if (loading) {
       const timeout = setTimeout(() => {
-        console.log('[OrdersPage] Force stop loading after 10s')
         setLoading(false)
         if (orders.length === 0) {
           setError('Не удалось загрузить заказы. Попробуйте обновить страницу.')
         }
-      }, 10000) // 10 секунд
+      }, 10000)
       
       return () => clearTimeout(timeout)
     }
   }, [loading, orders.length])
 
   // Загрузка данных
-  const loadOrders = async () => {
-    if (isLoading) return
-    
+  const loadOrders = useCallback(async () => {
     try {
-      setIsLoading(true)
       setLoading(true)
       setError(null)
-      
-      console.log('[OrdersPage] Loading orders with params:', {
-        page: currentPage,
-        limit: itemsPerPage,
-        status: statusFilter,
-        city: cityFilter,
-        search: searchTerm
-      })
       
       const response = await apiClient.getOrders({
         page: currentPage,
@@ -138,66 +86,38 @@ function OrdersContent() {
         search: searchTerm || undefined,
       } as any)
       
-      console.log('[OrdersPage] Response received:', response)
-      
       // Проверяем успешность ответа
       if (!response.success) {
         throw new Error(response.error || 'Ошибка загрузки заказов')
       }
       
-      // Устанавливаем заказы как есть (бэкенд уже сортирует)
       const ordersData = Array.isArray(response.data?.orders) ? response.data.orders : []
       
-      console.log('[OrdersPage] Orders data:', ordersData.length, 'orders')
-      console.log('[OrdersPage] First order:', ordersData[0])
-      
       setOrders(ordersData)
-      setAllStatuses(['Ожидает', 'Принял', 'В пути', 'В работе', 'Готово', 'Отказ', 'Модерн', 'Незаказ'])
       setPagination(response.data?.pagination || {
         page: 1,
         limit: itemsPerPage,
-        total: 0,
-        totalPages: 0
+        total: ordersData.length,
+        totalPages: 1
       })
-      setIsInitialized(true)
-      
-      // Принудительно убираем loading если данные пришли
-      if (ordersData.length >= 0) {
-        setLoading(false)
-      }
     } catch (err) {
-      console.error('[OrdersPage] Error loading orders:', err)
       setError(err instanceof Error ? err.message : 'Ошибка загрузки заказов')
       logger.error('Error loading orders', err)
     } finally {
       setLoading(false)
-      setIsLoading(false)
     }
-  }
+  }, [currentPage, itemsPerPage, statusFilter, cityFilter, searchTerm])
 
-  // Загружаем данные при изменении фильтров и itemsPerPage (исключаем searchTerm - у него свой дебаунс)
+  // Загружаем данные при изменении фильтров
   useEffect(() => {
-    if (itemsPerPage > 0) {
-      loadOrders()
-    }
-  }, [currentPage, statusFilter, cityFilter, itemsPerPage])
+    loadOrders()
+  }, [loadOrders])
 
   // Обработчики фильтров
   const handleSearchChange = (value: string) => {
     setSearchTerm(value)
     setCurrentPage(1) // Сбрасываем на первую страницу при поиске
   }
-
-  // Дебаунс для поиска
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (searchTerm !== '') {
-        loadOrders()
-      }
-    }, 500) // 500ms задержка
-
-    return () => clearTimeout(timeoutId)
-  }, [searchTerm])
 
   const handleStatusChange = (value: string) => {
     setStatusFilter(value)

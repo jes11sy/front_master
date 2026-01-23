@@ -1,6 +1,5 @@
 // API клиент для работы с бэкендом
 import { logger } from './logger'
-import { sortOrders } from './order-sort'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.lead-schem.ru/api/v1'
 
@@ -76,7 +75,7 @@ class ApiClient {
   private async request<T>(
     endpoint: string,
     options: RequestInit = {},
-    retries: number = 3,
+    retries: number = 2,
     isRetryAfterRefresh: boolean = false
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`
@@ -217,7 +216,7 @@ class ApiClient {
   }
 
     // 🍪 Аутентификация через httpOnly cookies
-    async login(login: string, password: string, remember: boolean = false) {
+    async login(login: string, password: string) {
       const response = await this.request<{
         user: any
       }>('/auth/login', {
@@ -692,18 +691,16 @@ class ApiClient {
 
     // Обработка 401 - пытаемся обновить токен
     if (response.status === 401) {
-      console.log('[API] Upload failed with 401, refreshing token...')
       const refreshed = await this.refreshAccessToken()
       if (refreshed) {
-        console.log('[API] Token refreshed, retrying upload...')
-        // ✅ ИСПРАВЛЕНИЕ: Создаем НОВЫЙ FormData для retry (старый уже использован)
+        // Создаем НОВЫЙ FormData для retry (старый уже использован)
         const retryResponse = await fetch(fullUrl, {
           method: 'POST',
           headers: {
             'X-Use-Cookies': 'true',
           },
           credentials: 'include',
-          body: createFormData(), // Создаем новый FormData
+          body: createFormData(),
         })
         
         if (!retryResponse.ok) {
@@ -711,10 +708,9 @@ class ApiClient {
           throw new Error(error.message || 'Ошибка загрузки файла после обновления токена')
         }
         
-        console.log('[API] Upload successful after token refresh')
         return retryResponse.json()
       } else {
-        console.error('[API] Token refresh failed')
+        logger.error('Token refresh failed during file upload')
         throw new Error('Не удалось обновить токен. Пожалуйста, войдите снова.')
       }
     }

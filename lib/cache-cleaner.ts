@@ -6,6 +6,8 @@
 let isClearing = false
 let hasCleared = false
 
+const isDev = process.env.NODE_ENV === 'development'
+
 /**
  * Очищает все кэши приложения
  * Выполняется только один раз за сессию
@@ -13,26 +15,23 @@ let hasCleared = false
 export async function clearAllCaches(): Promise<void> {
   // Если уже очищали в этой сессии - пропускаем
   if (hasCleared) {
-    console.log('[CacheCleaner] Already cleared in this session, skipping')
     return
   }
 
   // Если уже идет очистка - пропускаем
   if (isClearing) {
-    console.log('[CacheCleaner] Already clearing, skipping')
     return
   }
 
   try {
     isClearing = true
-    console.log('[CacheCleaner] Starting cache cleanup...')
 
     // 1. Очистка Service Worker кэшей
     if (typeof window !== 'undefined' && 'caches' in window) {
       const cacheNames = await caches.keys()
       if (cacheNames.length > 0) {
         await Promise.all(cacheNames.map(name => caches.delete(name)))
-        console.log('[CacheCleaner] ✅ Deleted', cacheNames.length, 'SW caches')
+        if (isDev) console.log('[CacheCleaner] Deleted', cacheNames.length, 'SW caches')
       }
     }
 
@@ -45,9 +44,8 @@ export async function clearAllCaches(): Promise<void> {
             indexedDB.deleteDatabase(db.name)
           }
         }
-        console.log('[CacheCleaner] ✅ Cleared IndexedDB')
-      } catch (e) {
-        console.log('[CacheCleaner] IndexedDB clear skipped:', e)
+      } catch {
+        // Silently ignore IndexedDB errors
       }
     }
 
@@ -56,14 +54,13 @@ export async function clearAllCaches(): Promise<void> {
       const registrations = await navigator.serviceWorker.getRegistrations()
       if (registrations.length > 0) {
         await Promise.all(registrations.map(reg => reg.unregister()))
-        console.log('[CacheCleaner] ✅ Unregistered', registrations.length, 'service workers')
+        if (isDev) console.log('[CacheCleaner] Unregistered', registrations.length, 'service workers')
       }
     }
 
     hasCleared = true
-    console.log('[CacheCleaner] ✅ Cache cleanup completed successfully')
-  } catch (err) {
-    console.error('[CacheCleaner] ❌ Error during cache cleanup:', err)
+  } catch {
+    // Silently ignore cleanup errors
   } finally {
     isClearing = false
   }
