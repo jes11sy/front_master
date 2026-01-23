@@ -113,7 +113,9 @@ class ApiClient {
         const data = await response.json()
 
         // Обрабатываем 401 ошибку - пытаемся обновить токен
-        if (response.status === 401 && !isRetryAfterRefresh && endpoint !== '/auth/refresh' && endpoint !== '/auth/login') {
+        // НО: Если мы на странице /login, просто возвращаем ошибку без refresh (избегаем бесконечного цикла)
+        const isOnLoginPage = typeof window !== 'undefined' && window.location.pathname.includes('/login')
+        if (response.status === 401 && !isRetryAfterRefresh && endpoint !== '/auth/refresh' && endpoint !== '/auth/login' && !isOnLoginPage) {
           
           // Если уже идет процесс обновления, ждем его завершения
           if (this.isRefreshing) {
@@ -144,8 +146,9 @@ class ApiClient {
               this.onTokenRefreshed()
               this.clearToken()
               
-              // Перенаправляем на страницу логина
-              if (typeof window !== 'undefined') {
+              // Перенаправляем на страницу логина ТОЛЬКО если мы НЕ уже на /login
+              // Это предотвращает бесконечный цикл редиректов
+              if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
                 window.location.href = '/login'
               }
               
@@ -158,7 +161,8 @@ class ApiClient {
             this.onTokenRefreshed()
             this.clearToken()
             
-            if (typeof window !== 'undefined') {
+            // Перенаправляем на страницу логина ТОЛЬКО если мы НЕ уже на /login
+            if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
               window.location.href = '/login'
             }
             
@@ -167,10 +171,11 @@ class ApiClient {
           }
         }
 
-        // 🚫 НЕ повторяем запросы с 403/404 ошибками
+        // 🚫 НЕ повторяем запросы с 401/403/404 ошибками
         if (!response.ok) {
-          // Для 403 и 404 сразу выбрасываем ошибку без retry
-          if (response.status === 403 || response.status === 404) {
+          // Для 401, 403 и 404 сразу выбрасываем ошибку без retry
+          // 401 тут означает что мы на странице login и не нужно пытаться обновить токен
+          if (response.status === 401 || response.status === 403 || response.status === 404) {
             throw new Error(data.error || data.message || `Ошибка ${response.status}`)
           }
           
