@@ -140,6 +140,8 @@ class ApiClient {
               return this.request<T>(endpoint, options, retries, true)
             } else {
               this.isRefreshing = false
+              // Оповещаем подписчиков даже при неудаче, чтобы они не зависли
+              this.onTokenRefreshed()
               this.clearToken()
               
               // Перенаправляем на страницу логина
@@ -152,6 +154,8 @@ class ApiClient {
             }
           } catch (refreshError: any) {
             this.isRefreshing = false
+            // Оповещаем подписчиков даже при ошибке
+            this.onTokenRefreshed()
             this.clearToken()
             
             if (typeof window !== 'undefined') {
