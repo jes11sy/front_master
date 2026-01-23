@@ -223,15 +223,11 @@ class ApiClient {
     // 🍪 Токены устанавливаются автоматически в httpOnly cookies на сервере
     
     // Сохраняем user для быстрой проверки автологина
+    // ВСЕГДА сохраняем в localStorage - иначе автологин не работает после закрытия браузера
     if (response.success && response.data?.user) {
       if (typeof window !== 'undefined') {
-        // Всегда сохраняем в sessionStorage для текущей сессии
         sessionStorage.setItem('user', JSON.stringify(response.data.user))
-        
-        // Если "Запомнить меня" - сохраняем также в localStorage
-        if (remember) {
-          localStorage.setItem('user', JSON.stringify(response.data.user))
-        }
+        localStorage.setItem('user', JSON.stringify(response.data.user))
       }
     }
 
