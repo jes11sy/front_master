@@ -28,6 +28,12 @@ export default function LoginPage() {
   // Проверяем автовход при загрузке страницы логина
   useEffect(() => {
     const tryAutoLogin = async () => {
+      // Минимальное время показа видео загрузки - 3 секунды
+      const minLoadingTime = new Promise(resolve => setTimeout(resolve, 3000))
+      const startTime = Date.now()
+      
+      let shouldShowForm = false
+      
       try {
         // 1. Быстрая проверка - есть ли сохраненный пользователь в storage
         const savedUser = apiClient.getSavedUser()
@@ -37,6 +43,8 @@ export default function LoginPage() {
             const isAlreadyAuthenticated = await apiClient.isAuthenticated()
             if (isAlreadyAuthenticated) {
               console.log('[Login] User already authenticated via cookies, redirecting...')
+              // Ждем минимальное время перед редиректом
+              await minLoadingTime
               router.replace('/orders')
               return
             } else {
@@ -44,12 +52,14 @@ export default function LoginPage() {
               console.log('[Login] Session invalid, clearing old data...')
               sessionStorage.removeItem('user')
               localStorage.removeItem('user')
+              shouldShowForm = true
             }
           } catch (error) {
             console.warn('[Login] Auth check failed, clearing data and showing login form:', error)
             // Ошибка проверки - очищаем данные и показываем форму
             sessionStorage.removeItem('user')
             localStorage.removeItem('user')
+            shouldShowForm = true
           }
         }
         
@@ -63,48 +73,49 @@ export default function LoginPage() {
           if (typeof window !== 'undefined') {
             localStorage.setItem('auto_login_debug', 'Нет данных для автовхода')
           }
-          setIsCheckingAutoLogin(false)
-          return
-        }
-
-        // Пробуем логин через API
-        console.log('[Login] Attempting auto-login via API')
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('auto_login_debug', 'Попытка автовхода через API')
-          localStorage.setItem('auto_login_last_attempt', new Date().toISOString())
-        }
-        
-        setIsLoading(true)
-        
-        try {
-          const loginResponse = await apiClient.login(
-            credentials.login,
-            credentials.password,
-            true
-          )
+          shouldShowForm = true
+        } else {
+          // Пробуем логин через API
+          console.log('[Login] Attempting auto-login via API')
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('auto_login_debug', 'Попытка автовхода через API')
+            localStorage.setItem('auto_login_last_attempt', new Date().toISOString())
+          }
           
-          if (loginResponse && loginResponse.success) {
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('auto_login_debug', 'Автовход успешен!')
-              localStorage.setItem('auto_login_last_success', new Date().toISOString())
+          setIsLoading(true)
+          
+          try {
+            const loginResponse = await apiClient.login(
+              credentials.login,
+              credentials.password,
+              true
+            )
+            
+            if (loginResponse && loginResponse.success) {
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('auto_login_debug', 'Автовход успешен!')
+                localStorage.setItem('auto_login_last_success', new Date().toISOString())
+              }
+              // Ждем минимальное время перед редиректом
+              await minLoadingTime
+              router.replace('/orders')
+              return
+            } else {
+              console.warn('[Login] Auto-login failed - invalid credentials')
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('auto_login_debug', 'Автовход не удался: неверные данные')
+              }
+              setIsLoading(false)
+              shouldShowForm = true
             }
-            router.replace('/orders')
-            return
-          } else {
-            console.warn('[Login] Auto-login failed - invalid credentials')
+          } catch (error) {
+            console.error('[Login] Auto-login error:', error)
             if (typeof window !== 'undefined') {
-              localStorage.setItem('auto_login_debug', 'Автовход не удался: неверные данные')
+              localStorage.setItem('auto_login_debug', 'Ошибка автовхода: ' + String(error))
             }
             setIsLoading(false)
-            setIsCheckingAutoLogin(false)
+            shouldShowForm = true
           }
-        } catch (error) {
-          console.error('[Login] Auto-login error:', error)
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('auto_login_debug', 'Ошибка автовхода: ' + String(error))
-          }
-          setIsLoading(false)
-          setIsCheckingAutoLogin(false)
         }
       } catch (error) {
         console.error('[Login] Auto-login error:', error)
@@ -112,6 +123,16 @@ export default function LoginPage() {
           localStorage.setItem('auto_login_debug', 'Ошибка автовхода: ' + String(error))
         }
         setIsLoading(false)
+        shouldShowForm = true
+      }
+      
+      // Если нужно показать форму - ждем минимальное время
+      if (shouldShowForm) {
+        const elapsed = Date.now() - startTime
+        const remaining = 3000 - elapsed
+        if (remaining > 0) {
+          await new Promise(resolve => setTimeout(resolve, remaining))
+        }
         setIsCheckingAutoLogin(false)
       }
     }
@@ -155,16 +176,20 @@ export default function LoginPage() {
     }
   }
 
-  // Показываем загрузку во время проверки автовхода
+  // Показываем видео загрузки во время проверки автовхода (минимум 3 сек)
   if (isCheckingAutoLogin) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#114643'}}>
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
-          <svg className="animate-spin h-12 w-12 text-white mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <p className="text-white text-lg">Проверка авторизации...</p>
+          <video 
+            autoPlay 
+            muted 
+            loop 
+            playsInline
+            className="w-48 h-48 mx-auto object-contain"
+          >
+            <source src="/video/loading.mp4" type="video/mp4" />
+          </video>
         </div>
       </div>
     )
