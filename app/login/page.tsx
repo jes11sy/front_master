@@ -186,7 +186,7 @@ export default function LoginPage() {
             muted 
             loop 
             playsInline
-            className="w-48 h-48 mx-auto object-contain"
+            className="w-80 h-80 mx-auto object-contain"
           >
             <source src="/video/loading.mp4" type="video/mp4" />
           </video>
