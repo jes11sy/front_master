@@ -14,10 +14,15 @@ interface AuthGuardProps {
  */
 const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const router = useRouter()
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
+  // Оптимистичная проверка: если есть данные в localStorage, считаем что авторизован (пока проверяем API)
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(() => {
+    if (typeof window !== 'undefined') {
+      return !!apiClient.getSavedUser()
+    }
+    return null
+  })
 
   useEffect(() => {
-    // 🍪 Проверяем сессию через API - токены в httpOnly cookies
     const checkAuth = async () => {
       try {
         const response = await apiClient.getProfile()
@@ -26,11 +31,15 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
           setIsAuthenticated(true)
         } else {
           setIsAuthenticated(false)
-          router.push('/login')
+          // Очищаем localStorage, так как сессия невалидна
+          apiClient.clearToken()
+          router.replace('/login')
         }
       } catch (error) {
+        console.error('Auth check failed:', error)
         setIsAuthenticated(false)
-        router.push('/login')
+        apiClient.clearToken()
+        router.replace('/login')
       }
     }
 
@@ -40,10 +49,17 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   // Показываем loading состояние пока проверяем сессию
   if (isAuthenticated === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#114643] to-[#1a6962]">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-white">Проверка авторизации...</p>
+          <video 
+            autoPlay 
+            muted 
+            loop 
+            playsInline
+            className="w-80 h-80 mx-auto object-contain"
+          >
+            <source src="/video/loading.mp4" type="video/mp4" />
+          </video>
         </div>
       </div>
     )

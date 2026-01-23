@@ -75,8 +75,15 @@ export default function LoginPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#114643] mx-auto mb-4"></div>
-          <p className="text-[#114643]">Проверка авторизации...</p>
+          <video 
+            autoPlay 
+            muted 
+            loop 
+            playsInline
+            className="w-80 h-80 mx-auto object-contain"
+          >
+            <source src="/video/loading.mp4" type="video/mp4" />
+          </video>
         </div>
       </div>
     )
