@@ -1,12 +1,16 @@
 'use client'
 
-import React, { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
+import { apiClient } from '@/lib/api'
+import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 
 export default function SchedulePage() {
   const [currentWeek, setCurrentWeek] = useState(new Date())
-  const [selectedDays, setSelectedDays] = useState<{[key: string]: 'work' | 'dayoff'}>({})
+  const [selectedDays, setSelectedDays] = useState<{[key: string]: boolean}>({})
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
 
   // Генерируем даты недели
   const getWeekDates = (date: Date) => {
@@ -26,12 +30,87 @@ export default function SchedulePage() {
 
   const weekDates = getWeekDates(currentWeek)
 
+  // Форматирование даты в YYYY-MM-DD
+  const formatDate = (date: Date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  // Загрузка расписания при смене недели
+  useEffect(() => {
+    const loadSchedule = async () => {
+      setIsLoading(true)
+      try {
+        const startDate = formatDate(weekDates[0])
+        const endDate = formatDate(weekDates[6])
+        
+        const response = await apiClient.getOwnSchedule({ startDate, endDate })
+        
+        if (response.success && response.data?.schedule) {
+          const scheduleMap: {[key: string]: boolean} = {}
+          response.data.schedule.forEach(item => {
+            scheduleMap[item.date] = item.isWorkDay
+          })
+          setSelectedDays(scheduleMap)
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки расписания:', error)
+        toast.error('Не удалось загрузить расписание')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadSchedule()
+  }, [currentWeek])
+
   const handleDayToggle = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0]
-    setSelectedDays(prev => ({
-      ...prev,
-      [dateStr]: prev[dateStr] === 'work' ? 'dayoff' : 'work'
-    }))
+    const dateStr = formatDate(date)
+    setSelectedDays(prev => {
+      const currentValue = prev[dateStr]
+      // Цикл: не выбран -> рабочий -> выходной -> не выбран
+      if (currentValue === undefined) {
+        return { ...prev, [dateStr]: true } // рабочий
+      } else if (currentValue === true) {
+        return { ...prev, [dateStr]: false } // выходной
+      } else {
+        const newState = { ...prev }
+        delete newState[dateStr] // не выбран
+        return newState
+      }
+    })
+  }
+
+  const handleSave = async () => {
+    setIsSaving(true)
+    try {
+      // Собираем только дни, которые выбраны (есть в selectedDays)
+      const days = Object.entries(selectedDays).map(([date, isWorkDay]) => ({
+        date,
+        isWorkDay,
+      }))
+
+      if (days.length === 0) {
+        toast.info('Выберите хотя бы один день')
+        setIsSaving(false)
+        return
+      }
+
+      const response = await apiClient.updateOwnSchedule(days)
+      
+      if (response.success) {
+        toast.success(`Расписание сохранено (${response.data?.updatedDays || days.length} дней)`)
+      } else {
+        toast.error(response.error || 'Ошибка сохранения')
+      }
+    } catch (error: any) {
+      console.error('Ошибка сохранения расписания:', error)
+      toast.error(error.message || 'Не удалось сохранить расписание')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -78,62 +157,80 @@ export default function SchedulePage() {
             <div className="mb-6">
               <h3 className="text-xl font-semibold text-gray-800 text-center">Выбор рабочих дней</h3>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-7 gap-2 sm:gap-3">
-              {weekDates.map((date, index) => {
-                const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
-                const dateStr = date.toISOString().split('T')[0]
-                const isSelected = selectedDays[dateStr] === 'work'
-                const isDayOff = selectedDays[dateStr] === 'dayoff'
-                
-                return (
-                  <div key={index} className="text-center">
-                    <div className="text-xs text-gray-600 mb-1">{dayNames[index]}</div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDayToggle(date)}
-                      className={`w-full h-12 text-xs ${
-                        isSelected 
-                          ? 'bg-teal-500 border-teal-400 text-white hover:bg-teal-600' 
-                          : isDayOff
-                          ? 'bg-red-500 border-red-400 text-white hover:bg-red-600'
-                          : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      {date.getDate()}
-                    </Button>
-                  </div>
-                )
-              })}
-            </div>
             
-            {/* Legend */}
-            <div className="mt-4 sm:mt-6 flex flex-wrap gap-3 sm:gap-4 justify-center">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-teal-500 rounded"></div>
-                <span className="text-sm text-gray-700">Рабочий день</span>
+            {isLoading ? (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
+                <span className="ml-2 text-gray-600">Загрузка...</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-red-500 rounded"></div>
-                <span className="text-sm text-gray-700">Выходной</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-gray-100 border border-gray-300 rounded"></div>
-                <span className="text-sm text-gray-700">Не выбран</span>
-              </div>
-            </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-7 gap-2 sm:gap-3">
+                  {weekDates.map((date, index) => {
+                    const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+                    const dateStr = formatDate(date)
+                    const dayValue = selectedDays[dateStr]
+                    const isWorkDay = dayValue === true
+                    const isDayOff = dayValue === false
+                    const isNotSelected = dayValue === undefined
+                    
+                    return (
+                      <div key={index} className="text-center">
+                        <div className="text-xs text-gray-600 mb-1">{dayNames[index]}</div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDayToggle(date)}
+                          className={`w-full h-12 text-xs ${
+                            isWorkDay 
+                              ? 'bg-teal-500 border-teal-400 text-white hover:bg-teal-600' 
+                              : isDayOff
+                              ? 'bg-red-500 border-red-400 text-white hover:bg-red-600'
+                              : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          {date.getDate()}
+                        </Button>
+                      </div>
+                    )
+                  })}
+                </div>
+                
+                {/* Legend */}
+                <div className="mt-4 sm:mt-6 flex flex-wrap gap-3 sm:gap-4 justify-center">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-teal-500 rounded"></div>
+                    <span className="text-sm text-gray-700">Рабочий день</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-red-500 rounded"></div>
+                    <span className="text-sm text-gray-700">Выходной</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-gray-100 border border-gray-300 rounded"></div>
+                    <span className="text-sm text-gray-700">Не выбран</span>
+                  </div>
+                </div>
 
-            {/* Save Button */}
-            <div className="mt-4 sm:mt-6 text-center">
-              <Button 
-                className="bg-teal-500 hover:bg-teal-600 text-white"
-                onClick={() => {
-                  // Здесь будет логика сохранения расписания
-                }}
-              >
-                Сохранить расписание
-              </Button>
-            </div>
+                {/* Save Button */}
+                <div className="mt-4 sm:mt-6 text-center">
+                  <Button 
+                    className="bg-teal-500 hover:bg-teal-600 text-white min-w-[200px]"
+                    onClick={handleSave}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Сохранение...
+                      </>
+                    ) : (
+                      'Сохранить расписание'
+                    )}
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
           </div>
         </div>

@@ -731,6 +731,60 @@ class ApiClient {
       body: JSON.stringify({ orderId, masterPhone }),
     })
   }
+
+  // ==================== SCHEDULE API ====================
+
+  /**
+   * Получить своё расписание (для мастера)
+   */
+  async getOwnSchedule(params?: { startDate?: string; endDate?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.startDate) searchParams.append('startDate', params.startDate)
+    if (params?.endDate) searchParams.append('endDate', params.endDate)
+
+    const query = searchParams.toString()
+    return this.request<{
+      masterId: number
+      masterName: string
+      schedule: Array<{ date: string; isWorkDay: boolean }>
+    }>(`/masters/profile/schedule${query ? `?${query}` : ''}`)
+  }
+
+  /**
+   * Обновить своё расписание (для мастера)
+   */
+  async updateOwnSchedule(days: Array<{ date: string; isWorkDay: boolean }>) {
+    return this.request<{ masterId: number; updatedDays: number }>('/masters/profile/schedule', {
+      method: 'POST',
+      body: JSON.stringify({ days }),
+    })
+  }
+
+  /**
+   * Получить расписание мастера по ID (для директора/админа)
+   */
+  async getMasterSchedule(masterId: number, params?: { startDate?: string; endDate?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.startDate) searchParams.append('startDate', params.startDate)
+    if (params?.endDate) searchParams.append('endDate', params.endDate)
+
+    const query = searchParams.toString()
+    return this.request<{
+      masterId: number
+      masterName: string
+      schedule: Array<{ date: string; isWorkDay: boolean }>
+    }>(`/masters/${masterId}/schedule${query ? `?${query}` : ''}`)
+  }
+
+  /**
+   * Обновить расписание мастера по ID (для директора/админа)
+   */
+  async updateMasterSchedule(masterId: number, days: Array<{ date: string; isWorkDay: boolean }>) {
+    return this.request<{ masterId: number; updatedDays: number }>(`/masters/${masterId}/schedule`, {
+      method: 'POST',
+      body: JSON.stringify({ days }),
+    })
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL)
