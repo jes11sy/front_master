@@ -12,6 +12,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    # ✅ FIX #116: Hadolint для Dockerfile linting
+    - name: Lint Dockerfile
+      uses: hadolint/hadolint-action@v3.1.0
+      with:
+        dockerfile: Dockerfile
+        failure-threshold: warning
+
     - name: Build Docker image
       run: |
         docker build \

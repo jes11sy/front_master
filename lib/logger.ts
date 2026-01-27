@@ -50,7 +50,9 @@ class Logger {
   }
 
   info(message: string, data?: any, options?: LogOptions) {
-    console.info(this.formatMessage('info', message, data, options));
+    if (this.isDevelopment) {
+      console.info(this.formatMessage('info', message, data, options));
+    }
   }
 
   warn(message: string, data?: any, options?: LogOptions) {

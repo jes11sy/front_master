@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import apiClient from '@/lib/api'
 
 const navigationItems = [
@@ -23,9 +23,20 @@ export function Navigation() {
   const pathname = usePathname()
   const router = useRouter()
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
-  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null)
+  // ✅ FIX: Используем ref вместо state для timeout (лучше для cleanup)
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [expandedDropdown, setExpandedDropdown] = useState<string | null>(null)
+
+  // ✅ FIX: Cleanup timeout при размонтировании
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current)
+        hoverTimeoutRef.current = null
+      }
+    }
+  }, [])
 
   const handleLogout = async () => {
     // Выполняем logout асинхронно и ждем завершения
@@ -68,17 +79,16 @@ export function Navigation() {
                 key={item.name}
                 className="relative"
                 onMouseEnter={() => {
-                  if (hoverTimeout) {
-                    clearTimeout(hoverTimeout)
-                    setHoverTimeout(null)
+                  if (hoverTimeoutRef.current) {
+                    clearTimeout(hoverTimeoutRef.current)
+                    hoverTimeoutRef.current = null
                   }
                   setHoveredItem(item.name)
                 }}
                 onMouseLeave={() => {
-                  const timeout = setTimeout(() => {
+                  hoverTimeoutRef.current = setTimeout(() => {
                     setHoveredItem(null)
                   }, 150)
-                  setHoverTimeout(timeout)
                 }}
               >
                 {item.href ? (
@@ -113,16 +123,15 @@ export function Navigation() {
                   <div 
                     className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-48 bg-white rounded-lg shadow-xl border border-teal-200 z-50"
                     onMouseEnter={() => {
-                      if (hoverTimeout) {
-                        clearTimeout(hoverTimeout)
-                        setHoverTimeout(null)
+                      if (hoverTimeoutRef.current) {
+                        clearTimeout(hoverTimeoutRef.current)
+                        hoverTimeoutRef.current = null
                       }
                     }}
                     onMouseLeave={() => {
-                      const timeout = setTimeout(() => {
+                      hoverTimeoutRef.current = setTimeout(() => {
                         setHoveredItem(null)
                       }, 150)
-                      setHoverTimeout(timeout)
                     }}
                   >
                     <div className="py-2">

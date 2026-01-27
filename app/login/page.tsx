@@ -19,16 +19,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
-  const [minTimeElapsed, setMinTimeElapsed] = useState(false)
 
-  // Минимум 3 секунды показываем видео загрузки
-  useEffect(() => {
-    const minTimer = setTimeout(() => {
-      setMinTimeElapsed(true)
-    }, 3000)
-
-    return () => clearTimeout(minTimer)
-  }, [])
+  // ✅ FIX: Убран artificial delay (3 секунды) - теперь загрузка показывается только пока идет проверка авторизации
 
   // Проверяем авторизацию при загрузке
   useEffect(() => {
@@ -80,8 +72,8 @@ export default function LoginPage() {
     }
   }
 
-  // Показываем видео минимум 3 секунды
-  if (isCheckingAuth || !minTimeElapsed) {
+  // ✅ FIX: Показываем загрузку только пока идет реальная проверка (без artificial delay)
+  if (isCheckingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">

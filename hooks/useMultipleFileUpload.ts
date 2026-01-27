@@ -2,7 +2,7 @@
  * Custom hook для работы с загрузкой нескольких файлов
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 
 interface FileWithPreview {
   file: File;
@@ -13,6 +13,8 @@ interface FileWithPreview {
 export function useMultipleFileUpload(maxFiles: number = 10) {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [dragOver, setDragOver] = useState(false);
+  // ✅ FIX: Ref для отслеживания blob URLs для cleanup при unmount
+  const blobUrlsRef = useRef<Set<string>>(new Set());
 
   const createFilePreview = useCallback((file: File): string => {
     return URL.createObjectURL(file);
@@ -34,11 +36,16 @@ export function useMultipleFileUpload(maxFiles: number = 10) {
       return;
     }
     
-    const newFilesWithPreviews: FileWithPreview[] = filesToAdd.map(file => ({
-      file,
-      preview: createFilePreview(file),
-      id: `${Date.now()}-${Math.random()}`,
-    }));
+    const newFilesWithPreviews: FileWithPreview[] = filesToAdd.map(file => {
+      const preview = createFilePreview(file);
+      // ✅ FIX: Отслеживаем blob URL для cleanup
+      blobUrlsRef.current.add(preview);
+      return {
+        file,
+        preview,
+        id: `${Date.now()}-${Math.random()}`,
+      };
+    });
     
     setFiles(prev => [...prev, ...newFilesWithPreviews]);
   }, [files.length, maxFiles, createFilePreview]);
@@ -48,6 +55,8 @@ export function useMultipleFileUpload(maxFiles: number = 10) {
       const fileToRemove = prev.find(f => f.id === id);
       if (fileToRemove && fileToRemove.preview.startsWith('blob:')) {
         clearPreview(fileToRemove.preview);
+        // ✅ FIX: Удаляем из ref
+        blobUrlsRef.current.delete(fileToRemove.preview);
       }
       return prev.filter(f => f.id !== id);
     });
@@ -59,6 +68,8 @@ export function useMultipleFileUpload(maxFiles: number = 10) {
         clearPreview(f.preview);
       }
     });
+    // ✅ FIX: Очищаем ref
+    blobUrlsRef.current.clear();
     setFiles([]);
   }, [files, clearPreview]);
 
@@ -79,6 +90,17 @@ export function useMultipleFileUpload(maxFiles: number = 10) {
       }
     });
   }, [files, clearPreview]);
+
+  // ✅ FIX: Автоматический cleanup blob URLs при размонтировании компонента
+  useEffect(() => {
+    return () => {
+      // Используем ref чтобы очистить все blob URLs даже если state уже устарел
+      blobUrlsRef.current.forEach(url => {
+        URL.revokeObjectURL(url);
+      });
+      blobUrlsRef.current.clear();
+    };
+  }, []);
 
   return {
     files,

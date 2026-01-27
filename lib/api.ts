@@ -1,5 +1,7 @@
 // API клиент для работы с бэкендом
+// ✅ FIX #151: Добавлен fetch retry logic
 import { logger } from './logger'
+import { fetchWithRetry, classifyNetworkError, getUserFriendlyErrorMessage, type NetworkError } from './fetch-with-retry'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.lead-schem.ru/api/v1'
 
@@ -91,17 +93,21 @@ class ApiClient {
 
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
-        // Создаем AbortController для таймаута (совместимо со старыми браузерами)
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 секунд
-
-        const response = await fetch(url, {
+        // ✅ FIX #151: Используем fetchWithRetry для автоматических повторных попыток
+        // при 502/503/504 ошибках (cold start) и сетевых проблемах
+        const response = await fetchWithRetry(url, {
           ...options,
           headers,
           credentials: 'include', // 🍪 Отправляем cookies с каждым запросом
-          signal: controller.signal,
           cache: 'no-store', // Отключаем кэширование на уровне fetch
-        }).finally(() => clearTimeout(timeoutId))
+          retryOptions: {
+            maxRetries: 3,
+            retryDelay: 1000,
+            backoff: true,
+            timeout: 15000, // 15 секунд таймаут на запрос
+            retryOn: ['NETWORK_ERROR', 'TIMEOUT', 'SERVER_ERROR'],
+          },
+        })
 
         // Проверяем, что ответ является JSON
         const contentType = response.headers.get('content-type')
@@ -188,15 +194,19 @@ class ApiClient {
           throw error
         }
         
-        // Если это последняя попытка, выбрасываем ошибку
+        // ✅ FIX #151: Улучшенная обработка ошибок с классификацией
+        // fetchWithRetry уже делает retry, так что здесь только финальная обработка
         if (attempt === retries) {
-          // Обрабатываем различные типы ошибок
-          if (error.name === 'AbortError') {
-            throw new Error('Превышено время ожидания ответа от сервера')
+          // Используем классификацию сетевых ошибок
+          const networkError = classifyNetworkError(error)
+          
+          // Показываем пользователю понятное сообщение
+          if (networkError.type === 'NETWORK_ERROR') {
+            throw new Error(getUserFriendlyErrorMessage(error))
           }
           
-          if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-            throw new Error('Сервер недоступен. Проверьте подключение к интернету и убедитесь, что бэкенд запущен')
+          if (networkError.type === 'TIMEOUT') {
+            throw new Error('Превышено время ожидания ответа от сервера. Попробуйте еще раз.')
           }
           
           if (error.message?.includes('CORS')) {
@@ -215,7 +225,18 @@ class ApiClient {
     throw new Error('Все попытки исчерпаны')
   }
 
-    // 🍪 Аутентификация через httpOnly cookies
+    /**
+     * 🍪 Аутентификация через httpOnly cookies
+     * 
+     * @param login - Логин пользователя (мастера)
+     * @param password - Пароль пользователя
+     *   ⚠️ SECURITY: Пароль передаётся в открытом виде только по HTTPS
+     *   - НЕ логировать в консоль/файлы
+     *   - НЕ сохранять в localStorage/sessionStorage
+     *   - Хэшируется на сервере через bcrypt (12 rounds)
+     *   - Минимум 6 символов (валидация на бэкенде)
+     * @returns Promise с данными пользователя (без пароля)
+     */
     async login(login: string, password: string) {
       const response = await this.request<{
         user: any
@@ -232,10 +253,13 @@ class ApiClient {
       
       // Сохраняем user для быстрой проверки автологина
       // ВСЕГДА сохраняем в localStorage - иначе автологин не работает после закрытия браузера
+      // ✅ FIX #150: Санитизация данных перед сохранением в localStorage
       if (response.success && response.data?.user) {
         if (typeof window !== 'undefined') {
-          sessionStorage.setItem('user', JSON.stringify(response.data.user))
-          localStorage.setItem('user', JSON.stringify(response.data.user))
+          const { sanitizeObject } = await import('./sanitize')
+          const sanitizedUser = sanitizeObject(response.data.user as Record<string, unknown>)
+          sessionStorage.setItem('user', JSON.stringify(sanitizedUser))
+          localStorage.setItem('user', JSON.stringify(sanitizedUser))
         }
       }
 
@@ -572,11 +596,36 @@ class ApiClient {
     })
   }
 
+  // ✅ FIX #151: Используем fetchWithRetry для FormData с retry logic
+  // request() не подходит, т.к. устанавливает Content-Type: application/json
   async uploadAvitoImage(avitoName: string, formData: FormData) {
-    return this.request<any>(`/avito/${avitoName}/upload-images`, {
-      method: 'POST',
-      body: formData,
-    })
+    const url = `${this.baseURL}/avito/${avitoName}/upload-images`
+    
+    try {
+      const response = await fetchWithRetry(url, {
+        method: 'POST',
+        headers: {
+          'X-Use-Cookies': 'true',
+          // НЕ устанавливаем Content-Type - браузер сам установит multipart/form-data с boundary
+        },
+        credentials: 'include',
+        body: formData,
+        retryOptions: {
+          maxRetries: 2,
+          timeout: 60000, // 60 секунд для загрузки изображений
+          retryOn: ['NETWORK_ERROR', 'TIMEOUT', 'SERVER_ERROR'],
+        },
+      })
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Ошибка загрузки изображения' }))
+        return { success: false, error: error.message || 'Ошибка загрузки изображения' }
+      }
+
+      return response.json()
+    } catch (error: any) {
+      return { success: false, error: getUserFriendlyErrorMessage(error) }
+    }
   }
 
   async sendAvitoImageMessage(avitoName: string, chatId: string, imageId: string) {
@@ -586,19 +635,27 @@ class ApiClient {
     })
   }
 
-  // Новые методы для работы с Avito Messenger (как у директора)
+  // ✅ FIX #151: Новые методы для работы с Avito Messenger с retry logic
   async getAvitoMessages(chatId: string, avitoAccountName: string, limit: number = 100): Promise<any[]> {
-    const response = await fetch(`${this.baseURL}/avito-messenger/chats/${chatId}/messages?avitoAccountName=${avitoAccountName}&limit=${limit}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Use-Cookies': 'true',
-      },
-      credentials: 'include',
-    })
+    const response = await fetchWithRetry(
+      `${this.baseURL}/avito-messenger/chats/${chatId}/messages?avitoAccountName=${avitoAccountName}&limit=${limit}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Use-Cookies': 'true',
+        },
+        credentials: 'include',
+        retryOptions: {
+          maxRetries: 3,
+          timeout: 15000,
+          retryOn: ['NETWORK_ERROR', 'TIMEOUT', 'SERVER_ERROR'],
+        },
+      }
+    )
 
     if (!response.ok) {
-      const error = await response.json()
+      const error = await response.json().catch(() => ({ message: 'Ошибка получения сообщений' }))
       throw new Error(error.message || 'Ошибка получения сообщений')
     }
 
@@ -607,18 +664,26 @@ class ApiClient {
   }
 
   async sendAvitoMessageNew(chatId: string, text: string, avitoAccountName: string): Promise<any> {
-    const response = await fetch(`${this.baseURL}/avito-messenger/chats/${chatId}/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Use-Cookies': 'true',
-      },
-      credentials: 'include',
-      body: JSON.stringify({ text, avitoAccountName }),
-    })
+    const response = await fetchWithRetry(
+      `${this.baseURL}/avito-messenger/chats/${chatId}/messages`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Use-Cookies': 'true',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ text, avitoAccountName }),
+        retryOptions: {
+          maxRetries: 2, // Меньше retry для POST запросов
+          timeout: 15000,
+          retryOn: ['NETWORK_ERROR', 'TIMEOUT', 'SERVER_ERROR'],
+        },
+      }
+    )
 
     if (!response.ok) {
-      const error = await response.json()
+      const error = await response.json().catch(() => ({ message: 'Ошибка отправки сообщения' }))
       throw new Error(error.message || 'Ошибка отправки сообщения')
     }
 
@@ -627,35 +692,51 @@ class ApiClient {
   }
 
   async markAvitoChatAsReadNew(chatId: string, avitoAccountName: string): Promise<void> {
-    const response = await fetch(`${this.baseURL}/avito-messenger/chats/${chatId}/read`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Use-Cookies': 'true',
-      },
-      credentials: 'include',
-      body: JSON.stringify({ avitoAccountName }),
-    })
+    const response = await fetchWithRetry(
+      `${this.baseURL}/avito-messenger/chats/${chatId}/read`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Use-Cookies': 'true',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ avitoAccountName }),
+        retryOptions: {
+          maxRetries: 2,
+          timeout: 10000,
+          retryOn: ['NETWORK_ERROR', 'TIMEOUT', 'SERVER_ERROR'],
+        },
+      }
+    )
 
     if (!response.ok) {
-      const error = await response.json()
+      const error = await response.json().catch(() => ({ message: 'Ошибка отметки чата как прочитанного' }))
       throw new Error(error.message || 'Ошибка отметки чата как прочитанного')
     }
   }
 
   async getAvitoVoiceUrlsNew(avitoAccountName: string, voiceIds: string[]): Promise<{ [key: string]: string }> {
-    const response = await fetch(`${this.baseURL}/avito-messenger/voice-files?avitoAccountName=${avitoAccountName}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Use-Cookies': 'true',
-      },
-      credentials: 'include',
-      body: JSON.stringify({ voiceIds }),
-    })
+    const response = await fetchWithRetry(
+      `${this.baseURL}/avito-messenger/voice-files?avitoAccountName=${avitoAccountName}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Use-Cookies': 'true',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ voiceIds }),
+        retryOptions: {
+          maxRetries: 3,
+          timeout: 15000,
+          retryOn: ['NETWORK_ERROR', 'TIMEOUT', 'SERVER_ERROR'],
+        },
+      }
+    )
 
     if (!response.ok) {
-      const error = await response.json()
+      const error = await response.json().catch(() => ({ message: 'Ошибка получения URL голосовых сообщений' }))
       throw new Error(error.message || 'Ошибка получения URL голосовых сообщений')
     }
 
@@ -663,6 +744,7 @@ class ApiClient {
     return result.data || {}
   }
 
+  // ✅ FIX #151: Улучшенный uploadFile с retry logic
   async uploadFile(file: File, folder?: string): Promise<any> {
     let url = `/files/upload`
     if (folder) {
@@ -678,50 +760,55 @@ class ApiClient {
       return formData
     }
     
-    // ✅ ИСПРАВЛЕНИЕ: Используем низкоуровневый fetch с credentials для загрузки файлов
-    // request() не подходит т.к. он добавляет Content-Type: application/json
-    const response = await fetch(fullUrl, {
-      method: 'POST',
-      headers: {
-        'X-Use-Cookies': 'true', // Указываем что используем cookie mode
-      },
-      credentials: 'include', // 🍪 Отправляем httpOnly cookies с токенами
-      body: createFormData(), // Создаем новый FormData
-    })
-
-    // Обработка 401 - пытаемся обновить токен
-    if (response.status === 401) {
-      const refreshed = await this.refreshAccessToken()
-      if (refreshed) {
-        // Создаем НОВЫЙ FormData для retry (старый уже использован)
-        const retryResponse = await fetch(fullUrl, {
+    // Внутренняя функция для загрузки с retry
+    const uploadWithRetry = async (retryCount: number = 0): Promise<any> => {
+      const maxRetries = 3
+      
+      try {
+        const response = await fetchWithRetry(fullUrl, {
           method: 'POST',
           headers: {
             'X-Use-Cookies': 'true',
           },
           credentials: 'include',
           body: createFormData(),
+          retryOptions: {
+            maxRetries: 2, // Меньше retry для загрузки файлов
+            timeout: 60000, // 60 секунд для загрузки файлов
+            retryOn: ['NETWORK_ERROR', 'TIMEOUT', 'SERVER_ERROR'],
+          },
         })
-        
-        if (!retryResponse.ok) {
-          const error = await retryResponse.json().catch(() => ({ message: 'Unknown error' }))
-          throw new Error(error.message || 'Ошибка загрузки файла после обновления токена')
+
+        // Обработка 401 - пытаемся обновить токен
+        if (response.status === 401 && retryCount < maxRetries) {
+          const refreshed = await this.refreshAccessToken()
+          if (refreshed) {
+            return uploadWithRetry(retryCount + 1)
+          } else {
+            logger.error('Token refresh failed during file upload')
+            throw new Error('Не удалось обновить токен. Пожалуйста, войдите снова.')
+          }
         }
-        
-        return retryResponse.json()
-      } else {
-        logger.error('Token refresh failed during file upload')
-        throw new Error('Не удалось обновить токен. Пожалуйста, войдите снова.')
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({ message: 'Unknown error' }))
+          throw new Error(error.message || 'Ошибка загрузки файла')
+        }
+
+        return response.json()
+      } catch (error: any) {
+        // Если это сетевая ошибка и у нас есть попытки - повторяем
+        const networkError = classifyNetworkError(error)
+        if (networkError.retryable && retryCount < maxRetries) {
+          const delay = Math.pow(2, retryCount) * 1000
+          await new Promise(resolve => setTimeout(resolve, delay))
+          return uploadWithRetry(retryCount + 1)
+        }
+        throw error
       }
     }
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Unknown error' }))
-      throw new Error(error.message || 'Ошибка загрузки файла')
-    }
-
-    const result = await response.json()
-    return result
+    return uploadWithRetry()
   }
 
   // Инициация callback звонка через Mango Office
