@@ -12,6 +12,7 @@ import { logger } from '@/lib/logger'
 import { getErrorMessage } from '@/lib/utils'
 import Image from 'next/image'
 import apiClient from '@/lib/api'
+import { LoadingScreen } from '@/components/ui/loading-screen'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -26,15 +27,28 @@ export default function LoginPage() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        // 1. Проверяем активную сессию через cookies
         const isAlreadyAuthenticated = await apiClient.isAuthenticated()
         if (isAlreadyAuthenticated) {
           router.replace('/orders')
-        } else {
-          setIsCheckingAuth(false)
+          return
+        }
+        
+        // 2. Cookies не работают — пробуем восстановить через IndexedDB
+        logger.debug('Cookies invalid, trying to restore from IndexedDB')
+        const restored = await apiClient.restoreSessionFromIndexedDB()
+        
+        if (restored) {
+          logger.debug('Session restored from IndexedDB, redirecting')
+          router.replace('/orders')
+          return
         }
       } catch (error) {
-        setIsCheckingAuth(false)
+        logger.debug('Auth check failed, showing login form')
       }
+      
+      // Показываем форму логина
+      setIsCheckingAuth(false)
     }
     
     checkAuth()
@@ -74,21 +88,7 @@ export default function LoginPage() {
 
   // ✅ FIX: Показываем загрузку только пока идет реальная проверка (без artificial delay)
   if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="text-center">
-          <video 
-            autoPlay 
-            muted 
-            loop 
-            playsInline
-            className="w-80 h-80 mx-auto object-contain"
-          >
-            <source src="/video/loading.mp4" type="video/mp4" />
-          </video>
-        </div>
-      </div>
-    )
+    return <LoadingScreen message="Проверка авторизации" />
   }
 
   return (

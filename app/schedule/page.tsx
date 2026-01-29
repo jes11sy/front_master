@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { apiClient } from '@/lib/api'
 import { toast } from '@/components/ui/toast'
 import { Loader2 } from 'lucide-react'
+import { LoadingSpinner } from '@/components/ui/loading-screen'
 
 export default function SchedulePage() {
   const [currentWeek, setCurrentWeek] = useState(new Date())
@@ -159,9 +160,9 @@ export default function SchedulePage() {
             </div>
             
             {isLoading ? (
-              <div className="flex justify-center items-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
-                <span className="ml-2 text-gray-600">Загрузка...</span>
+              <div className="flex flex-col items-center justify-center py-12">
+                <LoadingSpinner size="lg" variant="dark" />
+                <div className="text-gray-600 mt-4">Загрузка...</div>
               </div>
             ) : (
               <>

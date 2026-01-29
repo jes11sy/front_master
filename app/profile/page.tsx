@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import apiClient from '@/lib/api'
 import { useRouter } from 'next/navigation'
+import { LoadingSpinner } from '@/components/ui/loading-screen'
 
 // Интерфейс профиля мастера
 interface MasterProfile {
@@ -120,8 +121,9 @@ export default function ProfilePage() {
             </div>
             <div className="space-y-6">
               {loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-gray-600">Загрузка профиля...</div>
+                <div className="flex flex-col items-center justify-center py-12">
+                  <LoadingSpinner size="lg" variant="dark" />
+                  <div className="text-gray-600 mt-4">Загрузка профиля...</div>
                 </div>
               ) : error ? (
                 <div className="flex items-center justify-center py-12">

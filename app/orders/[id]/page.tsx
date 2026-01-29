@@ -12,6 +12,7 @@ import apiClient from '@/lib/api'
 import { CallButton } from '@/components/CallButton'
 import { useMultipleFileUpload } from '@/hooks/useMultipleFileUpload'
 import { MultipleFileUpload } from '@/components/MultipleFileUpload'
+import { LoadingScreen } from '@/components/ui/loading-screen'
 
 interface Order {
   id: number
@@ -764,15 +765,7 @@ function OrderDetailPageContent() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
-        <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
-          <div className="flex items-center space-x-2">
-            <div className="text-white text-lg">Загрузка заказа...</div>
-          </div>
-        </div>
-      </div>
-    )
+    return <LoadingScreen message="Загрузка заказа" />
   }
 
   if (error) {

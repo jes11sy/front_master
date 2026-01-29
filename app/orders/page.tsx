@@ -6,6 +6,7 @@ import { apiClient } from '@/lib/api'
 import { logger } from '@/lib/logger'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { sortOrders } from '@/lib/order-sort'
+import { LoadingSpinner } from '@/components/ui/loading-screen'
 
 interface Order {
   id: number
@@ -240,7 +241,9 @@ function OrdersContent() {
             {/* Состояние загрузки */}
             {loading && !error && (
               <div className="text-center py-8 animate-fade-in">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+                <div className="flex justify-center mb-4">
+                  <LoadingSpinner size="lg" variant="dark" />
+                </div>
                 <p className="text-gray-700 font-medium">Загрузка заказов...</p>
               </div>
             )}

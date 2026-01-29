@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { apiClient } from '@/lib/api'
+import { LoadingScreen } from '@/components/ui/loading-screen'
 
 interface Message {
   id: string
@@ -212,16 +213,7 @@ export default function AvitoChat() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
-        <div className="container mx-auto px-2 sm:px-4 py-8">
-          <div className="text-center py-8 animate-fade-in">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
-            <p className="text-gray-700 text-lg">Загрузка чата...</p>
-          </div>
-        </div>
-      </div>
-    )
+    return <LoadingScreen message="Загрузка чата" />
   }
 
   if (error || !chatData) {

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 // Убрали все иконки из lucide-react
 import apiClient from '@/lib/api'
 import { useRouter } from 'next/navigation'
+import { LoadingSpinner } from '@/components/ui/loading-screen'
 
 // Интерфейс статистики
 interface CityStatistics {
@@ -213,8 +214,9 @@ export default function StatisticsPage() {
             </div>
             <div>
               {loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-gray-600">Загрузка статистики...</div>
+                <div className="flex flex-col items-center justify-center py-12">
+                  <LoadingSpinner size="lg" variant="dark" />
+                  <div className="text-gray-600 mt-4">Загрузка статистики...</div>
                 </div>
               ) : error ? (
                 <div className="flex items-center justify-center py-12">

@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 // Убрали все иконки из lucide-react
 import { apiClient } from '@/lib/api'
+import { LoadingSpinner } from '@/components/ui/loading-screen'
 
 interface Order {
   id: number
@@ -375,7 +376,10 @@ export default function PaymentsPage() {
             </div>
             <div>
               {loading ? (
-                <div className="text-center py-8 text-gray-600">Загрузка...</div>
+                <div className="flex flex-col items-center justify-center py-8">
+                  <LoadingSpinner size="lg" variant="dark" />
+                  <div className="text-gray-600 mt-4">Загрузка...</div>
+                </div>
               ) : (
                 <>
                   {/* Десктопная таблица */}

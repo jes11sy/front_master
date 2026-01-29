@@ -261,6 +261,17 @@ class ApiClient {
           sessionStorage.setItem('user', JSON.stringify(sanitizedUser))
           localStorage.setItem('user', JSON.stringify(sanitizedUser))
         }
+        
+        // Сохраняем refresh token в IndexedDB (backup для iOS PWA)
+        if ((response.data as any).refreshToken) {
+          try {
+            const { saveRefreshToken } = await import('./remember-me')
+            await saveRefreshToken((response.data as any).refreshToken)
+          } catch (error) {
+            console.error('[Login] Failed to save refresh token:', error)
+            // Не прерываем процесс логина
+          }
+        }
       }
 
       return response
@@ -290,6 +301,14 @@ class ApiClient {
    * Очищает httpOnly cookies на сервере и локальные данные
    */
   async logout() {
+    // Очищаем refresh token из IndexedDB
+    try {
+      const { clearRefreshToken } = await import('./remember-me')
+      await clearRefreshToken()
+    } catch (error) {
+      logger.error('Failed to clear refresh token', error)
+    }
+    
     // Уведомляем сервер (cookies будут очищены)
     try {
       await fetch(`${this.baseURL}/auth/logout`, {
@@ -306,6 +325,61 @@ class ApiClient {
     } finally {
       // Очищаем локальные данные ПОСЛЕ запроса
       this.clearToken()
+    }
+  }
+
+  /**
+   * 🔄 Восстановление сессии через refresh token из IndexedDB
+   * Используется когда cookies удалены (iOS ITP, PWA)
+   * @returns true если сессия восстановлена
+   */
+  async restoreSessionFromIndexedDB(): Promise<boolean> {
+    try {
+      const { getRefreshToken } = await import('./remember-me')
+      const refreshToken = await getRefreshToken()
+      
+      if (!refreshToken) {
+        logger.debug('No refresh token in IndexedDB')
+        return false
+      }
+      
+      logger.debug('Found refresh token in IndexedDB, attempting to restore session')
+      
+      // Отправляем refresh token на сервер для получения новых cookies
+      const response = await fetch(`${this.baseURL}/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Use-Cookies': 'true',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ refreshToken }), // Передаём токен в body
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        
+        // Обновляем токен в IndexedDB если пришёл новый
+        if (result.data?.refreshToken) {
+          const { saveRefreshToken } = await import('./remember-me')
+          await saveRefreshToken(result.data.refreshToken)
+        }
+        
+        logger.debug('Session restored from IndexedDB token')
+        return true
+      }
+      
+      // Токен невалиден — очищаем IndexedDB
+      if (response.status === 401 || response.status === 403) {
+        logger.debug('Refresh token from IndexedDB is invalid, clearing')
+        const { clearRefreshToken } = await import('./remember-me')
+        await clearRefreshToken()
+      }
+      
+      return false
+    } catch (error) {
+      logger.error('Failed to restore session from IndexedDB', error)
+      return false
     }
   }
 

@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import apiClient from '@/lib/api'
+import { logger } from '@/lib/logger'
+import { LoadingScreen } from '@/components/ui/loading-screen'
 
 interface AuthGuardProps {
   children: React.ReactNode
@@ -11,6 +13,7 @@ interface AuthGuardProps {
 /**
  * 🍪 AuthGuard с поддержкой httpOnly cookies
  * Проверяет сессию через API вместо чтения localStorage
+ * При неудаче пробует восстановить через IndexedDB (iOS PWA backup)
  */
 const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const router = useRouter()
@@ -34,15 +37,38 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
         if (response.success && response.data) {
           setIsAuthenticated(true)
         } else {
+          // Cookies не работают — пробуем восстановить через IndexedDB
+          logger.debug('Cookies invalid, trying to restore from IndexedDB')
+          const restored = await apiClient.restoreSessionFromIndexedDB()
+          
+          if (!isMounted) return
+          
+          if (restored) {
+            logger.debug('Session restored from IndexedDB')
+            setIsAuthenticated(true)
+          } else {
+            setIsAuthenticated(false)
+            apiClient.clearToken()
+            router.replace('/login')
+          }
+        }
+      } catch {
+        if (!isMounted) return
+        
+        // Пробуем восстановить через IndexedDB
+        logger.debug('Auth check failed, trying IndexedDB restore')
+        const restored = await apiClient.restoreSessionFromIndexedDB()
+        
+        if (!isMounted) return
+        
+        if (restored) {
+          logger.debug('Session restored from IndexedDB')
+          setIsAuthenticated(true)
+        } else {
           setIsAuthenticated(false)
           apiClient.clearToken()
           router.replace('/login')
         }
-      } catch {
-        if (!isMounted) return
-        setIsAuthenticated(false)
-        apiClient.clearToken()
-        router.replace('/login')
       }
     }
 
@@ -55,21 +81,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
   // Показываем loading только если нет сохранённого пользователя
   if (isAuthenticated === null) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="text-center">
-          <video 
-            autoPlay 
-            muted 
-            loop 
-            playsInline
-            className="w-80 h-80 mx-auto object-contain"
-          >
-            <source src="/video/loading.mp4" type="video/mp4" />
-          </video>
-        </div>
-      </div>
-    )
+    return <LoadingScreen message="Проверка авторизации" />
   }
 
   // Если не аутентифицирован, не показываем содержимое
