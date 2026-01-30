@@ -52,11 +52,9 @@ const nextConfig = {
     // Content Security Policy
     const cspDirectives = [
       "default-src 'self'",
-      // Scripts: unsafe-eval только для dev (hot reload), unsafe-inline для Next.js
-      // TODO: Заменить 'unsafe-inline' на nonce-based CSP для улучшения безопасности
-      isDevelopment 
-        ? "script-src 'self' 'unsafe-eval' 'unsafe-inline'" 
-        : "script-src 'self' 'unsafe-inline'", // ⚠️ В production без unsafe-eval, но unsafe-inline остается
+      // Scripts: unsafe-eval и unsafe-inline для Next.js и некоторых библиотек
+      // TODO: Заменить на nonce-based CSP для улучшения безопасности
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
       // Styles: Tailwind и Next.js используют inline styles
       // TODO: Использовать CSS-in-JS библиотеки с nonce support
       "style-src 'self' 'unsafe-inline'",
