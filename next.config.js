@@ -15,6 +15,9 @@ const nextConfig = {
   
   reactStrictMode: true,
   
+  // Отключаем source maps в production для безопасности
+  productionBrowserSourceMaps: false,
+  
   // Удаляем console.log в production (оставляем только console.error)
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? {
@@ -102,10 +105,6 @@ const nextConfig = {
           {
             key: 'X-Content-Type-Options',
             value: 'nosniff'
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block'
           },
           {
             key: 'Referrer-Policy',
