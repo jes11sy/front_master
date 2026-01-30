@@ -3,6 +3,7 @@
 import React, { Component, ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
 import AuthGuard from '@/components/auth-guard'
+import { TokenRefresher } from '@/components/TokenRefresher'
 
 // Error Boundary для перехвата критических ошибок
 interface ErrorBoundaryState {
@@ -72,11 +73,14 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
   return (
     <ErrorBoundary>
       {isPublicPage ? (
-        // Публичные страницы без AuthGuard
+        // Публичные страницы без AuthGuard и TokenRefresher
         <>{children}</>
       ) : (
-        // Защищённые страницы с AuthGuard
-        <AuthGuard>{children}</AuthGuard>
+        // Защищённые страницы с AuthGuard и TokenRefresher
+        <>
+          <TokenRefresher />
+          <AuthGuard>{children}</AuthGuard>
+        </>
       )}
     </ErrorBoundary>
   )
