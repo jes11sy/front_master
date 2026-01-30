@@ -28,6 +28,7 @@ ARG NEXT_PUBLIC_API_URL=https://api.test-shem.ru/api/v1
 
 # Устанавливаем как ENV для использования в сборке
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NODE_ENV=production
 
 # Собираем приложение
 RUN npm run build
