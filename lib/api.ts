@@ -16,6 +16,9 @@ class ApiClient {
   private baseURL: string
   private isRefreshing: boolean = false
   private refreshSubscribers: Array<() => void> = []
+  
+  // ✅ FIX: Mutex для предотвращения race condition при параллельных refresh запросах
+  private refreshPromise: Promise<boolean> | null = null
 
   constructor(baseURL: string) {
     this.baseURL = baseURL
@@ -37,9 +40,35 @@ class ApiClient {
   /**
    * Обновление access токена с помощью refresh токена из httpOnly cookie
    * 🍪 Токены передаются автоматически через cookies
+   * ✅ FIX: Mutex для предотвращения race condition при параллельных refresh запросах
+   * Если несколько запросов одновременно получают 401, только один делает refresh,
+   * остальные ждут его результат — это предотвращает token reuse detection на backend
    */
   private async refreshAccessToken(): Promise<boolean> {
+    // Если refresh уже выполняется - ждём его результат
+    if (this.refreshPromise) {
+      logger.debug('[Auth] Refresh already in progress, waiting...')
+      return this.refreshPromise
+    }
+    
+    // Запускаем refresh и сохраняем Promise для других запросов
+    this.refreshPromise = this.doRefreshToken()
+    
     try {
+      return await this.refreshPromise
+    } finally {
+      // Сбрасываем Promise после завершения (успех или ошибка)
+      this.refreshPromise = null
+    }
+  }
+
+  /**
+   * Реальная логика обновления токена (вызывается только один раз при параллельных запросах)
+   */
+  private async doRefreshToken(): Promise<boolean> {
+    try {
+      logger.debug('[Auth] Starting token refresh')
+      
       const response = await fetch(`${this.baseURL}/auth/refresh`, {
         method: 'POST',
         headers: {
@@ -51,14 +80,17 @@ class ApiClient {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to refresh token')
+        logger.warn('[Auth] Token refresh failed', { status: response.status })
+        return false
       }
 
       const data = await response.json()
       
       // Токены обновлены в httpOnly cookies на сервере
+      logger.debug('[Auth] Token refresh successful')
       return data.success === true
     } catch (error) {
+      logger.error('[Auth] Token refresh error', { error: String(error) })
       return false
     }
   }
