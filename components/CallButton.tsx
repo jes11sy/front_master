@@ -82,14 +82,12 @@ export function CallButton({ orderId, clientPhone, clientName }: CallButtonProps
 
   return (
     <>
-      <Button
+      <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 border-0"
+        className="p-2.5 bg-[#0d5c4b] hover:bg-[#0a4a3c] text-white rounded-lg transition-colors"
       >
-        <Phone className="w-4 h-4" />
-        <span className="hidden sm:inline">Позвонить клиенту</span>
-        <span className="sm:hidden">Позвонить</span>
-      </Button>
+        <Phone className="w-5 h-5" />
+      </button>
 
       {isOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
