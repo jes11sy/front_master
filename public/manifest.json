@@ -2,11 +2,19 @@
   "name": "Новые Схемы - Мастер",
   "short_name": "Мастер CRM",
   "description": "CRM для мастеров - управление заказами",
-  "start_url": "/",
+  "id": "/",
+  "start_url": "/orders",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#0d5c4b",
   "theme_color": "#0d5c4b",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
+  "serviceworker": {
+    "src": "/sw.js",
+    "scope": "/",
+    "type": "module"
+  },
   "icons": [
     {
       "src": "/images/images/pwa_light.png",

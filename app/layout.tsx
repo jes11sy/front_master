@@ -5,6 +5,8 @@ import MasterLayout from '@/components/master-layout'
 import { LayoutProvider } from '@/components/layout-context'
 import ClientLayout from '@/components/client-layout'
 import Script from 'next/script'
+import { ServiceWorkerRegister } from '@/components/push/ServiceWorkerRegister'
+// import { PushPermissionBanner } from '@/components/push/PushNotificationManager'
 
 export const metadata: Metadata = {
   title: 'Новые схемы',
@@ -106,8 +108,6 @@ export default function RootLayout({
             `,
           }}
         />
-        {/* Удаление Service Worker */}
-        <script src="/unregister-sw.js" />
         <Script id="error-handler" strategy="beforeInteractive">
           {`
             // Глобальная обработка необработанных ошибок
@@ -125,6 +125,7 @@ export default function RootLayout({
         </Script>
       </head>
       <body className="font-myriad transition-colors duration-0">
+        <ServiceWorkerRegister />
         <LayoutProvider>
           <ToastProvider>
             <MasterLayout>
@@ -132,6 +133,7 @@ export default function RootLayout({
                 {children}
               </ClientLayout>
             </MasterLayout>
+            {/* PushPermissionBanner убран - системный диалог вызывается из настроек */}
           </ToastProvider>
         </LayoutProvider>
       </body>

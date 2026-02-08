@@ -6,7 +6,8 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useDesignStore } from '@/store/design.store'
 import { useAuthStore } from '@/store/auth.store'
-import { Sun, Moon, User, Menu, X, Bell, Check, FileText, Info, GripHorizontal } from 'lucide-react'
+import { Sun, Moon, User, Menu, X, Bell, Check, FileText, Info, GripHorizontal, BellRing } from 'lucide-react'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
 
 // Ключ для localStorage
 const NOTIFICATIONS_POSITION_KEY = 'master-notifications-panel-position'
@@ -57,6 +58,68 @@ const getNotificationIcon = (type: string) => {
     default:
       return Info
   }
+}
+
+// Компонент переключателя Push-уведомлений
+function PushNotificationToggle() {
+  const {
+    isSupported,
+    isSubscribed,
+    permission,
+    isLoading,
+    error,
+    isIOSPWARequired,
+    subscribe,
+    unsubscribe,
+    isSubscribing,
+    isUnsubscribing,
+  } = usePushNotifications()
+
+  // Не показываем если не поддерживается
+  if (!isSupported && !isLoading && !isIOSPWARequired) {
+    return null
+  }
+
+  const isProcessing = isLoading || isSubscribing || isUnsubscribing
+  const isDenied = permission === 'denied'
+
+  return (
+    <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1a1f2e] flex-shrink-0">
+      {/* iOS инструкция */}
+      {isIOSPWARequired ? (
+        <div className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">Для push-уведомлений:</p>
+          <p>Добавьте приложение на домашний экран</p>
+        </div>
+      ) : isDenied ? (
+        <div className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="font-medium text-amber-600 dark:text-amber-400">Push заблокированы</p>
+          <p>Разрешите в настройках браузера</p>
+        </div>
+      ) : (
+        <button
+          onClick={isSubscribed ? unsubscribe : subscribe}
+          disabled={isProcessing}
+          className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            isSubscribed
+              ? 'bg-[#0d5c4b]/10 text-[#0d5c4b] dark:text-[#10b981] hover:bg-[#0d5c4b]/20'
+              : 'bg-[#0d5c4b] text-white hover:bg-[#0a4a3c]'
+          } disabled:opacity-50 disabled:cursor-not-allowed`}
+        >
+          <BellRing className={`h-4 w-4 ${isSubscribed ? 'animate-pulse' : ''}`} />
+          {isProcessing
+            ? 'Загрузка...'
+            : isSubscribed
+              ? 'Push включены'
+              : 'Включить push'
+          }
+        </button>
+      )}
+      {error && !isDenied && !isIOSPWARequired && (
+        <p className="text-xs text-red-500 mt-1 text-center">{error}</p>
+      )}
+    </div>
+  )
 }
 
 // Вынесено за пределы компонента, чтобы React не пересоздавал при каждом рендере
@@ -457,7 +520,7 @@ export function SidebarNavigation() {
                     )}
                   </div>
                 </div>
-                <div className="max-h-80 overflow-y-auto">
+                <div className="max-h-60 overflow-y-auto">
                   {notifications.length > 0 ? (
                     notifications.map((notification) => {
                       const Icon = getNotificationIcon(notification.type)
@@ -498,6 +561,8 @@ export function SidebarNavigation() {
                     </div>
                   )}
                 </div>
+                {/* Push Notifications Toggle - Mobile */}
+                <PushNotificationToggle />
               </div>
             )}
           </div>
@@ -644,6 +709,9 @@ export function SidebarNavigation() {
               </div>
             )}
           </div>
+          
+          {/* Push Notifications Toggle */}
+          <PushNotificationToggle />
         </div>
       )}
     </>

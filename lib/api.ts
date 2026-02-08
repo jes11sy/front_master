@@ -978,6 +978,37 @@ class ApiClient {
       body: JSON.stringify({ days }),
     })
   }
+
+  // ==================== PUSH NOTIFICATIONS API ====================
+
+  /**
+   * Подписаться на push-уведомления (мастер)
+   */
+  async subscribeToPush(subscription: PushSubscriptionJSON) {
+    return this.request<{ success: boolean }>('/push/master/subscribe', {
+      method: 'POST',
+      body: JSON.stringify({ subscription }),
+    })
+  }
+
+  /**
+   * Отписаться от push-уведомлений (мастер)
+   */
+  async unsubscribeFromPush(endpoint: string) {
+    return this.request<{ success: boolean }>('/push/master/unsubscribe', {
+      method: 'POST',
+      body: JSON.stringify({ endpoint }),
+    })
+  }
+
+  /**
+   * Отправить тестовое push-уведомление (мастер)
+   */
+  async sendTestPush() {
+    return this.request<{ success: boolean }>('/push/master/test', {
+      method: 'POST',
+    })
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL)
