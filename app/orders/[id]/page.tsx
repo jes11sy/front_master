@@ -835,8 +835,8 @@ function OrderDetailPageContent() {
             <div className="space-y-4">
               {/* Блок модерна */}
               {order.statusOrder === 'Модерн' && showModernBlock && (
-                <div className={`rounded-xl p-4 ${isDark ? 'bg-purple-900/30 border border-purple-700' : 'bg-purple-50 border border-purple-200'}`}>
-                  <h3 className={`font-medium mb-4 ${isDark ? 'text-purple-300' : 'text-purple-800'}`}>Информация по модерну</h3>
+                <div className={`rounded-xl p-4 ${isDark ? 'bg-[#2a3441] border border-gray-700' : 'bg-gray-50 border border-gray-200'}`}>
+                  <h3 className={`font-medium mb-4 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Информация по модерну</h3>
                   
                   {notifications.length > 0 && (
                     <div className="mb-4 space-y-2">
@@ -867,13 +867,13 @@ function OrderDetailPageContent() {
                       </div>
                     </div>
                     
-                    <div>
+                    <div className="overflow-hidden">
                       <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>Дата закрытия</Label>
                       <Input
                         type="datetime-local"
                         value={dateClosmod}
                         onChange={(e) => setDateClosmod(e.target.value)}
-                        className={`mt-1 ${isDark ? 'bg-[#3a4451] border-gray-600 text-gray-100' : 'bg-white border-gray-300'}`}
+                        className={`mt-1 w-full max-w-full ${isDark ? 'bg-[#3a4451] border-gray-600 text-gray-100' : 'bg-white border-gray-300'}`}
                       />
                     </div>
                     
