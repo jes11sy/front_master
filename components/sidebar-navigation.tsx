@@ -67,16 +67,9 @@ interface MenuContentProps {
   toggleTheme: () => void
   userName: string | undefined
   onCloseMobileMenu: () => void
-  // Новые пропсы для уведомлений
-  isNotificationsOpen: boolean
+  // Пропсы для уведомлений (только кнопка)
   onToggleNotifications: () => void
-  notificationsPanelRef: React.RefObject<HTMLDivElement | null>
-  panelPosition: { x: number; y: number }
-  onDragStart: (e: React.MouseEvent) => void
-  notifications: Notification[]
   unreadCount: number
-  onMarkAllAsRead: () => void
-  onNotificationClick: (notification: Notification) => void
 }
 
 const MenuContent = memo(function MenuContent({
@@ -86,15 +79,8 @@ const MenuContent = memo(function MenuContent({
   toggleTheme,
   userName,
   onCloseMobileMenu,
-  isNotificationsOpen,
   onToggleNotifications,
-  notificationsPanelRef,
-  panelPosition,
-  onDragStart,
-  notifications,
   unreadCount,
-  onMarkAllAsRead,
-  onNotificationClick,
 }: MenuContentProps) {
   // Проверка активности с учетом подстраниц
   const isActive = (href: string) => {
@@ -207,83 +193,6 @@ const MenuContent = memo(function MenuContent({
                 Уведомления
               </span>
             </button>
-
-            {/* Notifications Dropdown Panel */}
-            {isNotificationsOpen && (
-              <div 
-                ref={notificationsPanelRef}
-                className="fixed w-96 max-h-96 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-[9999] flex flex-col bg-white dark:bg-[#1e2736]"
-                style={{ left: panelPosition.x, top: panelPosition.y }}
-              >
-                {/* Header - draggable */}
-                <div 
-                  className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between flex-shrink-0 cursor-move select-none"
-                  onMouseDown={onDragStart}
-                >
-                  <div className="flex items-center gap-2">
-                    <GripHorizontal className="h-4 w-4 text-gray-400" />
-                    <h3 className="font-medium text-gray-900 dark:text-gray-100">Уведомления</h3>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {unreadCount > 0 && (
-                      <button
-                        onMouseDown={(e) => e.stopPropagation()}
-                        onClick={(e) => { e.stopPropagation(); onMarkAllAsRead(); }}
-                        className="text-xs text-[#0d5c4b] hover:underline flex items-center gap-1"
-                      >
-                        <Check className="h-3 w-3" />
-                        Прочитать все
-                      </button>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Notifications List */}
-                <div className="flex-1 overflow-y-auto bg-white dark:bg-[#1a1f2e]">
-                  {notifications.length > 0 ? (
-                    notifications.map((notification) => {
-                      const Icon = getNotificationIcon(notification.type)
-                      return (
-                        <div
-                          key={notification.id}
-                          onClick={() => onNotificationClick(notification)}
-                          className={`px-4 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0 cursor-pointer ${
-                            !notification.read 
-                              ? 'bg-[#0d5c4b]/10 hover:bg-[#0d5c4b]/20' 
-                              : 'bg-white dark:bg-[#1a1f2e] hover:bg-gray-50 dark:hover:bg-[#252d3a]'
-                          }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 mt-0.5 text-gray-400 dark:text-gray-500">
-                              <Icon className="h-5 w-5" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className={`text-sm ${notification.read ? 'text-gray-600 dark:text-gray-400' : 'text-gray-900 dark:text-gray-100 font-medium'}`}>
-                                {notification.title}
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
-                                {notification.message}
-                              </p>
-                              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                {formatTime(notification.createdAt)}
-                              </p>
-                            </div>
-                            {!notification.read && (
-                              <span className="w-2 h-2 bg-[#0d5c4b] rounded-full flex-shrink-0 mt-1.5" />
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })
-                  ) : (
-                    <div className="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
-                      <Bell className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                      <p className="text-sm">Нет уведомлений</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -615,15 +524,8 @@ export function SidebarNavigation() {
             toggleTheme={toggleTheme}
             userName={userName}
             onCloseMobileMenu={closeMobileMenu}
-            isNotificationsOpen={isNotificationsOpen}
             onToggleNotifications={toggleNotifications}
-            notificationsPanelRef={notificationsPanelRef}
-            panelPosition={panelPosition}
-            onDragStart={handleDragStart}
-            notifications={notifications}
             unreadCount={unreadCount}
-            onMarkAllAsRead={markAllAsRead}
-            onNotificationClick={handleNotificationClick}
           />
         </div>
       </aside>
@@ -653,17 +555,87 @@ export function SidebarNavigation() {
           toggleTheme={toggleTheme}
           userName={userName}
           onCloseMobileMenu={closeMobileMenu}
-          isNotificationsOpen={isNotificationsOpen}
           onToggleNotifications={toggleNotifications}
-          notificationsPanelRef={notificationsPanelRef}
-          panelPosition={panelPosition}
-          onDragStart={handleDragStart}
-          notifications={notifications}
           unreadCount={unreadCount}
-          onMarkAllAsRead={markAllAsRead}
-          onNotificationClick={handleNotificationClick}
         />
       </aside>
+
+      {/* Desktop Notifications Panel - вынесено за пределы сайдбара */}
+      {isNotificationsOpen && (
+        <div 
+          ref={notificationsPanelRef}
+          className="hidden md:flex fixed w-96 max-h-96 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-[9999] flex-col bg-white dark:bg-[#1e2736]"
+          style={{ left: panelPosition.x, top: panelPosition.y }}
+        >
+          {/* Header - draggable */}
+          <div 
+            className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between flex-shrink-0 cursor-move select-none"
+            onMouseDown={handleDragStart}
+          >
+            <div className="flex items-center gap-2">
+              <GripHorizontal className="h-4 w-4 text-gray-400" />
+              <h3 className="font-medium text-gray-900 dark:text-gray-100">Уведомления</h3>
+            </div>
+            <div className="flex items-center gap-3">
+              {unreadCount > 0 && (
+                <button
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); markAllAsRead(); }}
+                  className="text-xs text-[#0d5c4b] hover:underline flex items-center gap-1"
+                >
+                  <Check className="h-3 w-3" />
+                  Прочитать все
+                </button>
+              )}
+            </div>
+          </div>
+          
+          {/* Notifications List */}
+          <div className="flex-1 overflow-y-auto bg-white dark:bg-[#1a1f2e]">
+            {notifications.length > 0 ? (
+              notifications.map((notification) => {
+                const Icon = getNotificationIcon(notification.type)
+                return (
+                  <div
+                    key={notification.id}
+                    onClick={() => handleNotificationClick(notification)}
+                    className={`px-4 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0 cursor-pointer ${
+                      !notification.read 
+                        ? 'bg-[#0d5c4b]/10 hover:bg-[#0d5c4b]/20' 
+                        : 'bg-white dark:bg-[#1a1f2e] hover:bg-gray-50 dark:hover:bg-[#252d3a]'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 mt-0.5 text-gray-400 dark:text-gray-500">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm ${notification.read ? 'text-gray-600 dark:text-gray-400' : 'text-gray-900 dark:text-gray-100 font-medium'}`}>
+                          {notification.title}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                          {notification.message}
+                        </p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                          {formatTime(notification.createdAt)}
+                        </p>
+                      </div>
+                      {!notification.read && (
+                        <span className="w-2 h-2 bg-[#0d5c4b] rounded-full flex-shrink-0 mt-1.5" />
+                      )}
+                    </div>
+                  </div>
+                )
+              })
+            ) : (
+              <div className="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
+                <Bell className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                <p className="text-sm">Нет уведомлений</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>
   )
 }
