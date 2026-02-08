@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { Phone, Loader2, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import apiClient from '@/lib/api';
+import { useDesignStore } from '@/store/design.store';
 
 interface CallButtonProps {
   orderId: number;
@@ -12,6 +12,9 @@ interface CallButtonProps {
 }
 
 export function CallButton({ orderId, clientPhone, clientName }: CallButtonProps) {
+  const { theme } = useDesignStore();
+  const isDark = theme === 'dark';
+  
   const [isOpen, setIsOpen] = useState(false);
   const [masterPhone, setMasterPhone] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -19,13 +22,9 @@ export function CallButton({ orderId, clientPhone, clientName }: CallButtonProps
   const [success, setSuccess] = useState('');
 
   const formatPhoneInput = (value: string) => {
-    // Убираем все нецифровые символы
     const digits = value.replace(/\D/g, '');
-    
-    // Ограничиваем до 11 цифр
     const limited = digits.slice(0, 11);
     
-    // Форматируем
     if (limited.length === 0) return '';
     if (limited.length <= 1) return `+${limited}`;
     if (limited.length <= 4) return `+${limited.slice(0, 1)} (${limited.slice(1)}`;
@@ -41,7 +40,6 @@ export function CallButton({ orderId, clientPhone, clientName }: CallButtonProps
   };
 
   const handleCall = async () => {
-    // Извлекаем только цифры
     const digits = masterPhone.replace(/\D/g, '');
     
     if (digits.length < 10) {
@@ -57,7 +55,7 @@ export function CallButton({ orderId, clientPhone, clientName }: CallButtonProps
       const response = await apiClient.initiateCallback(orderId, `+${digits}`);
       
       if (response.success) {
-        setSuccess('Звонок инициирован! Ожидайте входящего звонка на ваш номер.');
+        setSuccess('Звонок инициирован! Ожидайте входящего звонка.');
         setTimeout(() => {
           setIsOpen(false);
           setMasterPhone('');
@@ -90,72 +88,88 @@ export function CallButton({ orderId, clientPhone, clientName }: CallButtonProps
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4">
+          <div className={`rounded-xl p-5 max-w-sm w-full shadow-2xl ${
+            isDark ? 'bg-[#2a3441]' : 'bg-white'
+          }`}>
+            {/* Заголовок */}
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900">
+              <h3 className={`text-lg font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                 Звонок клиенту
               </h3>
               <button
                 onClick={handleClose}
                 disabled={isLoading}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className={`p-1 rounded transition-colors ${
+                  isDark ? 'text-gray-400 hover:text-gray-200 hover:bg-[#3a4451]' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                }`}
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             
-            <div className="mb-6">
-              <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                <p className="text-sm text-gray-600 mb-1">
-                  Клиент:
-                </p>
-                <p className="font-semibold text-gray-900">{clientName}</p>
-                <p className="text-sm text-gray-600 mt-2 mb-1">
-                  Номер клиента:
-                </p>
-                <p className="font-semibold text-gray-900">{clientPhone}</p>
+            {/* Информация о клиенте */}
+            <div className={`rounded-lg p-3 mb-4 ${isDark ? 'bg-[#3a4451]' : 'bg-gray-50'}`}>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className={`text-xs mb-0.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Клиент</p>
+                  <p className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{clientName}</p>
+                </div>
+                <div>
+                  <p className={`text-xs mb-0.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Телефон</p>
+                  <p className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{clientPhone}</p>
+                </div>
               </div>
-              
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ваш номер телефона: <span className="text-red-500">*</span>
+            </div>
+            
+            {/* Поле ввода */}
+            <div className="mb-4">
+              <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                Ваш номер телефона
               </label>
               <input
                 type="tel"
                 value={masterPhone}
                 onChange={handlePhoneChange}
                 placeholder="+7 (___) ___-__-__"
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-gray-900 placeholder-gray-400 transition-colors"
+                className={`w-full px-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-[#0d5c4b] transition-colors ${
+                  isDark 
+                    ? 'bg-[#3a4451] border-gray-600 text-gray-100 placeholder-gray-500' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                }`}
                 disabled={isLoading}
                 autoFocus
               />
-              <p className="text-xs text-gray-500 mt-2">
+              <p className={`text-xs mt-1.5 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
                 Сначала вам позвонит система, затем соединит с клиентом
               </p>
             </div>
 
+            {/* Ошибка */}
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-700 text-sm font-medium">{error}</p>
+              <div className={`mb-4 p-3 rounded-lg ${isDark ? 'bg-red-900/40 border border-red-700' : 'bg-red-50 border border-red-200'}`}>
+                <p className={`text-sm font-medium ${isDark ? 'text-red-400' : 'text-red-700'}`}>{error}</p>
               </div>
             )}
 
+            {/* Успех */}
             {success && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-green-700 text-sm font-medium">{success}</p>
+              <div className={`mb-4 p-3 rounded-lg ${isDark ? 'bg-green-900/40 border border-green-700' : 'bg-green-50 border border-green-200'}`}>
+                <p className={`text-sm font-medium ${isDark ? 'text-green-400' : 'text-green-700'}`}>{success}</p>
               </div>
             )}
 
+            {/* Кнопки */}
             <div className="flex gap-3">
-              <Button
+              <button
                 onClick={handleCall}
                 disabled={isLoading || !masterPhone}
-                className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-semibold py-3 rounded-lg transition-all duration-200 border-0"
+                className="flex-1 flex items-center justify-center gap-2 bg-[#0d5c4b] hover:bg-[#0a4a3c] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition-colors"
               >
                 {isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Инициация...
+                    Звоним...
                   </>
                 ) : (
                   <>
@@ -163,14 +177,18 @@ export function CallButton({ orderId, clientPhone, clientName }: CallButtonProps
                     Позвонить
                   </>
                 )}
-              </Button>
-              <Button
+              </button>
+              <button
                 onClick={handleClose}
                 disabled={isLoading}
-                className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition-all duration-200 border-0"
+                className={`px-4 py-2.5 font-medium rounded-lg transition-colors ${
+                  isDark 
+                    ? 'bg-[#3a4451] hover:bg-[#4a5461] text-gray-300' 
+                    : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                }`}
               >
                 Отмена
-              </Button>
+              </button>
             </div>
           </div>
         </div>
@@ -178,4 +196,3 @@ export function CallButton({ orderId, clientPhone, clientName }: CallButtonProps
     </>
   );
 }
-
