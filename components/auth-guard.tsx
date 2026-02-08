@@ -17,13 +17,21 @@ interface AuthGuardProps {
  */
 const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const router = useRouter()
-  // Оптимистичная проверка: если есть данные в localStorage, показываем контент сразу
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(() => {
-    if (typeof window !== 'undefined') {
-      return apiClient.getSavedUser() ? true : null
+  // Начальное состояние всегда null для избежания hydration mismatch
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
+  // Флаг для отслеживания оптимистичной загрузки (проверка localStorage)
+  const [hasOptimisticCheck, setHasOptimisticCheck] = useState(false)
+
+  // Оптимистичная проверка localStorage - только на клиенте
+  useEffect(() => {
+    if (!hasOptimisticCheck) {
+      const savedUser = apiClient.getSavedUser()
+      if (savedUser) {
+        setIsAuthenticated(true)
+      }
+      setHasOptimisticCheck(true)
     }
-    return null
-  })
+  }, [hasOptimisticCheck])
 
   useEffect(() => {
     let isMounted = true

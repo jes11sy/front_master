@@ -4,18 +4,18 @@
   "description": "CRM для мастеров - управление заказами",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#114643",
-  "theme_color": "#114643",
+  "background_color": "#0d5c4b",
+  "theme_color": "#0d5c4b",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/images/logo.png",
+      "src": "/images/images/pwa_light.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/images/logo.png",
+      "src": "/images/images/pwa_light.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
@@ -30,7 +30,7 @@
       "url": "/orders",
       "icons": [
         {
-          "src": "/images/logo.png",
+          "src": "/images/images/pwa_light.png",
           "sizes": "192x192"
         }
       ]
@@ -42,7 +42,7 @@
       "url": "/profile",
       "icons": [
         {
-          "src": "/images/logo.png",
+          "src": "/images/images/pwa_light.png",
           "sizes": "192x192"
         }
       ]

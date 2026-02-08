@@ -1,8 +1,6 @@
 'use client'
 
-import Image from 'next/image'
-import { useDesignStore } from '@/store/design.store'
-import { useState, useEffect, useSyncExternalStore } from 'react'
+import { useState, useEffect } from 'react'
 
 interface LoadingScreenProps {
   /** Текст под спиннером (не используется в новом дизайне) */
@@ -11,37 +9,6 @@ interface LoadingScreenProps {
   fullScreen?: boolean
   /** Дополнительные классы */
   className?: string
-}
-
-/**
- * Хук для определения темы без мелькания
- * Использует useSyncExternalStore для синхронной проверки DOM
- */
-function useThemeWithoutFlash() {
-  const { theme } = useDesignStore()
-  
-  // Проверяем DOM синхронно
-  const isDarkFromDOM = useSyncExternalStore(
-    // subscribe - подписываемся на изменения класса
-    (callback) => {
-      if (typeof window === 'undefined') return () => {}
-      const observer = new MutationObserver(callback)
-      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
-      return () => observer.disconnect()
-    },
-    // getSnapshot - получаем текущее значение на клиенте
-    () => typeof window !== 'undefined' && document.documentElement.classList.contains('dark'),
-    // getServerSnapshot - значение на сервере
-    () => false
-  )
-  
-  // После гидратации используем store
-  const [hydrated, setHydrated] = useState(false)
-  useEffect(() => {
-    setHydrated(true)
-  }, [])
-  
-  return hydrated ? theme === 'dark' : isDarkFromDOM
 }
 
 /**
@@ -56,42 +23,52 @@ export function LoadingScreen({
   fullScreen = true,
   className = ''
 }: LoadingScreenProps) {
-  const isDark = useThemeWithoutFlash()
+  // Определяем тему на клиенте после монтирования
+  const [isDark, setIsDark] = useState<boolean | null>(null)
+  
+  useEffect(() => {
+    // Проверяем класс dark на html элементе
+    setIsDark(document.documentElement.classList.contains('dark'))
+    
+    // Подписываемся на изменения класса
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains('dark'))
+    })
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    
+    return () => observer.disconnect()
+  }, [])
+
+  // Определяем какой логотип показывать
+  // На сервере и до гидратации показываем светлый по умолчанию
+  const logoSrc = isDark === null 
+    ? "/images/images/logo_light_v2.png" 
+    : isDark 
+      ? "/images/images/logo_dark_v2.png" 
+      : "/images/images/logo_light_v2.png"
 
   const content = (
     <div className="flex flex-col items-center justify-center px-4">
-      {/* Логотип - показываем оба и скрываем один через CSS для избежания мерцания */}
-      <div className="mb-8 relative">
-        {/* Светлый логотип - скрывается в темной теме */}
-        <Image 
-          src="/images/images/logo_light_v2.png"
+      {/* Логотип */}
+      <div className="mb-8">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img 
+          src={logoSrc}
           alt="MasterCRM" 
           width={200} 
           height={50} 
-          className={`h-12 w-auto transition-opacity duration-0 ${isDark ? 'opacity-0 absolute' : 'opacity-100'}`}
-          priority
-        />
-        {/* Темный логотип - показывается в темной теме */}
-        <Image 
-          src="/images/images/logo_dark_v2.png"
-          alt="MasterCRM" 
-          width={200} 
-          height={50} 
-          className={`h-12 w-auto transition-opacity duration-0 ${isDark ? 'opacity-100' : 'opacity-0 absolute'}`}
-          priority
+          className="h-12 w-auto"
         />
       </div>
 
       {/* Спиннер */}
       <div className="relative w-12 h-12">
-        <div className={`w-full h-full rounded-full border-4 ${isDark ? 'border-[#0d5c4b]/30' : 'border-[#0d5c4b]/20'}`} />
-        <div className={`absolute inset-0 rounded-full border-4 border-transparent border-t-[#0d5c4b] animate-spin`} />
+        <div className="w-full h-full rounded-full border-4 border-[#0d5c4b]/20 dark:border-[#0d5c4b]/30" />
+        <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-[#0d5c4b] animate-spin" />
       </div>
     </div>
   )
 
-  // Используем CSS-класс dark на html для определения фона без мелькания
-  // Класс dark устанавливается синхронным скриптом в layout.tsx до рендеринга React
   if (fullScreen) {
     return (
       <div className={`min-h-screen min-h-[100dvh] flex items-center justify-center bg-white dark:bg-[#1e2530] ${className}`}>
