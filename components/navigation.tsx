@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useDesignStore } from '@/store/design.store'
 import { useAuthStore } from '@/store/auth.store'
-import { Sun, Moon, User, Menu, X } from 'lucide-react'
+import { Sun, Moon, User, Menu, X, Bell } from 'lucide-react'
 import apiClient from '@/lib/api'
 
 // Навигационные элементы с иконками
@@ -93,7 +93,16 @@ export function Navigation() {
             priority
           />
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          {/* Notifications - placeholder для будущего функционала */}
+          <button
+            className={`p-2 transition-colors ${
+              theme === 'dark' ? 'text-gray-300 hover:text-[#0d5c4b]' : 'text-gray-600 hover:text-[#0d5c4b]'
+            }`}
+            aria-label="Уведомления"
+          >
+            <Bell className="h-6 w-6" />
+          </button>
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -292,6 +301,33 @@ export function Navigation() {
             </button>
             <Moon className={`h-4 w-4 transition-colors ${theme === 'dark' ? 'text-[#0d5c4b]' : 'text-gray-400'}`} />
           </div>
+
+          {/* Notifications - placeholder для будущего функционала */}
+          <button
+            className="nav-icon-hover relative flex items-center gap-2 px-3 py-2 text-sm font-normal group"
+          >
+            <span 
+              className="absolute left-1/2 -translate-x-1/2 bottom-0 h-[6px] w-10 transition-opacity duration-200 opacity-0 group-hover:opacity-50"
+            >
+              <svg viewBox="0 0 40 6" fill="none" className="w-full h-full">
+                <path 
+                  d="M1 5C1 2.5 4.5 1 10 1h20c5.5 0 9 1.5 9 4" 
+                  stroke="#0d5c4b" 
+                  strokeWidth="1.5" 
+                  strokeLinecap="round"
+                  fill="none"
+                />
+              </svg>
+            </span>
+            <Bell className={`h-[18px] w-[18px] transition-colors duration-200 ${
+              theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+            }`} />
+            <span className={`transition-colors duration-200 ${
+              theme === 'dark' ? 'text-gray-200' : 'text-gray-800'
+            } group-hover:text-[#0d5c4b]`}>
+              Уведомления
+            </span>
+          </button>
 
           {/* Profile */}
           <Link
