@@ -69,6 +69,7 @@ interface MenuContentProps {
   onCloseMobileMenu: () => void
   // Пропсы для уведомлений (только кнопка)
   onToggleNotifications: () => void
+  isNotificationsOpen: boolean
   unreadCount: number
 }
 
@@ -80,6 +81,7 @@ const MenuContent = memo(function MenuContent({
   userName,
   onCloseMobileMenu,
   onToggleNotifications,
+  isNotificationsOpen,
   unreadCount,
 }: MenuContentProps) {
   // Проверка активности с учетом подстраниц
@@ -162,10 +164,14 @@ const MenuContent = memo(function MenuContent({
           <div className="relative">
             <button
               onClick={onToggleNotifications}
-              className="nav-icon-hover relative flex items-center gap-3 px-3 py-2.5 text-sm font-normal group w-full text-left"
+              className={`nav-icon-hover relative flex items-center gap-3 px-3 py-2.5 text-sm font-normal group w-full text-left transition-colors ${
+                isNotificationsOpen ? 'text-[#0d5c4b]' : ''
+              }`}
             >
               <span 
-                className="absolute left-0 top-1/2 -translate-y-1/2 w-[6px] h-10 transition-opacity duration-200 opacity-0 group-hover:opacity-50"
+                className={`absolute left-0 top-1/2 -translate-y-1/2 w-[6px] h-10 transition-opacity duration-200 ${
+                  isNotificationsOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'
+                }`}
               >
                 <svg viewBox="0 0 6 40" fill="none" className="w-full h-full">
                   <path 
@@ -179,7 +185,7 @@ const MenuContent = memo(function MenuContent({
               </span>
               <div className="relative">
                 <Bell className={`h-5 w-5 transition-colors duration-200 ${
-                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  isNotificationsOpen ? 'text-[#0d5c4b]' : theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
                 }`} />
                 {unreadCount > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
@@ -188,7 +194,9 @@ const MenuContent = memo(function MenuContent({
                 )}
               </div>
               <span className={`transition-colors duration-200 ${
-                theme === 'dark' ? 'text-gray-200' : 'text-gray-800'
+                isNotificationsOpen 
+                  ? 'text-[#0d5c4b]' 
+                  : theme === 'dark' ? 'text-gray-200' : 'text-gray-800'
               } group-hover:text-[#0d5c4b]`}>
                 Уведомления
               </span>
@@ -414,14 +422,14 @@ export function SidebarNavigation() {
           <div className="relative" ref={notificationsButtonRef}>
             <button
               onClick={toggleNotifications}
-              className={`p-2 transition-colors relative ${
+              className="p-2 transition-colors relative"
+              aria-label="Уведомления"
+            >
+              <Bell className={`h-6 w-6 transition-colors duration-200 ${
                 isNotificationsOpen 
                   ? 'text-[#0d5c4b]' 
                   : theme === 'dark' ? 'text-gray-300 hover:text-[#0d5c4b]' : 'text-gray-600 hover:text-[#0d5c4b]'
-              }`}
-              aria-label="Уведомления"
-            >
-              <Bell className="h-6 w-6" />
+              }`} />
               {unreadCount > 0 && (
                 <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                   {unreadCount > 9 ? '9+' : unreadCount}
@@ -525,6 +533,7 @@ export function SidebarNavigation() {
             userName={userName}
             onCloseMobileMenu={closeMobileMenu}
             onToggleNotifications={toggleNotifications}
+            isNotificationsOpen={isNotificationsOpen}
             unreadCount={unreadCount}
           />
         </div>
@@ -556,6 +565,7 @@ export function SidebarNavigation() {
           userName={userName}
           onCloseMobileMenu={closeMobileMenu}
           onToggleNotifications={toggleNotifications}
+          isNotificationsOpen={isNotificationsOpen}
           unreadCount={unreadCount}
         />
       </aside>
