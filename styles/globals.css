@@ -2,6 +2,209 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Myriad Pro Font Family */
+@font-face {
+  font-family: 'Myriad Pro';
+  src: url('/images/fonts/MyriadPro-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Myriad Pro';
+  src: url('/images/fonts/MYRIADPRO-REGULAR.OTF') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Myriad Pro';
+  src: url('/images/fonts/MYRIADPRO-SEMIBOLD.OTF') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Myriad Pro';
+  src: url('/images/fonts/MYRIADPRO-SEMIBOLDIT.OTF') format('opentype');
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Myriad Pro';
+  src: url('/images/fonts/MYRIADPRO-BOLD.OTF') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Myriad Pro';
+  src: url('/images/fonts/MYRIADPRO-BOLDIT.OTF') format('opentype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Myriad Pro';
+  src: url('/images/fonts/MYRIADPRO-COND.OTF') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-stretch: condensed;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Myriad Pro';
+  src: url('/images/fonts/MYRIADPRO-CONDIT.OTF') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+  font-stretch: condensed;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Myriad Pro';
+  src: url('/images/fonts/MYRIADPRO-BOLDCOND.OTF') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-stretch: condensed;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Myriad Pro';
+  src: url('/images/fonts/MYRIADPRO-BOLDCONDIT.OTF') format('opentype');
+  font-weight: 700;
+  font-style: italic;
+  font-stretch: condensed;
+  font-display: swap;
+}
+
+/* Предотвращение автоматического скролла браузера */
+html {
+  scroll-behavior: smooth;
+}
+
+html, body {
+  scroll-behavior: auto;
+  scroll-padding-top: 0;
+  /* Улучшение прокрутки на iOS */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Тёмная тема - применяется через класс на html */
+html.dark {
+  background-color: #1e2530;
+  color-scheme: dark;
+}
+
+html.dark body {
+  background-color: #1e2530;
+}
+
+/* Навигация/Сайдбар - стили для предотвращения мерцания при загрузке */
+html:not(.hydrated) nav.nav-main,
+html:not(.hydrated) aside.sidebar-main,
+html:not(.hydrated) header.header-main {
+  transition: none !important;
+}
+
+/* Светлая тема (по умолчанию) */
+nav.nav-main,
+aside.sidebar-main,
+header.header-main {
+  background-color: white !important;
+  border-color: #e5e7eb !important;
+}
+
+nav.nav-main .nav-logo,
+aside.sidebar-main .nav-logo,
+header.header-main .nav-logo {
+  color: #1f2937;
+}
+
+nav.nav-main .nav-item,
+aside.sidebar-main .nav-item,
+header.header-main .nav-item {
+  color: #374151;
+}
+
+nav.nav-main .nav-item-active,
+aside.sidebar-main .nav-item-active,
+header.header-main .nav-item-active {
+  color: white;
+  background-color: #0d5c4b;
+}
+
+/* Тёмная тема навигации/сайдбара */
+html.dark nav.nav-main,
+html.dark aside.sidebar-main,
+html.dark header.header-main {
+  background-color: #1e2530 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+html.dark nav.nav-main .nav-logo,
+html.dark aside.sidebar-main .nav-logo,
+html.dark header.header-main .nav-logo {
+  color: #f3f4f6;
+}
+
+html.dark nav.nav-main .nav-item,
+html.dark aside.sidebar-main .nav-item,
+html.dark header.header-main .nav-item {
+  color: #d1d5db;
+}
+
+html.dark nav.nav-main .nav-item-active,
+html.dark aside.sidebar-main .nav-item-active,
+html.dark header.header-main .nav-item-active {
+  color: white;
+  background-color: #0d5c4b;
+}
+
+/* Main content - предотвращение мерцания */
+main.main-content {
+  background-color: white !important;
+}
+
+html.dark main.main-content {
+  background-color: #1e2530 !important;
+}
+
+/* Navigation Icon Hover Effect */
+.nav-icon-hover:hover .nav-icon {
+  filter: invert(27%) sepia(51%) saturate(1095%) hue-rotate(140deg) brightness(92%) contrast(92%);
+}
+
+.nav-icon-active {
+  filter: invert(27%) sepia(51%) saturate(1095%) hue-rotate(140deg) brightness(92%) contrast(92%);
+}
+
+/* Dark mode - инвертируем иконки навигации для светлого отображения */
+.dark .nav-icon:not(.nav-icon-active) {
+  filter: invert(1) brightness(0.8);
+}
+
+.dark .nav-icon-hover:hover .nav-icon {
+  filter: invert(27%) sepia(51%) saturate(1095%) hue-rotate(140deg) brightness(92%) contrast(92%);
+}
+
+/* iOS Safari: GPU ускорение для фиксированных элементов */
+@supports (-webkit-touch-callout: none) {
+  .fixed:not([class*="translate-x"]):not([class*="-translate-x"]) {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -10,42 +213,42 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
+    --primary: 222.2 47.4% 11.2%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
     --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
+    --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --ring: 222.2 84% 4.9%;
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --background: 120 25% 8%;
+    --foreground: 120 10% 95%;
+    --card: 120 25% 10%;
+    --card-foreground: 120 10% 95%;
+    --popover: 120 25% 10%;
+    --popover-foreground: 120 10% 95%;
+    --primary: 120 60% 35%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 120 20% 15%;
+    --secondary-foreground: 120 10% 95%;
+    --muted: 120 20% 15%;
+    --muted-foreground: 120 10% 65%;
+    --accent: 120 20% 15%;
+    --accent-foreground: 120 10% 95%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 94.1%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 120 20% 20%;
+    --input: 120 20% 20%;
+    --ring: 120 60% 35%;
   }
 }
 
@@ -58,91 +261,68 @@
   }
 }
 
-/* Кастомные стили для главной страницы */
-.hero-gradient {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* Кастомные скроллбары */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-.hero-bg {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+::-webkit-scrollbar-track {
+  background: #1e293b;
+  border-radius: 4px;
 }
 
-/* Анимации для страницы входа */
-@keyframes blob {
-  0% {
-    transform: translate(0px, 0px) scale(1);
+::-webkit-scrollbar-thumb {
+  background: #2a6b68;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #1a5a57;
+}
+
+/* Скрытый скроллбар для горизонтальной прокрутки */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Toast animations */
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
   }
-  33% {
-    transform: translate(30px, -50px) scale(1.1);
-  }
-  66% {
-    transform: translate(-20px, 20px) scale(0.9);
-  }
-  100% {
-    transform: translate(0px, 0px) scale(1);
-  }
-}
-
-.animate-blob {
-  animation: blob 7s infinite;
-}
-
-.animation-delay-2000 {
-  animation-delay: 2s;
-}
-
-.animation-delay-4000 {
-  animation-delay: 4s;
-}
-
-/* Дополнительные анимации */
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-10px);
+  to {
+    transform: translateX(0);
+    opacity: 1;
   }
 }
 
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
-
-/* Эффекты для карточки */
-.card-glow {
-  box-shadow: 
-    0 0 20px rgba(139, 92, 246, 0.3),
-    0 0 40px rgba(139, 92, 246, 0.2),
-    0 0 60px rgba(139, 92, 246, 0.1);
-}
-
-/* Градиентный текст */
-.gradient-text {
-  background: linear-gradient(135deg, #8b5cf6, #ec4899, #3b82f6);
-  background-size: 200% 200%;
-  animation: gradient-shift 3s ease infinite;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-@keyframes gradient-shift {
-  0% {
-    background-position: 0% 50%;
+@keyframes slide-out {
+  from {
+    transform: translateX(0);
+    opacity: 1;
   }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
+  to {
+    transform: translateX(100%);
+    opacity: 0;
   }
 }
 
-/* Анимации для страницы логина */
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out forwards;
+}
+
+.animate-slide-out {
+  animation: slide-out 0.3s ease-out forwards;
+}
+
+/* Login page animations */
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -157,18 +337,18 @@
 @keyframes bounce-in {
   0% {
     opacity: 0;
-    transform: scale(0.3);
+    transform: scale(0.3) translateY(-50px);
   }
   50% {
     opacity: 1;
-    transform: scale(1.05);
+    transform: scale(1.05) translateY(0);
   }
   70% {
     transform: scale(0.9);
   }
   100% {
     opacity: 1;
-    transform: scale(1);
+    transform: scale(1) translateY(0);
   }
 }
 
@@ -197,12 +377,15 @@
 @keyframes fade-in-delayed {
   0% {
     opacity: 0;
+    transform: translateY(10px);
   }
   50% {
     opacity: 0;
+    transform: translateY(10px);
   }
   100% {
     opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -223,31 +406,96 @@
 }
 
 .animate-fade-in-delayed {
-  animation: fade-in-delayed 1s ease-out forwards;
+  animation: fade-in-delayed 0.6s ease-out 0.6s both;
 }
 
-/* Стили для формы */
+/* Enhanced shadows for login form */
+.shadow-3xl {
+  box-shadow: 0 35px 60px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* Hover effects for form elements */
 .form-input-hover {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .form-input-hover:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .form-input-hover:focus {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
 }
 
-/* Стили для навигации */
+/* Navigation animations */
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(20, 184, 166, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(20, 184, 166, 0.6);
+  }
+}
+
+.animate-slide-down {
+  animation: slide-down 0.3s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out forwards;
+}
+
+.animate-fade-in-scale {
+  animation: fade-in-scale 0.2s ease-out forwards;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Navigation hover effects */
 .nav-item-hover {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .nav-item-hover:hover {
   transform: translateY(-1px);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .dropdown-hover {
@@ -255,19 +503,47 @@
 }
 
 .dropdown-hover:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateX(4px);
+  background-color: rgba(20, 184, 166, 0.1);
 }
 
-/* Анимация прогресс-бара для экрана загрузки */
+/* Force remove outline for login inputs */
+input:focus,
+input:focus-visible,
+input:focus-within,
+input[type="text"]:focus,
+input[type="password"]:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border: 2px solid #14b8a6 !important;
+}
+
+/* Custom focus styles for login form */
+.login-input:focus {
+  outline: none !important;
+  border-color: #14b8a6 !important;
+  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.2) !important;
+}
+
+/* Nuclear option - remove all browser outlines */
+*:focus {
+  outline: none !important;
+}
+
+input:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Loading screen animations */
 @keyframes loading-bar {
   0% {
     width: 0%;
-    margin-left: 0%;
+    margin-left: 0;
   }
   50% {
-    width: 60%;
-    margin-left: 20%;
+    width: 70%;
+    margin-left: 15%;
   }
   100% {
     width: 0%;
