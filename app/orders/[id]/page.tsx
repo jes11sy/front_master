@@ -791,7 +791,7 @@ function OrderDetailPageContent() {
                   </div>
                   <div className="p-4">
                     <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Телефон</div>
-                    <a href={`tel:${order.phone}`} className="text-sm font-medium text-[#0d5c4b]">{order.phone || '-'}</a>
+                    <div className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{order.phone || '-'}</div>
                   </div>
                   <div className="p-4 col-span-2 sm:col-span-1">
                     <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Адрес</div>
@@ -938,11 +938,11 @@ function OrderDetailPageContent() {
                     <div className={`mt-4 pt-4 border-t grid grid-cols-2 gap-4 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
                       <div>
                         <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Чистыми</div>
-                        <div className="text-lg font-semibold text-[#0d5c4b]">{cleanAmount}₽</div>
+                        <div className={`text-lg font-semibold ${isDark ? 'text-gray-100' : 'text-[#0d5c4b]'}`}>{cleanAmount}₽</div>
                       </div>
                       <div>
                         <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Сдача мастера</div>
-                        <div className={`text-lg font-semibold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{masterChange}₽</div>
+                        <div className={`text-lg font-semibold ${isDark ? 'text-gray-100' : 'text-blue-600'}`}>{masterChange}₽</div>
                       </div>
                     </div>
                   )}

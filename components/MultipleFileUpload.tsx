@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { X, Download, UploadCloud } from 'lucide-react';
+import { useDesignStore } from '@/store/design.store';
 
 interface FileWithPreview {
   file: File | null;
@@ -32,6 +33,9 @@ export const MultipleFileUpload: React.FC<MultipleFileUploadProps> = ({
   disabled,
   canAddMore,
 }) => {
+  const { theme } = useDesignStore();
+  const isDark = theme === 'dark';
+
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragOver(false);
@@ -54,20 +58,30 @@ export const MultipleFileUpload: React.FC<MultipleFileUploadProps> = ({
     link.click();
   };
 
+  const getDropzoneClasses = () => {
+    if (dragOver) {
+      return isDark 
+        ? 'border-blue-500 bg-blue-900/30' 
+        : 'border-blue-400 bg-blue-50';
+    }
+    if (files.length > 0) {
+      return isDark 
+        ? 'border-[#0d5c4b] bg-[#0d5c4b]/20' 
+        : 'border-green-400 bg-green-50';
+    }
+    return isDark 
+      ? 'border-gray-600 bg-[#3a4451]' 
+      : 'border-gray-300 bg-gray-50';
+  };
+
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
+      <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
         {label} ({files.length} фото)
       </label>
 
       <div
-        className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-          dragOver
-            ? 'border-blue-400 bg-blue-50'
-            : files.length > 0
-              ? 'border-green-400 bg-green-50'
-              : 'border-gray-300 bg-gray-50'
-        }`}
+        className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${getDropzoneClasses()}`}
         onDragOver={(e) => {
           e.preventDefault();
           if (!disabled && canAddMore) setDragOver(true);
@@ -121,7 +135,7 @@ export const MultipleFileUpload: React.FC<MultipleFileUploadProps> = ({
                   )}
                 </div>
                 {fileWithPreview.file && (
-                  <div className="text-xs text-gray-600 text-center mt-1 truncate px-1">
+                  <div className={`text-xs text-center mt-1 truncate px-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                     {fileWithPreview.file.name}
                   </div>
                 )}
@@ -130,11 +144,11 @@ export const MultipleFileUpload: React.FC<MultipleFileUploadProps> = ({
           </div>
         ) : (
           <div className="space-y-3">
-            <UploadCloud className="w-16 h-16 text-gray-400 mx-auto" />
-            <div className="text-gray-700 font-medium">
+            <UploadCloud className={`w-16 h-16 mx-auto ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+            <div className={`font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
               {dragOver ? 'Отпустите файлы' : 'Перетащите файлы сюда'}
             </div>
-            <div className="text-sm text-gray-500">или нажмите для выбора (можно несколько)</div>
+            <div className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>или нажмите для выбора (можно несколько)</div>
             {!canAddMore && (
               <div className="text-sm text-red-500 font-medium">Достигнут лимит файлов</div>
             )}
@@ -144,4 +158,3 @@ export const MultipleFileUpload: React.FC<MultipleFileUploadProps> = ({
     </div>
   );
 };
-
