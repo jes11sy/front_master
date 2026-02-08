@@ -1,111 +1,101 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import Image from 'next/image'
+import { useDesignStore } from '@/store/design.store'
+import { useState, useEffect } from 'react'
 
 interface LoadingScreenProps {
-  /** Текст под спиннером */
+  /** Текст под спиннером (не используется в новом дизайне) */
   message?: string
-  /** Показывать логотип */
-  showLogo?: boolean
   /** Полноэкранный режим */
   fullScreen?: boolean
+  /** Дополнительные классы */
+  className?: string
+}
+
+/**
+ * Хук для определения темы без мелькания
+ * Сначала проверяет CSS класс dark на html, потом синхронизируется со store
+ */
+function useThemeWithoutFlash() {
+  const { theme } = useDesignStore()
+  const [isDark, setIsDark] = useState(() => {
+    // На сервере или при первом рендере проверяем CSS класс
+    if (typeof window !== 'undefined') {
+      return document.documentElement.classList.contains('dark')
+    }
+    return false
+  })
+
+  useEffect(() => {
+    // После гидратации синхронизируемся со store
+    setIsDark(theme === 'dark')
+  }, [theme])
+
+  return isDark
 }
 
 /**
  * Единый компонент загрузки для всего приложения
  * Используется на:
- * - Странице логина (проверка автовхода)
  * - AuthGuard (проверка сессии)
  * - Suspense fallback
+ * - Любые полноэкранные загрузки
+ * Минималистичный дизайн: только лого и спиннер
  */
 export function LoadingScreen({ 
-  message = 'Загрузка...', 
-  showLogo = true,
-  fullScreen = true 
+  fullScreen = true,
+  className = ''
 }: LoadingScreenProps) {
-  const [dots, setDots] = useState('')
-
-  // Анимация точек в тексте
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setDots(prev => prev.length >= 3 ? '' : prev + '.')
-    }, 500)
-    return () => clearInterval(interval)
-  }, [])
+  const isDark = useThemeWithoutFlash()
 
   const content = (
     <div className="flex flex-col items-center justify-center px-4">
-      {/* Логотип с пульсацией */}
-      {showLogo && (
-        <div className="mb-6 sm:mb-8 relative flex items-center justify-center">
-          {/* Внешнее свечение - белое, чтобы контрастировало с зелёным лого */}
-          <div className="absolute w-20 h-20 sm:w-28 sm:h-28 bg-white/15 blur-2xl rounded-full animate-pulse" />
-          
-          {/* Логотип - адаптивный размер */}
-          <div className="relative animate-pulse" style={{ animationDuration: '2s' }}>
-            <Image 
-              src="/images/logo.png" 
-              alt="Новые Схемы" 
-              width={100} 
-              height={100}
-              className="w-20 h-20 sm:w-[100px] sm:h-[100px] drop-shadow-[0_0_20px_rgba(255,255,255,0.25)]"
-              priority
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Спиннер - адаптивный размер */}
-      <div className="relative mb-4 sm:mb-6 w-12 h-12 sm:w-14 sm:h-14">
-        {/* Внешнее кольцо */}
-        <div className="w-full h-full rounded-full border-[3px] sm:border-4 border-white/20" />
-        
-        {/* Вращающееся кольцо */}
-        <div className="absolute inset-0 rounded-full border-[3px] sm:border-4 border-transparent 
-                        border-t-white border-r-white/50 animate-spin" />
-        
-        {/* Внутреннее кольцо (вращается в другую сторону) */}
-        <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 w-9 h-9 sm:w-10 sm:h-10 rounded-full 
-                        border-[3px] sm:border-4 border-transparent border-b-white/70 border-l-white/30 animate-spin"
-             style={{ animationDirection: 'reverse', animationDuration: '0.8s' }} />
+      {/* Логотип */}
+      <div className="mb-8">
+        <Image 
+          src={isDark ? "/images/images/logo_dark_v2.png" : "/images/images/logo_light_v2.png"} 
+          alt="MasterCRM" 
+          width={200} 
+          height={50} 
+          className="h-12 w-auto" 
+          priority
+        />
       </div>
 
-      {/* Текст загрузки */}
-      <div className="text-white text-base sm:text-lg font-medium text-center">
-        {message.replace('...', '')}{dots}
-      </div>
-      
-      {/* Прогресс-бар (декоративный) */}
-      <div className="mt-4 sm:mt-6 w-40 sm:w-48 h-1 bg-white/10 rounded-full overflow-hidden">
-        <div className="h-full bg-gradient-to-r from-white/50 to-white rounded-full animate-loading-bar" />
+      {/* Спиннер */}
+      <div className="relative w-12 h-12">
+        <div className={`w-full h-full rounded-full border-4 ${isDark ? 'border-[#0d5c4b]/30' : 'border-[#0d5c4b]/20'}`} />
+        <div className={`absolute inset-0 rounded-full border-4 border-transparent border-t-[#0d5c4b] animate-spin`} />
       </div>
     </div>
   )
 
+  // Используем CSS-класс dark на html для определения фона без мелькания
+  // Класс dark устанавливается синхронным скриптом в layout.tsx до рендеринга React
   if (fullScreen) {
     return (
-      <div className="min-h-screen min-h-[100dvh] flex items-center justify-center" 
-           style={{ backgroundColor: '#114643' }}>
+      <div className={`min-h-screen min-h-[100dvh] flex items-center justify-center bg-white dark:bg-[#1e2530] ${className}`}>
         {content}
       </div>
     )
   }
 
-  return content
+  return (
+    <div className={`flex items-center justify-center py-12 bg-white dark:bg-[#1e2530] ${className}`}>
+      {content}
+    </div>
+  )
 }
 
 /**
  * Минимальный спиннер для использования внутри компонентов
- * @param variant - 'light' для тёмного фона, 'dark' для светлого фона
  */
 export function LoadingSpinner({ 
   size = 'md', 
-  variant = 'light',
   className = '' 
 }: { 
   size?: 'sm' | 'md' | 'lg'
-  variant?: 'light' | 'dark'
   className?: string 
 }) {
   const sizeClasses = {
@@ -114,22 +104,54 @@ export function LoadingSpinner({
     lg: 'w-12 h-12'
   }
 
-  const colorClasses = {
-    light: {
-      ring: 'border-white/20',
-      spinner: 'border-t-white border-r-white/50'
-    },
-    dark: {
-      ring: 'border-gray-300',
-      spinner: 'border-t-teal-600 border-r-teal-600/50'
-    }
-  }
-
   return (
     <div className={`relative ${sizeClasses[size]} ${className}`}>
-      <div className={`${sizeClasses[size]} rounded-full border-2 ${colorClasses[variant].ring}`} />
-      <div className={`absolute top-0 left-0 ${sizeClasses[size]} rounded-full border-2 border-transparent 
-                      ${colorClasses[variant].spinner} animate-spin`} />
+      <div className={`${sizeClasses[size]} rounded-full border-2 border-[#0d5c4b]/20`} />
+      <div className={`absolute top-0 left-0 ${sizeClasses[size]} rounded-full border-2 border-transparent border-t-[#0d5c4b] animate-spin`} />
+    </div>
+  )
+}
+
+/**
+ * Состояние загрузки для контента (таблицы, списки и т.д.)
+ */
+export function LoadingState({ 
+  message = 'Загрузка...', 
+  size = 'md',
+  className = ''
+}: { 
+  message?: string
+  size?: 'sm' | 'md' | 'lg'
+  className?: string
+}) {
+  return (
+    <div className={`flex flex-col items-center justify-center py-8 space-y-3 ${className}`}>
+      <LoadingSpinner size={size} />
+      <p className="text-sm text-gray-500 dark:text-gray-400">{message}</p>
+    </div>
+  )
+}
+
+/**
+ * Оверлей загрузки поверх контента
+ */
+export function LoadingOverlay({ 
+  isLoading, 
+  message, 
+  children 
+}: { 
+  isLoading: boolean
+  message?: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="relative">
+      {children}
+      {isLoading && (
+        <div className="absolute inset-0 backdrop-blur-sm flex items-center justify-center z-50 bg-white/80 dark:bg-[#1e2530]/80">
+          <LoadingState message={message} />
+        </div>
+      )}
     </div>
   )
 }

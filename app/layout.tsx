@@ -4,16 +4,32 @@ import { ToastProvider } from '@/components/ui/toast'
 import MasterLayout from '@/components/master-layout'
 import { LayoutProvider } from '@/components/layout-context'
 import ClientLayout from '@/components/client-layout'
+import Script from 'next/script'
 
 export const metadata: Metadata = {
   title: 'Новые схемы',
   description: 'CRM Мастера',
-  icons: {
-    icon: '/images/logo.png',
-    shortcut: '/images/logo.png',
-    apple: '/images/logo.png',
-  },
   manifest: '/manifest.json',
+  icons: {
+    icon: [
+      { url: '/images/images/pwa_light.png', media: '(prefers-color-scheme: light)' },
+      { url: '/images/images/pwa_dark.png', media: '(prefers-color-scheme: dark)' },
+    ],
+    shortcut: '/images/images/favicon.png',
+    apple: [
+      { url: '/images/images/pwa_light.png', media: '(prefers-color-scheme: light)' },
+      { url: '/images/images/pwa_dark.png', media: '(prefers-color-scheme: dark)' },
+    ],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'НС Мастер',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  themeColor: '#0d5c4b',
 }
 
 export default function RootLayout({
@@ -22,12 +38,71 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="ru">
+    <html lang="ru" suppressHydrationWarning>
       <head>
-        {/* 🔴 АГРЕССИВНОЕ УДАЛЕНИЕ SERVICE WORKER - выполняется ДО загрузки React */}
+        {/* Скрипт инициализации темы - ДОЛЖЕН быть первым, чтобы избежать мелькания */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var stored = localStorage.getItem('design-storage');
+                  if (stored) {
+                    var data = JSON.parse(stored);
+                    var theme = data.state && data.state.theme;
+                    if (theme === 'dark') {
+                      document.documentElement.classList.add('dark');
+                      document.documentElement.style.backgroundColor = '#1e2530';
+                      document.documentElement.style.colorScheme = 'dark';
+                    }
+                  }
+                  // Добавляем класс hydrated после небольшой задержки для плавных переходов
+                  requestAnimationFrame(function() {
+                    document.documentElement.classList.add('hydrated');
+                  });
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+        {/* Критические стили для предотвращения мерцания */}
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              nav.nav-main, aside.sidebar-main, header.header-main, main.main-content {
+                background-color: white !important;
+              }
+              html.dark nav.nav-main, html.dark aside.sidebar-main, html.dark header.header-main, html.dark main.main-content {
+                background-color: #1e2530 !important;
+              }
+              nav.nav-main, aside.sidebar-main, header.header-main {
+                border-color: #e5e7eb;
+              }
+              html.dark nav.nav-main, html.dark aside.sidebar-main, html.dark header.header-main {
+                border-color: rgba(255, 255, 255, 0.15);
+              }
+            `,
+          }}
+        />
+        {/* Удаление Service Worker */}
         <script src="/unregister-sw.js" />
+        <Script id="error-handler" strategy="beforeInteractive">
+          {`
+            // Глобальная обработка необработанных ошибок
+            window.addEventListener('error', function(event) {
+              console.error('Global error caught:', event.error);
+              event.preventDefault();
+            });
+            
+            // Обработка необработанных промисов
+            window.addEventListener('unhandledrejection', function(event) {
+              console.error('Unhandled promise rejection:', event.reason);
+              event.preventDefault();
+            });
+          `}
+        </Script>
       </head>
-      <body>
+      <body className="font-myriad transition-colors duration-0">
         <LayoutProvider>
           <ToastProvider>
             <MasterLayout>
@@ -41,4 +116,3 @@ export default function RootLayout({
     </html>
   )
 }
-
