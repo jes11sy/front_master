@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import apiClient from '@/lib/api'
 import { logger } from '@/lib/logger'
 import { LoadingScreen } from '@/components/ui/loading-screen'
+import { useAuthStore } from '@/store/auth.store'
 
 interface AuthGuardProps {
   children: React.ReactNode
@@ -17,6 +18,7 @@ interface AuthGuardProps {
  */
 const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const router = useRouter()
+  const { setUser, updateUser } = useAuthStore()
   // Начальное состояние всегда null для избежания hydration mismatch
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   // Флаг для отслеживания оптимистичной загрузки (проверка localStorage)
@@ -43,7 +45,19 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
         if (!isMounted) return
         
         if (response.success && response.data) {
+          // Сохраняем базовые данные пользователя
+          setUser(response.data)
           setIsAuthenticated(true)
+          
+          // Загружаем полный профиль мастера с ФИО
+          try {
+            const masterProfile = await apiClient.getMasterProfile()
+            if (isMounted && masterProfile.success && masterProfile.data?.name) {
+              updateUser({ name: masterProfile.data.name })
+            }
+          } catch {
+            // Игнорируем ошибку загрузки профиля мастера
+          }
         } else {
           // Cookies не работают — пробуем восстановить через IndexedDB
           logger.debug('Cookies invalid, trying to restore from IndexedDB')
@@ -85,7 +99,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     return () => {
       isMounted = false
     }
-  }, [router])
+  }, [router, setUser, updateUser])
 
   // Показываем loading только если нет сохранённого пользователя
   if (isAuthenticated === null) {

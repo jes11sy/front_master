@@ -2,6 +2,31 @@
 
 import { useState, useEffect } from 'react'
 
+// Функция для определения темы из localStorage
+function getInitialTheme(): boolean {
+  if (typeof window === 'undefined') return false
+  
+  try {
+    // Сначала проверяем класс на html (самый надёжный способ)
+    if (document.documentElement.classList.contains('dark')) {
+      return true
+    }
+    
+    // Затем проверяем localStorage
+    const stored = localStorage.getItem('design-storage')
+    if (stored) {
+      const data = JSON.parse(stored)
+      if (data?.state?.theme === 'dark') {
+        return true
+      }
+    }
+  } catch {
+    // Игнорируем ошибки
+  }
+  
+  return false
+}
+
 interface LoadingScreenProps {
   /** Текст под спиннером (не используется в новом дизайне) */
   message?: string
@@ -23,12 +48,12 @@ export function LoadingScreen({
   fullScreen = true,
   className = ''
 }: LoadingScreenProps) {
-  // Определяем тему на клиенте после монтирования
-  const [isDark, setIsDark] = useState<boolean | null>(null)
+  // Определяем тему на клиенте - сразу читаем из localStorage/html
+  const [isDark, setIsDark] = useState<boolean>(() => getInitialTheme())
   
   useEffect(() => {
-    // Проверяем класс dark на html элементе
-    setIsDark(document.documentElement.classList.contains('dark'))
+    // Обновляем состояние после монтирования (на случай если SSR показал другое)
+    setIsDark(getInitialTheme())
     
     // Подписываемся на изменения класса
     const observer = new MutationObserver(() => {
@@ -40,12 +65,9 @@ export function LoadingScreen({
   }, [])
 
   // Определяем какой логотип показывать
-  // На сервере и до гидратации показываем светлый по умолчанию
-  const logoSrc = isDark === null 
-    ? "/images/images/logo_light_v2.png" 
-    : isDark 
-      ? "/images/images/logo_dark_v2.png" 
-      : "/images/images/logo_light_v2.png"
+  const logoSrc = isDark 
+    ? "/images/images/logo_dark_v2.png" 
+    : "/images/images/logo_light_v2.png"
 
   const content = (
     <div className="flex flex-col items-center justify-center px-4">

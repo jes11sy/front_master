@@ -454,7 +454,7 @@ function OrdersContent() {
                   </svg>
                   {/* Индикатор активных фильтров */}
                   {(searchId || searchPhone || searchAddress || statusFilter || cityFilter) && (
-                    <span className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-teal-500 rounded-full border-2 ${
+                    <span className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#0d5c4b] rounded-full border-2 ${
                       isDark ? 'border-[#1e2530]' : 'border-white'
                     }`}></span>
                   )}
@@ -577,9 +577,9 @@ function OrdersContent() {
                             <SelectValue placeholder="Все статусы" />
                           </SelectTrigger>
                           <SelectContent className={isDark ? 'bg-[#2a3441] border-gray-600' : 'bg-white border-gray-200'}>
-                            <SelectItem value="all" className={isDark ? 'text-gray-100 focus:bg-[#3a4451] focus:text-teal-400' : 'text-gray-800 focus:bg-teal-50 focus:text-teal-700'}>Все статусы</SelectItem>
+                            <SelectItem value="all" className={isDark ? 'text-gray-100 focus:bg-[#3a4451] focus:text-[#0d5c4b]' : 'text-gray-800 focus:bg-[#daece2] focus:text-[#0d5c4b]'}>Все статусы</SelectItem>
                             {allStatuses.map(status => (
-                              <SelectItem key={status} value={status} className={isDark ? 'text-gray-100 focus:bg-[#3a4451] focus:text-teal-400' : 'text-gray-800 focus:bg-teal-50 focus:text-teal-700'}>{status}</SelectItem>
+                              <SelectItem key={status} value={status} className={isDark ? 'text-gray-100 focus:bg-[#3a4451] focus:text-[#0d5c4b]' : 'text-gray-800 focus:bg-[#daece2] focus:text-[#0d5c4b]'}>{status}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -592,9 +592,9 @@ function OrdersContent() {
                             <SelectValue placeholder="Все города" />
                           </SelectTrigger>
                           <SelectContent className={isDark ? 'bg-[#2a3441] border-gray-600' : 'bg-white border-gray-200'}>
-                            <SelectItem value="all" className={isDark ? 'text-gray-100 focus:bg-[#3a4451] focus:text-teal-400' : 'text-gray-800 focus:bg-teal-50 focus:text-teal-700'}>Все города</SelectItem>
+                            <SelectItem value="all" className={isDark ? 'text-gray-100 focus:bg-[#3a4451] focus:text-[#0d5c4b]' : 'text-gray-800 focus:bg-[#daece2] focus:text-[#0d5c4b]'}>Все города</SelectItem>
                             {uniqueCities.map(city => (
-                              <SelectItem key={city} value={city} className={isDark ? 'text-gray-100 focus:bg-[#3a4451] focus:text-teal-400' : 'text-gray-800 focus:bg-teal-50 focus:text-teal-700'}>{city}</SelectItem>
+                              <SelectItem key={city} value={city} className={isDark ? 'text-gray-100 focus:bg-[#3a4451] focus:text-[#0d5c4b]' : 'text-gray-800 focus:bg-[#daece2] focus:text-[#0d5c4b]'}>{city}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -618,7 +618,7 @@ function OrdersContent() {
                     </button>
                     <button
                       onClick={applyFilters}
-                      className="flex-1 px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg transition-colors text-sm font-medium"
+                      className="flex-1 px-4 py-2 bg-[#0d5c4b] hover:bg-[#0a4a3c] text-white rounded-lg transition-colors text-sm font-medium"
                     >
                       Применить
                     </button>
@@ -664,7 +664,7 @@ function OrdersContent() {
                       className={`border-b transition-colors cursor-pointer ${
                         isDark 
                           ? 'border-gray-700 hover:bg-[#3a4451]'
-                          : 'border-gray-200 hover:bg-teal-50'
+                          : 'border-gray-200 hover:bg-[#daece2]'
                       }`}
                       onClick={() => handleOrderClick(order.id)}
                     >

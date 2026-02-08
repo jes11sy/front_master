@@ -210,13 +210,13 @@ function ScheduleContent() {
                           onClick={() => handleDayToggle(date)}
                           className={`w-full aspect-square rounded-xl text-sm font-bold transition-all duration-200 relative ${
                             isWorkDay 
-                              ? 'bg-teal-500 text-white shadow-md hover:bg-teal-600' 
+                              ? 'bg-[#0d5c4b] text-white shadow-md hover:bg-[#0a4a3c]' 
                               : isDayOff
                               ? 'bg-red-500 text-white shadow-md hover:bg-red-600'
                               : isDark
                               ? 'bg-[#3a4451] text-gray-300 hover:bg-[#4a5461]'
                               : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-100'
-                          } ${isToday ? 'ring-2 ring-teal-400 ring-offset-2' : ''}`}
+                          } ${isToday ? 'ring-2 ring-[#0d5c4b] ring-offset-2' : ''}`}
                           style={isToday && isDark ? { ringOffsetColor: '#2a3441' } : {}}
                         >
                           {date.getDate()}
@@ -229,7 +229,7 @@ function ScheduleContent() {
                 {/* Легенда */}
                 <div className="flex flex-wrap gap-4 justify-center mb-4">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-teal-500 rounded"></div>
+                    <div className="w-3 h-3 bg-[#0d5c4b] rounded"></div>
                     <span className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Рабочий</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -246,7 +246,7 @@ function ScheduleContent() {
                 <button 
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="w-full py-3 bg-teal-500 hover:bg-teal-600 text-white rounded-xl transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-[#0d5c4b] hover:bg-[#0a4a3c] text-white rounded-xl transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isSaving ? (
                     <>
