@@ -132,7 +132,7 @@ export function CallButton({ orderId, clientPhone, clientName }: CallButtonProps
                 autoFocus
               />
               <p className="text-xs text-gray-500 mt-2">
-                💡 Сначала вам позвонит система, затем соединит с клиентом
+                Сначала вам позвонит система, затем соединит с клиентом
               </p>
             </div>
 

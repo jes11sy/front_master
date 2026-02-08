@@ -4,7 +4,8 @@ import { useRouter, useParams } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2, ChevronLeft, Phone } from 'lucide-react'
+import { Loader2, ChevronLeft } from 'lucide-react'
+import { CallButton } from '@/components/CallButton'
 import apiClient from '@/lib/api'
 import { useMultipleFileUpload } from '@/hooks/useMultipleFileUpload'
 import { MultipleFileUpload } from '@/components/MultipleFileUpload'
@@ -688,13 +689,12 @@ function OrderDetailPageContent() {
               </span>
             </div>
             
-            {/* Кнопка звонка */}
-            <a 
-              href={`tel:${order.phone}`}
-              className="p-2.5 bg-[#0d5c4b] hover:bg-[#0a4a3c] text-white rounded-lg transition-colors"
-            >
-              <Phone className="w-5 h-5" />
-            </a>
+            {/* Кнопка звонка через телефонию */}
+            <CallButton 
+              orderId={order.id} 
+              clientPhone={order.phone} 
+              clientName={order.clientName} 
+            />
           </div>
 
           {/* Табы */}
