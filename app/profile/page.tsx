@@ -1,13 +1,11 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import apiClient from '@/lib/api'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { LoadingSpinner } from '@/components/ui/loading-screen'
+import { useAuthStore } from '@/store/auth.store'
+import { useDesignStore } from '@/store/design.store'
+import apiClient from '@/lib/api'
+import { User, Edit2, LogOut, Eye, EyeOff, Save, X, Loader2, FileText, Camera } from 'lucide-react'
 
 // Интерфейс профиля мастера
 interface MasterProfile {
@@ -28,10 +26,28 @@ interface MasterProfile {
 
 export default function ProfilePage() {
   const router = useRouter()
+  const { user, logout } = useAuthStore()
+  const { theme } = useDesignStore()
+  const isDark = theme === 'dark'
+  
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [profileData, setProfileData] = useState<MasterProfile | null>(null)
+  
+  // Форма смены пароля
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  })
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
 
   // Загружаем профиль мастера из API
   useEffect(() => {
@@ -47,7 +63,6 @@ export default function ProfilePage() {
         }
       } catch (error: any) {
         setError(error.message || 'Ошибка загрузки профиля')
-        // Если ошибка авторизации, перенаправляем на логин
         if (error.message?.includes('401') || error.message?.includes('токен')) {
           router.push('/login')
         }
@@ -57,33 +72,82 @@ export default function ProfilePage() {
     }
 
     fetchProfile()
-  }, []) // ✅ Убрали router - профиль загружается один раз при монтировании
+  }, [])
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      await logout()
+      router.push('/login')
+    } catch (error) {
+      console.error('Logout error:', error)
+      setIsLoggingOut(false)
+    }
+  }
 
   const handleEdit = () => {
     setIsEditing(true)
   }
 
-  const handleSave = () => {
-    setIsEditing(false)
-    // Здесь будет логика сохранения данных
-  }
-
   const handleCancel = () => {
     setIsEditing(false)
-    // Здесь будет логика отмены изменений
   }
 
-  const handleInputChange = (field: string, value: string) => {
-    setProfileData(prev => prev ? ({
-      ...prev,
-      [field]: value
-    }) : null)
+  const handleSave = async () => {
+    setIsSaving(true)
+    try {
+      // TODO: Implement profile update API
+      setIsEditing(false)
+    } catch (error) {
+      console.error('Save error:', error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handlePasswordChange = async () => {
+    setPasswordError(null)
+    
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError('Пароли не совпадают')
+      return
+    }
+    
+    if (passwordData.newPassword.length < 6) {
+      setPasswordError('Пароль должен содержать минимум 6 символов')
+      return
+    }
+    
+    setIsSaving(true)
+    try {
+      // TODO: Implement password change API
+      setIsChangingPassword(false)
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
+    } catch (error) {
+      console.error('Password change error:', error)
+      setPasswordError('Ошибка смены пароля')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('ru-RU', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
+
+  // Получаем инициалы для аватара
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
   }
 
   const handleFileUpload = (field: string, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file && profileData) {
-      // Здесь будет логика загрузки файла
+      // TODO: Implement file upload
       setProfileData(prev => prev ? ({
         ...prev,
         [field]: file.name
@@ -91,170 +155,286 @@ export default function ProfilePage() {
     }
   }
 
-  return (
-    <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
-        <div className="container mx-auto px-2 sm:px-4 py-8 pt-4 md:pt-8">
-          <div className="max-w-4xl mx-auto">
+  if (loading) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center transition-colors duration-300 ${isDark ? 'bg-[#1e2530]' : 'bg-white'}`}>
+        <Loader2 className={`h-8 w-8 animate-spin ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+      </div>
+    )
+  }
 
-          {/* Profile Card */}
-          <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in" style={{borderColor: '#114643'}}>
-            <div className="mb-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-800">Личная информация</h2>
-                </div>
-                {!isEditing ? (
-                  <Button onClick={handleEdit} className="bg-teal-600 hover:bg-teal-700 text-white w-full sm:w-auto">
-                    Загрузить документы
-                  </Button>
+  if (error) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center transition-colors duration-300 ${isDark ? 'bg-[#1e2530]' : 'bg-white'}`}>
+        <p className="text-red-500">{error}</p>
+      </div>
+    )
+  }
+
+  const cities = profileData?.cities || []
+
+  return (
+    <div className={`min-h-screen transition-colors duration-300 ${isDark ? 'bg-[#1e2530]' : 'bg-white'}`}>
+      <div className="px-6 py-6">
+        <div className="max-w-2xl space-y-6">
+          
+          {/* Шапка профиля */}
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-[#0d5c4b] flex items-center justify-center text-white text-xl font-medium">
+                {profileData?.name ? getInitials(profileData.name) : <User className="w-8 h-8" />}
+              </div>
+              <div>
+                <h1 className={`text-xl ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+                  {profileData?.name || 'Мастер'}
+                </h1>
+                <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>{profileData?.login}</p>
+                <span className={`inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded ${
+                  profileData?.statusWork === 'active' 
+                    ? isDark ? 'bg-green-900/40 text-green-400' : 'bg-green-100 text-green-700'
+                    : isDark ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-600'
+                }`}>
+                  {profileData?.statusWork === 'active' ? 'Активен' : profileData?.statusWork || 'Мастер'}
+                </span>
+              </div>
+            </div>
+            {!isEditing ? (
+              <button 
+                onClick={handleEdit} 
+                className={`transition-colors ${isDark ? 'text-gray-500 hover:text-[#0d5c4b]' : 'text-gray-400 hover:text-[#0d5c4b]'}`}
+              >
+                <Edit2 className="h-5 w-5" />
+              </button>
+            ) : (
+              <div className="flex gap-2">
+                <button 
+                  onClick={handleCancel} 
+                  className={`transition-colors ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                  <X className="h-5 w-5" />
+                </button>
+                <button 
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className={`transition-colors disabled:opacity-50 ${isDark ? 'text-[#0d5c4b] hover:text-[#0a4a3c]' : 'text-[#0d5c4b] hover:text-[#0a4a3c]'}`}
+                >
+                  {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Разделитель */}
+          <div className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`} />
+
+          {/* Информация */}
+          <div className="space-y-4">
+            {/* Города */}
+            <div className={`flex justify-between items-center py-2 border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+              <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Города</span>
+              <span className={isDark ? 'text-gray-200' : 'text-gray-900'}>
+                {cities.length > 0 ? cities.join(', ') : 'Не указаны'}
+              </span>
+            </div>
+
+            {/* Дата регистрации */}
+            <div className={`flex justify-between items-center py-2 border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+              <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Дата регистрации</span>
+              <span className={isDark ? 'text-gray-200' : 'text-gray-900'}>
+                {profileData?.createdAt ? formatDate(profileData.createdAt) : profileData?.dateCreate ? formatDate(profileData.dateCreate) : 'Не указана'}
+              </span>
+            </div>
+
+            {/* Telegram */}
+            {profileData?.tgId && (
+              <div className={`flex justify-between items-center py-2 border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+                <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Telegram ID</span>
+                <span className={isDark ? 'text-gray-200' : 'text-gray-900'}>{profileData.tgId}</span>
+              </div>
+            )}
+
+            {/* Примечание */}
+            {profileData?.note && (
+              <div className={`flex justify-between items-start py-2 border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+                <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Примечание</span>
+                <span className={`text-right max-w-xs ${isDark ? 'text-gray-200' : 'text-gray-900'}`}>{profileData.note}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Разделитель */}
+          <div className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`} />
+
+          {/* Документы */}
+          <div className="space-y-4">
+            <h3 className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Документы</h3>
+            
+            <div className="grid grid-cols-2 gap-4">
+              {/* Паспорт */}
+              <div>
+                <p className={`text-sm mb-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Фото паспорта</p>
+                {isEditing ? (
+                  <label className={`flex flex-col items-center justify-center h-24 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                    isDark ? 'border-gray-600 hover:border-[#0d5c4b]' : 'border-gray-300 hover:border-[#0d5c4b]'
+                  }`}>
+                    <Camera className={`h-6 w-6 mb-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+                    <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Загрузить</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileUpload('passportDoc', e)}
+                      className="hidden"
+                    />
+                  </label>
                 ) : (
-                  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                    <Button onClick={handleSave} className="bg-teal-600 hover:bg-teal-700 w-full sm:w-auto">
-                      Сохранить
-                    </Button>
-                    <Button onClick={handleCancel} variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-100 w-full sm:w-auto">
-                      Отмена
-                    </Button>
+                  <div className={`flex items-center gap-2 py-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    <FileText className="h-4 w-4" />
+                    <span className="text-sm">{profileData?.passportDoc || 'Не загружен'}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Договор */}
+              <div>
+                <p className={`text-sm mb-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Фото договора</p>
+                {isEditing ? (
+                  <label className={`flex flex-col items-center justify-center h-24 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                    isDark ? 'border-gray-600 hover:border-[#0d5c4b]' : 'border-gray-300 hover:border-[#0d5c4b]'
+                  }`}>
+                    <Camera className={`h-6 w-6 mb-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+                    <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Загрузить</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileUpload('contractDoc', e)}
+                      className="hidden"
+                    />
+                  </label>
+                ) : (
+                  <div className={`flex items-center gap-2 py-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    <FileText className="h-4 w-4" />
+                    <span className="text-sm">{profileData?.contractDoc || 'Не загружен'}</span>
                   </div>
                 )}
               </div>
             </div>
-            <div className="space-y-6">
-              {loading ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <LoadingSpinner size="lg" variant="dark" />
-                  <div className="text-gray-600 mt-4">Загрузка профиля...</div>
-                </div>
-              ) : error ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-red-600">{error}</div>
-                </div>
-              ) : profileData ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="name" className="text-gray-700">Имя</Label>
-                    <p className="text-gray-800 font-medium">{profileData.name}</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="login" className="text-gray-700">Логин</Label>
-                    <p className="text-gray-800 font-medium">
-                      {profileData.login}
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="status" className="text-gray-700">Статус работы</Label>
-                    <p className="text-gray-800 font-medium">
-                      {profileData.statusWork}
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="cities" className="text-gray-700">Города</Label>
-                    <p className="text-gray-800 font-medium">
-                      {profileData.cities.join(', ')}
-                    </p>
-                  </div>
-
-                  {profileData.tgId && (
-                    <div className="space-y-2">
-                      <Label htmlFor="tgId" className="text-gray-700">Telegram ID</Label>
-                      <p className="text-gray-800 font-medium">{profileData.tgId}</p>
-                    </div>
-                  )}
-
-                  {profileData.note && (
-                    <div className="space-y-2">
-                      <Label htmlFor="note" className="text-gray-700">Примечание</Label>
-                      <p className="text-gray-800 font-medium">{profileData.note}</p>
-                    </div>
-                  )}
-                </div>
-              ) : null}
-
-              {/* Documents Section */}
-              {profileData && (
-                <div className="mt-8 pt-6 border-t border-gray-300">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                    Документы
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
-                    <div className="space-y-2">
-                      <Label className="text-gray-700">Фото паспорта</Label>
-                      {isEditing ? (
-                        <div className="space-y-2">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => handleFileUpload('passportDoc', e)}
-                            className="hidden"
-                            id="passport-upload"
-                          />
-                          <label
-                            htmlFor="passport-upload"
-                            className="flex items-center justify-center w-full h-16 sm:h-20 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-teal-500 transition-colors"
-                          >
-                            <div className="text-center">
-                              <p className="text-sm text-gray-600">Загрузить фото</p>
-                            </div>
-                          </label>
-                          {profileData.passportDoc && (
-                            <p className="text-teal-600 text-sm">{profileData.passportDoc}</p>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center w-full h-16 sm:h-20 border border-gray-300 rounded-lg bg-gray-50">
-                          {profileData.passportDoc ? (
-                            <p className="text-gray-800 text-sm">{profileData.passportDoc}</p>
-                          ) : (
-                            <p className="text-gray-500 text-sm">Фото не загружено</p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-gray-700">Фото договора</Label>
-                      {isEditing ? (
-                        <div className="space-y-2">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => handleFileUpload('contractDoc', e)}
-                            className="hidden"
-                            id="contract-upload"
-                          />
-                          <label
-                            htmlFor="contract-upload"
-                            className="flex items-center justify-center w-full h-16 sm:h-20 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-teal-500 transition-colors"
-                          >
-                            <div className="text-center">
-                              <p className="text-sm text-gray-600">Загрузить фото</p>
-                            </div>
-                          </label>
-                          {profileData.contractDoc && (
-                            <p className="text-teal-600 text-sm">{profileData.contractDoc}</p>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center w-full h-16 sm:h-20 border border-gray-300 rounded-lg bg-gray-50">
-                          {profileData.contractDoc ? (
-                            <p className="text-gray-800 text-sm">{profileData.contractDoc}</p>
-                          ) : (
-                            <p className="text-gray-500 text-sm">Фото не загружено</p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
+
+          {/* Разделитель */}
+          <div className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`} />
+
+          {/* Смена пароля */}
+          <div>
+            <button
+              onClick={() => setIsChangingPassword(!isChangingPassword)}
+              className={`text-sm transition-colors ${isDark ? 'text-gray-400 hover:text-[#0d5c4b]' : 'text-gray-500 hover:text-[#0d5c4b]'}`}
+            >
+              {isChangingPassword ? 'Отмена' : 'Сменить пароль'}
+            </button>
+
+            {isChangingPassword && (
+              <div className="mt-4 space-y-4">
+                {/* Текущий пароль */}
+                <div className="space-y-1">
+                  <label className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Текущий пароль</label>
+                  <div className="relative">
+                    <input
+                      type={showCurrentPassword ? 'text' : 'password'}
+                      value={passwordData.currentPassword}
+                      onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                      className={`w-full px-3 py-2 pr-10 border rounded-lg focus:border-[#0d5c4b] focus:outline-none ${
+                        isDark ? 'bg-[#3a4451] border-gray-600 text-gray-200' : 'border-gray-200 text-gray-900'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      className={`absolute right-3 top-1/2 -translate-y-1/2 ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                      {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Новый пароль */}
+                <div className="space-y-1">
+                  <label className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Новый пароль</label>
+                  <div className="relative">
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      value={passwordData.newPassword}
+                      onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                      className={`w-full px-3 py-2 pr-10 border rounded-lg focus:border-[#0d5c4b] focus:outline-none ${
+                        isDark ? 'bg-[#3a4451] border-gray-600 text-gray-200' : 'border-gray-200 text-gray-900'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className={`absolute right-3 top-1/2 -translate-y-1/2 ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                      {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Подтверждение пароля */}
+                <div className="space-y-1">
+                  <label className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Подтвердите пароль</label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={passwordData.confirmPassword}
+                      onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                      className={`w-full px-3 py-2 pr-10 border rounded-lg focus:border-[#0d5c4b] focus:outline-none ${
+                        isDark ? 'bg-[#3a4451] border-gray-600 text-gray-200' : 'border-gray-200 text-gray-900'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className={`absolute right-3 top-1/2 -translate-y-1/2 ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Ошибка */}
+                {passwordError && (
+                  <p className={`text-sm ${isDark ? 'text-red-400' : 'text-red-500'}`}>{passwordError}</p>
+                )}
+
+                {/* Кнопка сохранения */}
+                <button
+                  onClick={handlePasswordChange}
+                  disabled={isSaving}
+                  className="px-4 py-2 bg-[#0d5c4b] hover:bg-[#0a4a3c] text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Сохранить пароль
+                </button>
+              </div>
+            )}
           </div>
+
+          {/* Разделитель */}
+          <div className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`} />
+
+          {/* Выход */}
+          <button
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className={`w-full flex items-center justify-start gap-2 transition-colors disabled:opacity-50 ${
+              isDark ? 'text-red-400 hover:text-red-300' : 'text-red-500 hover:text-red-600'
+            }`}
+          >
+            <LogOut className="h-4 w-4" />
+            {isLoggingOut ? 'Выход...' : 'Выйти из аккаунта'}
+          </button>
+
         </div>
       </div>
+    </div>
   )
 }
-

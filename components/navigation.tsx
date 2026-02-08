@@ -1,329 +1,302 @@
 'use client'
 
-import Link from 'next/link'
+import { useState, useEffect, useCallback, memo } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState, useEffect, useRef } from 'react'
-import apiClient from '@/lib/api'
 import { useDesignStore } from '@/store/design.store'
-import { Sun, Moon, LogOut, ChevronDown } from 'lucide-react'
+import { useAuthStore } from '@/store/auth.store'
+import { Sun, Moon, User, Menu, X } from 'lucide-react'
 
 // Навигационные элементы с иконками
 const navigationItems = [
-  { 
-    name: 'Заказы', 
-    href: '/orders',
-    icon: '/images/images/navigate/orders.svg'
-  },
-  { 
-    name: 'Статистика', 
-    href: '/statistics',
-    icon: '/images/images/navigate/reports.svg'
-  },
-  { 
-    name: 'Платежи', 
-    href: '/payments',
-    icon: '/images/images/navigate/cash.svg'
-  },
-  { 
-    name: 'Профиль', 
-    icon: '/images/images/navigate/employees.svg',
-    dropdown: [
-      { name: 'Настройки профиля', href: '/profile' },
-      { name: 'График работы', href: '/schedule' },
-      { name: 'Выйти', href: '/logout' }
-    ]
-  },
+  { name: 'Заказы', href: '/orders', icon: '/images/images/navigate/orders.svg' },
+  { name: 'Статистика', href: '/statistics', icon: '/images/images/navigate/reports.svg' },
+  { name: 'Платежи', href: '/payments', icon: '/images/images/navigate/cash.svg' },
+  { name: 'График работы', href: '/schedule', icon: '/images/images/navigate/employees.svg' },
 ]
 
 export function Navigation() {
+  const { user } = useAuthStore()
+  const { theme, toggleTheme } = useDesignStore()
   const pathname = usePathname()
   const router = useRouter()
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null)
-  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [expandedDropdown, setExpandedDropdown] = useState<string | null>(null)
-  
-  // Тема из store
-  const { theme, toggleTheme } = useDesignStore()
-  const isDark = theme === 'dark'
 
-  // Cleanup timeout при размонтировании
+  // Закрываем меню при смене маршрута
   useEffect(() => {
-    return () => {
-      if (hoverTimeoutRef.current) {
-        clearTimeout(hoverTimeoutRef.current)
-        hoverTimeoutRef.current = null
-      }
-    }
-  }, [])
-
-  const handleLogout = async () => {
-    await apiClient.logout()
-    router.push('/login')
-  }
-
-  const handleDropdownClick = (href: string) => {
     setMobileMenuOpen(false)
-    setHoveredItem(null)
-    
-    if (href === '/logout') {
-      handleLogout()
+  }, [pathname])
+
+  // Блокируем скролл body при открытом меню
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden'
     } else {
-      router.push(href)
+      document.body.style.overflow = ''
     }
-  }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [mobileMenuOpen])
 
   // Проверка активности пункта меню
-  const isActive = (href?: string) => {
-    if (!href) return false
-    return pathname === href || pathname.startsWith(href + '/')
+  const isActive = (href: string) => {
+    if (pathname === href) return true
+    if (href !== '/orders' && pathname.startsWith(href + '/')) return true
+    return false
   }
 
+  const userName = user?.name || user?.login
+
   return (
-    <nav className="nav-main fixed top-0 left-0 right-0 z-50 shadow-lg backdrop-blur-md border-b transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Логотип */}
-          <Link href="/orders" className="flex items-center">
-            <Image 
-              src={isDark ? "/images/images/logo_dark_v2.png" : "/images/images/logo_light_v2.png"}
-              alt="MasterCRM" 
-              width={140} 
-              height={32} 
-              className="h-8 w-auto"
-              priority
-            />
-          </Link>
+    <>
+      {/* Mobile Header */}
+      <header className={`header-main md:hidden fixed top-0 left-0 w-screen z-[9999] h-16 flex items-center justify-between px-6 transition-all ${
+        mobileMenuOpen ? '' : 'border-b border-gray-200 dark:border-gray-700'
+      }`}>
+        <Link href="/orders" className="bg-transparent border-none cursor-pointer p-0">
+          <Image 
+            src={theme === 'dark' ? "/images/images/logo_dark_v2.png" : "/images/images/logo_light_v2.png"} 
+            alt="MasterCRM" 
+            width={130} 
+            height={36} 
+            className="h-9 w-auto" 
+            priority
+          />
+        </Link>
+        <div className="flex items-center gap-2">
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className={`p-2 transition-colors ${
+              theme === 'dark' ? 'text-gray-300 hover:text-[#0d5c4b]' : 'text-gray-600 hover:text-[#0d5c4b]'
+            }`}
+            aria-label="Открыть меню"
+          >
+            {mobileMenuOpen ? (
+              <X className="h-7 w-7" />
+            ) : (
+              <Menu className="h-7 w-7" />
+            )}
+          </button>
+        </div>
+      </header>
 
-          {/* Десктопная навигация */}
-          <div className="hidden md:flex items-center space-x-2">
-            {navigationItems.map((item) => (
-              <div
-                key={item.name}
-                className="relative"
-                onMouseEnter={() => {
-                  if (hoverTimeoutRef.current) {
-                    clearTimeout(hoverTimeoutRef.current)
-                    hoverTimeoutRef.current = null
-                  }
-                  setHoveredItem(item.name)
-                }}
-                onMouseLeave={() => {
-                  hoverTimeoutRef.current = setTimeout(() => {
-                    setHoveredItem(null)
-                  }, 150)
-                }}
+      {/* Mobile Full-screen Menu */}
+      <aside 
+        className={`sidebar-main md:hidden fixed top-16 left-0 w-screen h-[calc(100vh-4rem)] z-[9998] transform transition-transform duration-300 ease-in-out flex flex-col ${
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="pt-6 flex flex-col h-full overflow-y-auto">
+          {/* Navigation */}
+          <nav className="flex-1 px-5 space-y-4">
+            {navigationItems.map((item) => {
+              const active = isActive(item.href)
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className="nav-icon-hover relative flex items-center gap-3 px-3 py-3.5 text-base font-normal group"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {/* Индикатор активной вкладки - тонкая скобка */}
+                  <span 
+                    className={`absolute left-0 top-1/2 -translate-y-1/2 w-[6px] h-12 transition-opacity duration-200 ${
+                      active ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'
+                    }`}
+                  >
+                    <svg viewBox="0 0 6 40" fill="none" className="w-full h-full">
+                      <path 
+                        d="M5 1C2.5 1 1 4.5 1 10v20c0 5.5 1.5 9 4 9" 
+                        stroke="#0d5c4b" 
+                        strokeWidth="1.5" 
+                        strokeLinecap="round"
+                        fill="none"
+                      />
+                    </svg>
+                  </span>
+                  <Image 
+                    src={item.icon} 
+                    alt={item.name} 
+                    width={24} 
+                    height={24} 
+                    className={`nav-icon w-6 h-6 transition-all duration-200 ${active ? 'nav-icon-active' : ''}`}
+                  />
+                  <span className={`transition-colors duration-200 ${
+                    theme === 'dark' ? 'text-gray-200' : 'text-gray-800'
+                  } group-hover:text-[#0d5c4b]`}>
+                    {item.name}
+                  </span>
+                </Link>
+              )
+            })}
+          </nav>
+
+          {/* Bottom Section */}
+          <div className="px-5 pb-6 space-y-4">
+            {/* Theme Toggle */}
+            <div className="flex items-center gap-3 px-3 py-3">
+              <Sun className={`h-6 w-6 transition-colors ${theme === 'light' ? 'text-[#0d5c4b]' : 'text-gray-400'}`} />
+              <button
+                onClick={toggleTheme}
+                className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${
+                  theme === 'dark' ? 'bg-[#0d5c4b]' : 'bg-gray-300'
+                }`}
               >
-                {item.href ? (
-                  <Link
-                    href={item.href}
-                    className={`nav-icon-hover inline-flex items-center px-3 py-2 text-sm font-medium transition-all duration-200 rounded-lg ${
-                      isActive(item.href)
-                        ? 'nav-item-active text-white bg-[#0d5c4b] shadow-md shadow-[#0d5c4b]/20'
-                        : isDark 
-                          ? 'nav-item text-gray-300 hover:text-white hover:bg-[#2a3441]'
-                          : 'nav-item text-gray-700 hover:text-[#0d5c4b] hover:bg-[#daece2]/50'
-                    }`}
-                  >
-                    <img 
-                      src={item.icon} 
-                      alt="" 
-                      className={`nav-icon w-4 h-4 mr-2 ${isActive(item.href) ? 'nav-icon-active' : ''}`}
-                    />
-                    {item.name}
-                  </Link>
-                ) : (
-                  <div className={`nav-icon-hover inline-flex items-center px-3 py-2 text-sm font-medium transition-all duration-200 cursor-pointer rounded-lg ${
-                    isDark 
-                      ? 'nav-item text-gray-300 hover:text-white hover:bg-[#2a3441]'
-                      : 'nav-item text-gray-700 hover:text-[#0d5c4b] hover:bg-[#daece2]/50'
-                  }`}>
-                    <img 
-                      src={item.icon} 
-                      alt="" 
-                      className="nav-icon w-4 h-4 mr-2"
-                    />
-                    {item.name}
-                    {item.dropdown && (
-                      <ChevronDown className="ml-1 h-4 w-4 transition-transform duration-200" />
-                    )}
-                  </div>
-                )}
-                
-                {/* Выпадающий список для десктопа */}
-                {item.dropdown && hoveredItem === item.name && (
-                  <div 
-                    className={`absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-48 rounded-xl shadow-xl z-50 overflow-hidden ${
-                      isDark 
-                        ? 'bg-[#2a3441] border border-[#0d5c4b]/30'
-                        : 'bg-white border border-[#0d5c4b]/20'
-                    }`}
-                    onMouseEnter={() => {
-                      if (hoverTimeoutRef.current) {
-                        clearTimeout(hoverTimeoutRef.current)
-                        hoverTimeoutRef.current = null
-                      }
-                    }}
-                    onMouseLeave={() => {
-                      hoverTimeoutRef.current = setTimeout(() => {
-                        setHoveredItem(null)
-                      }, 150)
-                    }}
-                  >
-                    <div className="py-2">
-                      {item.dropdown.map((dropdownItem) => (
-                        <button
-                          key={dropdownItem.name}
-                          onClick={() => handleDropdownClick(dropdownItem.href)}
-                          className={`block w-full text-left px-4 py-2.5 text-sm transition-all duration-150 mx-2 rounded-lg ${
-                            dropdownItem.href === '/logout'
-                              ? isDark
-                                ? 'text-red-400 hover:bg-red-500/10 hover:text-red-300'
-                                : 'text-red-600 hover:bg-red-50 hover:text-red-700'
-                              : isActive(dropdownItem.href)
-                                ? 'text-white bg-[#0d5c4b] shadow-sm'
-                                : isDark
-                                  ? 'text-gray-300 hover:bg-[#1e2530] hover:text-white'
-                                  : 'text-gray-700 hover:bg-[#daece2]/50 hover:text-[#0d5c4b]'
-                          }`}
-                          style={{ width: 'calc(100% - 16px)' }}
-                        >
-                          {dropdownItem.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+                <span
+                  className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-300 ${
+                    theme === 'dark' ? 'translate-x-6' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+              <Moon className={`h-6 w-6 transition-colors ${theme === 'dark' ? 'text-[#0d5c4b]' : 'text-gray-400'}`} />
+            </div>
 
-          <div className="flex items-center gap-2">
-            {/* Переключатель темы */}
-            <button
-              onClick={toggleTheme}
-              className={`p-2 rounded-lg transition-all duration-200 ${
-                isDark 
-                  ? 'text-[#0d5c4b] hover:text-white hover:bg-[#2a3441]'
-                  : 'text-[#0d5c4b] hover:bg-[#daece2]/50'
-              }`}
-              title={isDark ? 'Светлая тема' : 'Тёмная тема'}
+            {/* Profile with user name */}
+            <Link
+              href="/profile"
+              className="nav-icon-hover relative flex items-center gap-3 px-3 py-3.5 text-base font-normal group"
+              onClick={() => setMobileMenuOpen(false)}
             >
-              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
-
-            {/* Кнопка гамбургер-меню для мобильных */}
-            <button
-              className={`md:hidden transition-all duration-200 p-2 rounded-lg ${
-                isDark 
-                  ? 'text-gray-300 hover:text-white hover:bg-[#2a3441]'
-                  : 'text-gray-700 hover:text-[#0d5c4b] hover:bg-[#daece2]/50'
-              }`}
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              <svg className="h-6 w-6 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {mobileMenuOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                )}
-              </svg>
-            </button>
+              <span 
+                className={`absolute left-0 top-1/2 -translate-y-1/2 w-[6px] h-12 transition-opacity duration-200 ${
+                  isActive('/profile') ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'
+                }`}
+              >
+                <svg viewBox="0 0 6 40" fill="none" className="w-full h-full">
+                  <path 
+                    d="M5 1C2.5 1 1 4.5 1 10v20c0 5.5 1.5 9 4 9" 
+                    stroke="#0d5c4b" 
+                    strokeWidth="1.5" 
+                    strokeLinecap="round"
+                    fill="none"
+                  />
+                </svg>
+              </span>
+              <User className={`h-6 w-6 transition-colors duration-200 ${
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+              } ${isActive('/profile') ? 'text-[#0d5c4b]' : ''}`} />
+              <span className={`transition-colors duration-200 ${
+                theme === 'dark' ? 'text-gray-200' : 'text-gray-800'
+              } group-hover:text-[#0d5c4b]`}>
+                {userName || 'Профиль'}
+              </span>
+            </Link>
           </div>
         </div>
+      </aside>
 
-        {/* Мобильное меню */}
-        {mobileMenuOpen && (
-          <div className={`md:hidden border-t ${
-            isDark 
-              ? 'bg-[#1e2530] border-[#0d5c4b]/30' 
-              : 'bg-white border-[#0d5c4b]/20'
-          }`}>
-            <div className="px-2 pt-2 pb-3 space-y-1">
-              {navigationItems.map((item) => (
-                <div key={item.name}>
-                  {item.href ? (
-                    <Link
-                      href={item.href}
-                      className={`nav-icon-hover flex items-center px-3 py-2.5 text-base font-medium transition-all duration-200 rounded-lg ${
-                        isActive(item.href)
-                          ? 'nav-item-active text-white bg-[#0d5c4b] shadow-md'
-                          : isDark
-                            ? 'nav-item text-gray-300 hover:text-white hover:bg-[#2a3441]'
-                            : 'nav-item text-gray-700 hover:text-[#0d5c4b] hover:bg-[#daece2]/50'
-                      }`}
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <img 
-                        src={item.icon} 
-                        alt="" 
-                        className={`nav-icon w-5 h-5 mr-3 ${isActive(item.href) ? 'nav-icon-active' : ''}`}
-                      />
-                      {item.name}
-                    </Link>
-                  ) : (
-                    <div>
-                      <button
-                        className={`nav-icon-hover w-full text-left px-3 py-2.5 text-base font-medium transition-all duration-200 flex items-center justify-between rounded-lg ${
-                          expandedDropdown === item.name
-                            ? 'nav-item-active text-white bg-[#0d5c4b] shadow-md'
-                            : isDark
-                              ? 'nav-item text-gray-300 hover:text-white hover:bg-[#2a3441]'
-                              : 'nav-item text-gray-700 hover:text-[#0d5c4b] hover:bg-[#daece2]/50'
-                        }`}
-                        onClick={() => setExpandedDropdown(expandedDropdown === item.name ? null : item.name)}
-                      >
-                        <span className="flex items-center">
-                          <img 
-                            src={item.icon} 
-                            alt="" 
-                            className={`nav-icon w-5 h-5 mr-3 ${expandedDropdown === item.name ? 'nav-icon-active' : ''}`}
-                          />
-                          {item.name}
-                        </span>
-                        {item.dropdown && (
-                          <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${
-                            expandedDropdown === item.name ? 'rotate-180' : ''
-                          }`} />
-                        )}
-                      </button>
-                      
-                      {/* Выпадающий список для мобильных */}
-                      {item.dropdown && expandedDropdown === item.name && (
-                        <div className={`pl-4 mt-1 space-y-1 ${
-                          isDark ? 'border-l-2 border-[#0d5c4b]/30 ml-3' : 'border-l-2 border-[#0d5c4b]/20 ml-3'
-                        }`}>
-                          {item.dropdown.map((dropdownItem) => (
-                            <button
-                              key={dropdownItem.name}
-                              onClick={() => handleDropdownClick(dropdownItem.href)}
-                              className={`block w-full text-left px-3 py-2 text-sm transition-all duration-150 rounded-lg ${
-                                dropdownItem.href === '/logout'
-                                  ? isDark
-                                    ? 'text-red-400 hover:bg-red-500/10 hover:text-red-300'
-                                    : 'text-red-600 hover:bg-red-50 hover:text-red-700'
-                                  : isActive(dropdownItem.href)
-                                    ? 'text-white bg-[#0d5c4b] shadow-sm'
-                                    : isDark
-                                      ? 'text-gray-400 hover:text-white hover:bg-[#2a3441]'
-                                      : 'text-gray-600 hover:text-[#0d5c4b] hover:bg-[#daece2]/50'
-                              }`}
-                            >
-                              {dropdownItem.name}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+      {/* Desktop Navigation */}
+      <nav className="nav-main hidden md:flex fixed top-0 left-0 right-0 z-50 h-16 items-center justify-between px-6 border-b transition-colors duration-300">
+        {/* Logo */}
+        <Link href="/orders" className="flex items-center">
+          <Image 
+            src={theme === 'dark' ? "/images/images/logo_dark_v2.png" : "/images/images/logo_light_v2.png"}
+            alt="MasterCRM" 
+            width={140} 
+            height={32} 
+            className="h-8 w-auto"
+            priority
+          />
+        </Link>
+
+        {/* Navigation Items */}
+        <div className="flex items-center gap-1">
+          {navigationItems.map((item) => {
+            const active = isActive(item.href)
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className="nav-icon-hover relative flex items-center gap-2 px-4 py-2 text-sm font-normal group"
+              >
+                {/* Индикатор активной вкладки - тонкая скобка снизу */}
+                <span 
+                  className={`absolute left-1/2 -translate-x-1/2 bottom-0 h-[6px] w-10 transition-opacity duration-200 ${
+                    active ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'
+                  }`}
+                >
+                  <svg viewBox="0 0 40 6" fill="none" className="w-full h-full">
+                    <path 
+                      d="M1 5C1 2.5 4.5 1 10 1h20c5.5 0 9 1.5 9 4" 
+                      stroke="#0d5c4b" 
+                      strokeWidth="1.5" 
+                      strokeLinecap="round"
+                      fill="none"
+                    />
+                  </svg>
+                </span>
+                <Image 
+                  src={item.icon} 
+                  alt={item.name} 
+                  width={18} 
+                  height={18} 
+                  className={`nav-icon w-[18px] h-[18px] transition-all duration-200 ${active ? 'nav-icon-active' : ''}`}
+                />
+                <span className={`transition-colors duration-200 ${
+                  theme === 'dark' ? 'text-gray-200' : 'text-gray-800'
+                } group-hover:text-[#0d5c4b]`}>
+                  {item.name}
+                </span>
+              </Link>
+            )
+          })}
+        </div>
+
+        {/* Right Section */}
+        <div className="flex items-center gap-4">
+          {/* Theme Toggle */}
+          <div className="flex items-center gap-2">
+            <Sun className={`h-4 w-4 transition-colors ${theme === 'light' ? 'text-[#0d5c4b]' : 'text-gray-400'}`} />
+            <button
+              onClick={toggleTheme}
+              className={`relative w-10 h-5 rounded-full transition-colors duration-300 ${
+                theme === 'dark' ? 'bg-[#0d5c4b]' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-300 ${
+                  theme === 'dark' ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+            <Moon className={`h-4 w-4 transition-colors ${theme === 'dark' ? 'text-[#0d5c4b]' : 'text-gray-400'}`} />
           </div>
-        )}
-      </div>
-    </nav>
+
+          {/* Profile */}
+          <Link
+            href="/profile"
+            className="nav-icon-hover relative flex items-center gap-2 px-3 py-2 text-sm font-normal group"
+          >
+            <span 
+              className={`absolute left-1/2 -translate-x-1/2 bottom-0 h-[6px] w-10 transition-opacity duration-200 ${
+                isActive('/profile') ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'
+              }`}
+            >
+              <svg viewBox="0 0 40 6" fill="none" className="w-full h-full">
+                <path 
+                  d="M1 5C1 2.5 4.5 1 10 1h20c5.5 0 9 1.5 9 4" 
+                  stroke="#0d5c4b" 
+                  strokeWidth="1.5" 
+                  strokeLinecap="round"
+                  fill="none"
+                />
+              </svg>
+            </span>
+            <User className={`h-[18px] w-[18px] transition-colors duration-200 ${
+              theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+            } ${isActive('/profile') ? 'text-[#0d5c4b]' : ''}`} />
+            <span className={`transition-colors duration-200 ${
+              theme === 'dark' ? 'text-gray-200' : 'text-gray-800'
+            } group-hover:text-[#0d5c4b]`}>
+              {userName || 'Профиль'}
+            </span>
+          </Link>
+        </div>
+      </nav>
+    </>
   )
 }
 

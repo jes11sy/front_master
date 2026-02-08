@@ -1,12 +1,14 @@
 "use client"
 
-import { useRouter } from 'next/navigation'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useEffect, useCallback, useRef, Suspense, useMemo } from 'react'
 import { apiClient } from '@/lib/api'
 import { logger } from '@/lib/logger'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { sortOrders } from '@/lib/order-sort'
 import { LoadingSpinner } from '@/components/ui/loading-screen'
+import { OptimizedPagination } from '@/components/ui/optimized-pagination'
+import { useDesignStore } from '@/store/design.store'
+import { sortOrders } from '@/lib/order-sort'
 
 interface Order {
   id: number
@@ -37,14 +39,44 @@ interface Order {
   }
 }
 
+// Ключ для сохранения позиции прокрутки
+const SCROLL_POSITION_KEY = 'master_orders_scroll_position'
+
 function OrdersContent() {
   const router = useRouter()
-  const [currentPage, setCurrentPage] = useState(1)
+  const searchParams = useSearchParams()
+  
+  // Тема из store
+  const { theme } = useDesignStore()
+  const isDark = theme === 'dark'
+  
+  // Инициализация из URL query params (для сохранения состояния при возврате назад)
+  const [currentPage, setCurrentPage] = useState(() => {
+    const page = searchParams.get('page')
+    return page ? parseInt(page, 10) : 1
+  })
   const [itemsPerPage] = useState(15)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
-  const [cityFilter, setCityFilter] = useState('')
-  const [showFilters, setShowFilters] = useState(false)
+  
+  // Отдельные поля поиска
+  const [searchId, setSearchId] = useState(() => searchParams.get('searchId') || '')
+  const [searchPhone, setSearchPhone] = useState(() => searchParams.get('searchPhone') || '')
+  const [searchAddress, setSearchAddress] = useState(() => searchParams.get('searchAddress') || '')
+  
+  // Табы статусов: all, Ожидает, Принял, В работе, completed (Готово+Отказ+Незаказ)
+  const [statusTab, setStatusTab] = useState<string>(() => searchParams.get('tab') || 'all')
+  const [statusFilter, setStatusFilter] = useState(() => searchParams.get('status') || '')
+  const [cityFilter, setCityFilter] = useState(() => searchParams.get('city') || '')
+  const [showFilters, setShowFilters] = useState(() => {
+    return !!(searchParams.get('status') || searchParams.get('city') || 
+              searchParams.get('searchId') || searchParams.get('searchPhone') || searchParams.get('searchAddress'))
+  })
+
+  // Черновые состояния для панели фильтров (применяются только по кнопке)
+  const [draftSearchId, setDraftSearchId] = useState('')
+  const [draftSearchPhone, setDraftSearchPhone] = useState('')
+  const [draftSearchAddress, setDraftSearchAddress] = useState('')
+  const [draftStatusFilter, setDraftStatusFilter] = useState('')
+  const [draftCityFilter, setDraftCityFilter] = useState('')
 
   // Состояние для данных
   const [orders, setOrders] = useState<Order[]>([])
@@ -57,37 +89,103 @@ function OrdersContent() {
     total: 0,
     totalPages: 1
   })
-  const [renderError, setRenderError] = useState<string | null>(null)
   
-  // Таймаут для загрузки - если больше 10 секунд, принудительно показываем контент
+  // Ref для отмены запросов
+  const abortControllerRef = useRef<AbortController | null>(null)
+  const requestIdRef = useRef(0)
+  const isInitialMount = useRef(true)
+  const hasRestoredScroll = useRef(false)
+  const isBackNavigation = useRef(false)
+  
+  // При монтировании проверяем тип навигации
   useEffect(() => {
-    if (loading) {
-      const timeout = setTimeout(() => {
-        setLoading(false)
-        if (orders.length === 0) {
-          setError('Не удалось загрузить заказы. Попробуйте обновить страницу.')
-        }
-      }, 10000)
+    if (typeof window !== 'undefined') {
+      const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[]
+      const navigationType = navEntries.length > 0 ? navEntries[0].type : 'navigate'
       
-      return () => clearTimeout(timeout)
+      if (navigationType === 'reload' || navigationType === 'navigate') {
+        sessionStorage.removeItem(SCROLL_POSITION_KEY)
+        isBackNavigation.current = false
+      } else if (navigationType === 'back_forward') {
+        isBackNavigation.current = true
+      }
     }
-  }, [loading, orders.length])
+  }, [])
+
+  // Обновление URL с текущими фильтрами
+  const updateUrlWithFilters = useCallback(() => {
+    const params = new URLSearchParams()
+    
+    if (currentPage > 1) params.set('page', currentPage.toString())
+    if (statusTab !== 'all') params.set('tab', statusTab)
+    if (searchId) params.set('searchId', searchId)
+    if (searchPhone) params.set('searchPhone', searchPhone)
+    if (searchAddress) params.set('searchAddress', searchAddress)
+    if (statusFilter) params.set('status', statusFilter)
+    if (cityFilter) params.set('city', cityFilter)
+    
+    const queryString = params.toString()
+    const newUrl = queryString ? `/orders?${queryString}` : '/orders'
+    
+    window.history.replaceState(null, '', newUrl)
+  }, [currentPage, statusTab, searchId, searchPhone, searchAddress, statusFilter, cityFilter])
+
+  // Сохранение позиции прокрутки
+  const saveScrollPosition = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(SCROLL_POSITION_KEY, window.scrollY.toString())
+    }
+  }, [])
+
+  // Восстановление позиции прокрутки
+  const restoreScrollPosition = useCallback(() => {
+    if (typeof window !== 'undefined' && !hasRestoredScroll.current && isBackNavigation.current) {
+      const savedPosition = sessionStorage.getItem(SCROLL_POSITION_KEY)
+      if (savedPosition) {
+        setTimeout(() => {
+          window.scrollTo(0, parseInt(savedPosition, 10))
+          hasRestoredScroll.current = true
+          sessionStorage.removeItem(SCROLL_POSITION_KEY)
+        }, 100)
+      }
+    }
+  }, [])
 
   // Загрузка данных
   const loadOrders = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    abortControllerRef.current = new AbortController()
+    
+    const currentRequestId = ++requestIdRef.current
+    
     try {
       setLoading(true)
       setError(null)
       
+      // Определяем статус на основе таба
+      let effectiveStatus = statusFilter?.trim() || undefined
+      if (!effectiveStatus && statusTab !== 'all') {
+        if (statusTab === 'completed') {
+          effectiveStatus = 'Готово,Отказ,Незаказ'
+        } else {
+          effectiveStatus = statusTab
+        }
+      }
+      
       const response = await apiClient.getOrders({
         page: currentPage,
         limit: itemsPerPage,
-        status: statusFilter || undefined,
-        city: cityFilter || undefined,
-        search: searchTerm || undefined,
+        status: effectiveStatus,
+        city: cityFilter?.trim() || undefined,
+        search: searchId?.trim() || searchPhone?.trim() || searchAddress?.trim() || undefined,
       } as any)
       
-      // Проверяем успешность ответа
+      if (currentRequestId !== requestIdRef.current) {
+        return
+      }
+      
       if (!response.success) {
         throw new Error(response.error || 'Ошибка загрузки заказов')
       }
@@ -102,330 +200,500 @@ function OrdersContent() {
         totalPages: 1
       })
     } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        return
+      }
+      if (currentRequestId !== requestIdRef.current) {
+        return
+      }
       setError(err instanceof Error ? err.message : 'Ошибка загрузки заказов')
       logger.error('Error loading orders', err)
     } finally {
-      setLoading(false)
+      if (currentRequestId === requestIdRef.current) {
+        setLoading(false)
+      }
     }
-  }, [currentPage, itemsPerPage, statusFilter, cityFilter, searchTerm])
+  }, [currentPage, itemsPerPage, statusTab, statusFilter, cityFilter, searchId, searchPhone, searchAddress])
 
   // Загружаем данные при изменении фильтров
   useEffect(() => {
     loadOrders()
+    
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
   }, [loadOrders])
 
-  // Обработчики фильтров
-  const handleSearchChange = (value: string) => {
-    setSearchTerm(value)
-    setCurrentPage(1) // Сбрасываем на первую страницу при поиске
-  }
+  // Обновляем URL при изменении фильтров
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
+    }
+    updateUrlWithFilters()
+  }, [updateUrlWithFilters])
 
-  const handleStatusChange = (value: string) => {
-    setStatusFilter(value)
+  // Восстанавливаем позицию прокрутки
+  useEffect(() => {
+    if (!loading && orders.length > 0) {
+      restoreScrollPosition()
+    }
+  }, [loading, orders.length, restoreScrollPosition])
+
+  // Обработчик смены таба статусов
+  const handleStatusTabChange = (tab: string) => {
+    setStatusTab(tab)
+    setStatusFilter('')
     setCurrentPage(1)
   }
 
-  const handleCityChange = (value: string) => {
-    setCityFilter(value)
-    setCurrentPage(1)
-  }
-
-  // Получаем уникальные значения для фильтров из загруженных данных
-  // Используем useMemo для безопасной обработки данных
-  const { sortedOrders, uniqueCities, processingError } = useMemo(() => {
+  // Получаем уникальные города
+  const { sortedOrders, uniqueCities } = useMemo(() => {
     try {
       const safeOrders = Array.isArray(orders) ? orders : []
-      // Применяем сортировку на клиенте
       const sorted = sortOrders(safeOrders)
       const cities = Array.from(new Set(safeOrders.map(order => order.city || 'Неизвестно')))
-      return { sortedOrders: sorted, uniqueCities: cities, processingError: null }
-    } catch (err) {
-      console.error('[OrdersPage] Error processing orders:', err)
-      return { 
-        sortedOrders: [] as Order[], 
-        uniqueCities: [] as string[], 
-        processingError: 'Ошибка обработки данных заказов. Попробуйте обновить страницу.' 
-      }
+      return { sortedOrders: sorted, uniqueCities: cities }
+    } catch {
+      return { sortedOrders: [] as Order[], uniqueCities: [] as string[] }
     }
   }, [orders])
 
-  // Устанавливаем renderError через useEffect (не во время рендера)
-  useEffect(() => {
-    if (processingError) {
-      setRenderError(processingError)
-    } else {
-      setRenderError(null) // Очищаем ошибку если данные обработались успешно
-    }
-  }, [processingError])
+  // Открытие панели фильтров
+  const openFiltersPanel = () => {
+    setDraftSearchId(searchId)
+    setDraftSearchPhone(searchPhone)
+    setDraftSearchAddress(searchAddress)
+    setDraftStatusFilter(statusFilter)
+    setDraftCityFilter(cityFilter)
+    setShowFilters(true)
+  }
+
+  // Применение фильтров
+  const applyFilters = () => {
+    setSearchId(draftSearchId)
+    setSearchPhone(draftSearchPhone)
+    setSearchAddress(draftSearchAddress)
+    setStatusFilter(draftStatusFilter)
+    setCityFilter(draftCityFilter)
+    setCurrentPage(1)
+    setShowFilters(false)
+  }
 
   // Сброс фильтров
   const resetFilters = () => {
-    setSearchTerm('')
+    setDraftSearchId('')
+    setDraftSearchPhone('')
+    setDraftSearchAddress('')
+    setDraftStatusFilter('')
+    setDraftCityFilter('')
+    setSearchId('')
+    setSearchPhone('')
+    setSearchAddress('')
     setStatusFilter('')
     setCityFilter('')
     setCurrentPage(1)
+    setShowFilters(false)
+    window.history.replaceState(null, '', '/orders')
+    sessionStorage.removeItem(SCROLL_POSITION_KEY)
   }
 
   const handleOrderClick = (orderId: number) => {
+    saveScrollPosition()
+    updateUrlWithFilters()
     router.push(`/orders/${orderId}`)
   }
 
-  // Функция для форматирования даты
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'UTC'
-    })
+  // Форматирование даты
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return '-'
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) return '-'
+      
+      const day = String(date.getUTCDate()).padStart(2, '0')
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+      const year = date.getUTCFullYear()
+      const hours = String(date.getUTCHours()).padStart(2, '0')
+      const minutes = String(date.getUTCMinutes()).padStart(2, '0')
+      
+      return `${day}.${month}.${year} ${hours}:${minutes}`
+    } catch {
+      return '-'
+    }
   }
 
-  // Функция для получения цвета статуса
-  const getStatusColor = (status: string) => {
+  // Стили статуса
+  const getStatusStyle = (status: string) => {
+    if (isDark) {
+      switch (status) {
+        case 'Готово': return 'bg-green-700 text-white'
+        case 'В работе': return 'bg-blue-700 text-white'
+        case 'Ожидает': return 'bg-amber-600 text-white'
+        case 'Отказ': return 'bg-red-700 text-white'
+        case 'Принял': return 'bg-emerald-700 text-white'
+        case 'В пути': return 'bg-violet-700 text-white'
+        case 'Модерн': return 'bg-orange-600 text-white'
+        case 'Незаказ': return 'bg-gray-600 text-white'
+        default: return 'bg-gray-600 text-white'
+      }
+    }
     switch (status) {
-      case 'Готово': return '#059669'
-      case 'В работе': return '#3b82f6'
-      case 'Ожидает': return '#f59e0b'
-      case 'Отказ': return '#ef4444'
-      case 'Принял': return '#10b981'
-      case 'В пути': return '#8b5cf6'
-      case 'Модерн': return '#f97316'
-      case 'Незаказ': return '#6b7280'
-      default: return '#6b7280'
+      case 'Готово': return 'bg-green-600 text-white'
+      case 'В работе': return 'bg-blue-600 text-white'
+      case 'Ожидает': return 'bg-amber-500 text-white'
+      case 'Отказ': return 'bg-red-600 text-white'
+      case 'Принял': return 'bg-emerald-600 text-white'
+      case 'В пути': return 'bg-violet-600 text-white'
+      case 'Модерн': return 'bg-orange-500 text-white'
+      case 'Незаказ': return 'bg-gray-500 text-white'
+      default: return 'bg-gray-500 text-white'
     }
   }
 
-  // Функция для получения цвета типа заказа
-  const getTypeColor = (type: string) => {
+  // Стили типа заказа
+  const getTypeStyle = (type: string) => {
+    if (isDark) {
+      switch (type) {
+        case 'Впервые': return 'bg-emerald-700 text-white'
+        case 'Повтор': return 'bg-amber-600 text-white'
+        case 'Гарантия': return 'bg-red-700 text-white'
+        default: return 'bg-gray-600 text-white'
+      }
+    }
     switch (type) {
-      case 'Впервые': return '#10b981'
-      case 'Повтор': return '#f59e0b'
-      case 'Гарантия': return '#ef4444'
-      default: return '#6b7280'
+      case 'Впервые': return 'bg-emerald-600 text-white'
+      case 'Повтор': return 'bg-amber-500 text-white'
+      case 'Гарантия': return 'bg-red-600 text-white'
+      default: return 'bg-gray-500 text-white'
     }
-  }
-
-  // Если критическая ошибка рендеринга - показываем большой красный экран
-  if (renderError) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#114643'}}>
-        <div className="max-w-md mx-4">
-          <div className="bg-red-600 text-white rounded-2xl p-8 shadow-2xl">
-            <div className="text-6xl mb-4 text-center">⚠️</div>
-            <h1 className="text-2xl font-bold mb-4 text-center">Критическая ошибка</h1>
-            <p className="text-lg mb-6 text-center">{renderError}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="w-full bg-white text-red-600 font-bold py-3 px-6 rounded-lg hover:bg-gray-100 transition-all"
-            >
-              🔄 Обновить страницу
-            </button>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   return (
-    <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
-      <div className="container mx-auto px-2 sm:px-4 py-8 pt-4 md:pt-8">
-        <div className="max-w-none mx-auto">
-          <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl animate-fade-in" style={{borderColor: '#114643'}}>
-            
-            {/* Заголовок */}
-            <h1 className="text-2xl font-bold text-gray-800 mb-6">Мои заказы</h1>
+    <div className={`min-h-screen transition-colors duration-300 ${
+      isDark ? 'bg-[#1e2530]' : 'bg-white'
+    }`}>
+      <div className="px-4 py-6">
+        <div className="w-full">
+          <div className={`transition-colors duration-300 ${isDark ? 'bg-[#1e2530]' : 'bg-white'}`}>
 
             {/* Состояние загрузки */}
-            {loading && !error && (
+            {loading && (
               <div className="text-center py-8 animate-fade-in">
                 <div className="flex justify-center mb-4">
-                  <LoadingSpinner size="lg" variant="dark" />
+                  <LoadingSpinner size="lg" />
                 </div>
-                <p className="text-gray-700 font-medium">Загрузка заказов...</p>
+                <p className={`font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Загрузка заказов...</p>
               </div>
             )}
 
             {/* Ошибка */}
             {!loading && error && (
-              <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6 mb-6 animate-slide-in-left">
-                <div className="flex items-start gap-3 mb-4">
-                  <div className="text-3xl">❌</div>
-                  <div className="flex-1">
-                    <p className="text-red-700 font-bold text-lg mb-2">Ошибка загрузки заказов</p>
-                    <p className="text-red-800 text-base mb-3 font-medium">{error}</p>
-                    <p className="text-red-600 text-sm mb-4">
-                      Если проблема повторяется, обратитесь к администратору
-                    </p>
-                  </div>
-                </div>
+              <div className={`rounded-lg p-4 mb-6 animate-slide-in-left ${
+                isDark ? 'bg-red-900/30 border border-red-700' : 'bg-red-50 border border-red-200'
+              }`}>
+                <p className={`font-medium ${isDark ? 'text-red-400' : 'text-red-600'}`}>{error}</p>
                 <button 
                   onClick={loadOrders}
-                  className="w-full sm:w-auto px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-200 hover:shadow-md font-semibold"
+                  className="mt-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-200 hover:shadow-md"
                 >
-                  🔄 Попробовать снова
+                  Попробовать снова
                 </button>
               </div>
             )}
 
-            {/* Фильтры */}
-            <div className="mb-6 animate-slide-in-left">
-              <div className="mb-4">
+            {/* Табы статусов + иконка фильтров */}
+            <div className="mb-4 animate-slide-in-left">
+              <div className="flex items-center gap-2">
+                {/* Табы с прокруткой */}
+                <div className="flex-1 min-w-0 overflow-x-auto scrollbar-hide">
+                  <div className={`flex gap-1 p-1 rounded-lg w-max ${
+                    isDark ? 'bg-[#2a3441]' : 'bg-gray-100'
+                  }`}>
+                    {[
+                      { id: 'all', label: 'Все' },
+                      { id: 'Ожидает', label: 'Ожидает' },
+                      { id: 'Принял', label: 'Принял' },
+                      { id: 'В работе', label: 'В работе' },
+                      { id: 'Модерн', label: 'Модерн' },
+                      { id: 'completed', label: 'Завершённые' },
+                    ].map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => handleStatusTabChange(tab.id)}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap ${
+                          statusTab === tab.id
+                            ? isDark 
+                              ? 'bg-[#0d5c4b] text-white shadow-sm'
+                              : 'bg-[#0d5c4b] text-white shadow-sm'
+                            : isDark
+                              ? 'text-gray-400 hover:text-gray-200 hover:bg-[#3a4451]'
+                              : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Иконка фильтров */}
                 <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="flex items-center gap-2 text-left cursor-pointer group"
+                  onClick={openFiltersPanel}
+                  className={`relative flex-shrink-0 p-2 rounded-lg transition-all duration-200 ${
+                    isDark 
+                      ? 'bg-[#2a3441] hover:bg-[#3a4451] text-gray-400 hover:text-teal-400'
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-teal-600'
+                  }`}
+                  title="Фильтры"
                 >
-                  <h2 className="text-lg font-semibold text-gray-700 group-hover:text-teal-600 transition-colors duration-200">
-                    Фильтр
-                  </h2>
-                  <svg
-                    className={`w-5 h-5 text-gray-600 group-hover:text-teal-600 transition-all duration-200 ${
-                      showFilters ? 'rotate-180' : ''
-                    }`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                   </svg>
+                  {/* Индикатор активных фильтров */}
+                  {(searchId || searchPhone || searchAddress || statusFilter || cityFilter) && (
+                    <span className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-teal-500 rounded-full border-2 ${
+                      isDark ? 'border-[#1e2530]' : 'border-white'
+                    }`}></span>
+                  )}
                 </button>
               </div>
-              
-              {showFilters && (
-                <div className="relative z-[100] space-y-4 animate-slide-in-right">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* Поиск */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">
-                        Поиск (№, телефон, адрес)
-                      </label>
-                      <input
-                        type="text"
-                        value={searchTerm}
-                        onChange={(e) => handleSearchChange(e.target.value)}
-                        placeholder="Введите номер, телефон или адрес..."
-                        className="w-full px-3 py-2 bg-white border-2 border-gray-200 rounded-lg text-gray-800 placeholder-gray-400 text-sm focus:outline-none focus:border-teal-500 transition-all duration-200 hover:border-gray-300 shadow-sm hover:shadow-md"
-                      />
+            </div>
+
+            {/* Выезжающая панель фильтров справа */}
+            {showFilters && (
+              <>
+                {/* Затемнение фона */}
+                <div 
+                  className={`fixed inset-0 z-40 transition-opacity duration-300 ${
+                    isDark ? 'bg-black/50' : 'bg-black/30'
+                  }`}
+                  onClick={() => setShowFilters(false)}
+                />
+                
+                {/* Панель фильтров */}
+                <div className={`fixed top-16 md:top-0 right-0 h-[calc(100%-4rem)] md:h-full w-full sm:w-80 shadow-xl z-50 transform transition-transform duration-300 ease-out overflow-y-auto ${
+                  isDark ? 'bg-[#2a3441]' : 'bg-white'
+                }`}>
+                  {/* Заголовок панели - только на десктопе */}
+                  <div className={`hidden md:flex sticky top-0 border-b px-4 py-3 items-center justify-between z-10 ${
+                    isDark ? 'bg-[#2a3441] border-gray-700' : 'bg-white border-gray-200'
+                  }`}>
+                    <h2 className={`text-lg font-semibold ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>Фильтры</h2>
+                    <button
+                      onClick={() => setShowFilters(false)}
+                      className={`p-2 rounded-lg transition-colors ${
+                        isDark ? 'text-gray-400 hover:text-gray-200 hover:bg-[#3a4451]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                      }`}
+                      title="Закрыть"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* Кнопка скрыть - только на мобильных */}
+                  <div className={`md:hidden sticky top-0 border-b px-4 py-3 z-10 ${
+                    isDark ? 'bg-[#2a3441] border-gray-700' : 'bg-white border-gray-200'
+                  }`}>
+                    <button
+                      onClick={() => setShowFilters(false)}
+                      className={`w-full py-2.5 px-4 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                        isDark ? 'bg-[#3a4451] hover:bg-[#4a5461] text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+                      }`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      </svg>
+                      Скрыть фильтры
+                    </button>
+                  </div>
+
+                  {/* Содержимое фильтров */}
+                  <div className="p-4 space-y-4">
+                    {/* Секция: Поиск */}
+                    <div className="space-y-3">
+                      <h3 className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Поиск</h3>
+                      
+                      <div>
+                        <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>№ заказа</label>
+                        <input
+                          type="text"
+                          value={draftSearchId}
+                          onChange={(e) => setDraftSearchId(e.target.value)}
+                          placeholder="ID заказа..."
+                          className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${
+                            isDark 
+                              ? 'bg-[#3a4451] border-gray-600 text-gray-100 placeholder-gray-500'
+                              : 'bg-gray-50 border-gray-200 text-gray-800 placeholder-gray-400'
+                          }`}
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Телефон</label>
+                        <input
+                          type="text"
+                          value={draftSearchPhone}
+                          onChange={(e) => setDraftSearchPhone(e.target.value)}
+                          placeholder="Номер телефона..."
+                          className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${
+                            isDark 
+                              ? 'bg-[#3a4451] border-gray-600 text-gray-100 placeholder-gray-500'
+                              : 'bg-gray-50 border-gray-200 text-gray-800 placeholder-gray-400'
+                          }`}
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Адрес</label>
+                        <input
+                          type="text"
+                          value={draftSearchAddress}
+                          onChange={(e) => setDraftSearchAddress(e.target.value)}
+                          placeholder="Адрес..."
+                          className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all ${
+                            isDark 
+                              ? 'bg-[#3a4451] border-gray-600 text-gray-100 placeholder-gray-500'
+                              : 'bg-gray-50 border-gray-200 text-gray-800 placeholder-gray-400'
+                          }`}
+                        />
+                      </div>
                     </div>
-                    
-                    {/* Статус */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">
-                        Статус
-                      </label>
-                      <Select value={statusFilter || "all"} onValueChange={(value) => handleStatusChange(value === "all" ? "" : value)}>
-                        <SelectTrigger className="w-full bg-white border-gray-300 text-gray-800">
-                          <SelectValue placeholder="Все статусы" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white border-gray-300">
-                          <SelectItem value="all" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
-                            Все статусы
-                          </SelectItem>
-                          {Array.isArray(allStatuses) && allStatuses.map(status => (
-                            <SelectItem key={status} value={status} className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
-                              {status}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+
+                    <hr className={isDark ? 'border-gray-700' : 'border-gray-200'} />
+
+                    {/* Секция: Основные фильтры */}
+                    <div className="space-y-3">
+                      <h3 className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Основные</h3>
+                      
+                      <div>
+                        <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Статус</label>
+                        <Select value={draftStatusFilter || "all"} onValueChange={(value) => setDraftStatusFilter(value === "all" ? "" : value)}>
+                          <SelectTrigger className={`w-full ${isDark ? 'bg-[#3a4451] border-gray-600 text-gray-100' : 'bg-gray-50 border-gray-200 text-gray-800'}`}>
+                            <SelectValue placeholder="Все статусы" />
+                          </SelectTrigger>
+                          <SelectContent className={isDark ? 'bg-[#2a3441] border-gray-600' : 'bg-white border-gray-200'}>
+                            <SelectItem value="all" className={isDark ? 'text-gray-100 focus:bg-[#3a4451] focus:text-teal-400' : 'text-gray-800 focus:bg-teal-50 focus:text-teal-700'}>Все статусы</SelectItem>
+                            {allStatuses.map(status => (
+                              <SelectItem key={status} value={status} className={isDark ? 'text-gray-100 focus:bg-[#3a4451] focus:text-teal-400' : 'text-gray-800 focus:bg-teal-50 focus:text-teal-700'}>{status}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div>
+                        <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Город</label>
+                        <Select value={draftCityFilter || "all"} onValueChange={(value) => setDraftCityFilter(value === "all" ? "" : value)}>
+                          <SelectTrigger className={`w-full ${isDark ? 'bg-[#3a4451] border-gray-600 text-gray-100' : 'bg-gray-50 border-gray-200 text-gray-800'}`}>
+                            <SelectValue placeholder="Все города" />
+                          </SelectTrigger>
+                          <SelectContent className={isDark ? 'bg-[#2a3441] border-gray-600' : 'bg-white border-gray-200'}>
+                            <SelectItem value="all" className={isDark ? 'text-gray-100 focus:bg-[#3a4451] focus:text-teal-400' : 'text-gray-800 focus:bg-teal-50 focus:text-teal-700'}>Все города</SelectItem>
+                            {uniqueCities.map(city => (
+                              <SelectItem key={city} value={city} className={isDark ? 'text-gray-100 focus:bg-[#3a4451] focus:text-teal-400' : 'text-gray-800 focus:bg-teal-50 focus:text-teal-700'}>{city}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </div>
-                  
-                  {/* Город */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Город
-                    </label>
-                    <Select value={cityFilter || "all"} onValueChange={(value) => handleCityChange(value === "all" ? "" : value)}>
-                      <SelectTrigger className="w-full sm:w-64 bg-white border-gray-300 text-gray-800">
-                        <SelectValue placeholder="Все города" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white border-gray-300">
-                        <SelectItem value="all" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
-                          Все города
-                        </SelectItem>
-                        {Array.isArray(uniqueCities) && uniqueCities.map(city => (
-                          <SelectItem key={city} value={city} className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
-                            {city}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {/* Кнопки управления фильтрами */}
-                  <div className="flex flex-col sm:flex-row gap-2">
+
+                  {/* Нижняя панель с кнопками */}
+                  <div className={`sticky bottom-0 border-t px-4 py-3 flex gap-2 ${
+                    isDark ? 'bg-[#2a3441] border-gray-700' : 'bg-white border-gray-200'
+                  }`}>
                     <button
                       onClick={resetFilters}
-                      className="px-4 py-2 text-white rounded-lg transition-all duration-200 hover:shadow-md text-sm font-medium bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700"
+                      className={`flex-1 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                        isDark 
+                          ? 'bg-[#3a4451] hover:bg-[#4a5461] text-gray-300'
+                          : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                      }`}
                     >
                       Сбросить
                     </button>
+                    <button
+                      onClick={applyFilters}
+                      className="flex-1 px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg transition-colors text-sm font-medium"
+                    >
+                      Применить
+                    </button>
                   </div>
                 </div>
-              )}
-            </div>
+              </>
+            )}
 
             {/* Десктопная таблица */}
             {!loading && !error && sortedOrders.length === 0 && (
               <div className="text-center py-8 animate-fade-in">
-                <p className="text-gray-500 font-medium">Нет заказов для отображения</p>
+                <p className={`font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Нет заказов для отображения</p>
               </div>
             )}
             
             {!loading && !error && sortedOrders.length > 0 && (
             <div className="hidden md:block animate-fade-in">
-              <table className="w-full border-collapse text-xs bg-white rounded-lg shadow-lg">
+              <table className={`w-full border-collapse text-xs rounded-lg shadow-lg ${
+                isDark ? 'bg-[#2a3441]' : 'bg-white'
+              }`}>
                 <thead>
-                  <tr className="border-b-2 bg-gray-50" style={{borderColor: '#14b8a6'}}>
-                    <th className="text-left py-2 px-2 font-semibold text-gray-700">ID</th>
-                    <th className="text-left py-2 px-2 font-semibold text-gray-700">Тип заказа</th>
-                    <th className="text-left py-2 px-2 font-semibold text-gray-700">РК</th>
-                    <th className="text-left py-2 px-2 font-semibold text-gray-700">Город</th>
-                    <th className="text-left py-2 px-2 font-semibold text-gray-700">Имя мастера</th>
-                    <th className="text-left py-2 px-2 font-semibold text-gray-700">Телефон</th>
-                    <th className="text-left py-2 px-2 font-semibold text-gray-700">Клиент</th>
-                    <th className="text-left py-2 px-2 font-semibold text-gray-700">Адрес</th>
-                    <th className="text-left py-2 px-2 font-semibold text-gray-700">Дата встречи</th>
-                    <th className="text-left py-2 px-2 font-semibold text-gray-700">Направление</th>
-                    <th className="text-left py-2 px-2 font-semibold text-gray-700">Проблема</th>
-                    <th className="text-center py-2 px-2 font-semibold text-gray-700">Статус</th>
-                    <th className="text-left py-2 px-2 font-semibold text-gray-700">Мастер</th>
-                    <th className="text-left py-2 px-2 font-semibold text-gray-700">Итог</th>
+                  <tr className={`border-b-2 ${isDark ? 'bg-[#3a4451] border-[#0d5c4b]' : 'bg-gray-50 border-[#0d5c4b]'}`}>
+                    <th className={`text-left py-2 px-2 font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>ID</th>
+                    <th className={`text-left py-2 px-2 font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Тип заказа</th>
+                    <th className={`text-left py-2 px-2 font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>РК</th>
+                    <th className={`text-left py-2 px-2 font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Город</th>
+                    <th className={`text-left py-2 px-2 font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Имя мастера</th>
+                    <th className={`text-left py-2 px-2 font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Телефон</th>
+                    <th className={`text-left py-2 px-2 font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Клиент</th>
+                    <th className={`text-left py-2 px-2 font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Адрес</th>
+                    <th className={`text-left py-2 px-2 font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Дата встречи</th>
+                    <th className={`text-left py-2 px-2 font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Направление</th>
+                    <th className={`text-left py-2 px-2 font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Проблема</th>
+                    <th className={`text-center py-2 px-2 font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Статус</th>
+                    <th className={`text-left py-2 px-2 font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Мастер</th>
+                    <th className={`text-left py-2 px-2 font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Итог</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {Array.isArray(sortedOrders) && sortedOrders.map((order) => (
+                  {sortedOrders.map((order) => (
                     <tr 
                       key={order.id}
-                      className="border-b hover:bg-teal-50 transition-colors cursor-pointer" 
-                      style={{borderColor: '#e5e7eb'}}
+                      className={`border-b transition-colors cursor-pointer ${
+                        isDark 
+                          ? 'border-gray-700 hover:bg-[#3a4451]'
+                          : 'border-gray-200 hover:bg-teal-50'
+                      }`}
                       onClick={() => handleOrderClick(order.id)}
                     >
-                      <td className="py-2 px-2 text-gray-800 font-medium">{order.id}</td>
+                      <td className={`py-2 px-2 font-medium ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{order.id}</td>
                       <td className="py-2 px-2">
-                        <span className="px-2 py-1 rounded-full text-xs font-medium text-white shadow-sm" style={{backgroundColor: getTypeColor(order.typeOrder)}}>
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${getTypeStyle(order.typeOrder)}`}>
                           {order.typeOrder}
                         </span>
                       </td>
-                      <td className="py-2 px-2 text-gray-800">{order.rk}</td>
-                      <td className="py-2 px-2 text-gray-800">{order.city}</td>
-                      <td className="py-2 px-2 text-gray-800">{order.avitoName || '-'}</td>
-                      <td className="py-2 px-2 text-gray-800">{order.phone}</td>
-                      <td className="py-2 px-2 text-gray-800">{order.clientName}</td>
-                      <td className="py-2 px-2 text-gray-800">{order.address}</td>
-                      <td className="py-2 px-2 text-gray-800">{formatDate(order.dateMeeting)}</td>
-                      <td className="py-2 px-2 text-gray-800">{order.typeEquipment}</td>
-                      <td className="py-2 px-2 text-gray-800">{order.problem}</td>
+                      <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.rk}</td>
+                      <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.city}</td>
+                      <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.avitoName || '-'}</td>
+                      <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.phone}</td>
+                      <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.clientName}</td>
+                      <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.address}</td>
+                      <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{formatDate(order.dateMeeting)}</td>
+                      <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.typeEquipment}</td>
+                      <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.problem}</td>
                       <td className="py-2 px-2 text-center">
-                        <span className="inline-block px-2 py-1 rounded-full text-xs font-medium text-white shadow-sm" style={{backgroundColor: getStatusColor(order.statusOrder)}}>
+                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${getStatusStyle(order.statusOrder)}`}>
                           {order.statusOrder}
                         </span>
                       </td>
-                      <td className="py-2 px-2 text-gray-800">{order.master?.name || '-'}</td>
-                      <td className="py-2 px-2 text-gray-800 font-semibold">{order.result ? `${order.result.toLocaleString()} ₽` : '-'}</td>
+                      <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.master?.name || '-'}</td>
+                      <td className={`py-2 px-2 font-semibold ${isDark ? 'text-teal-400' : 'text-gray-800'}`}>
+                        {order.result && typeof order.result === 'number' 
+                          ? `${order.result.toLocaleString()} ₽`
+                          : '-'}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -435,55 +703,63 @@ function OrdersContent() {
 
             {/* Мобильные карточки */}
             {!loading && !error && sortedOrders.length > 0 && (
-            <div className="md:hidden space-y-4 animate-fade-in">
-              {Array.isArray(sortedOrders) && sortedOrders.map((order) => (
+            <div className="md:hidden space-y-3 animate-fade-in">
+              {sortedOrders.map((order) => (
                 <div 
                   key={order.id}
-                  className="bg-white rounded-lg p-4 border border-gray-200 cursor-pointer hover:bg-teal-50 transition-all duration-200 shadow-sm hover:shadow-md"
+                  className={`rounded-xl overflow-hidden border cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md ${
+                    isDark 
+                      ? 'bg-[#2a3441] border-gray-700 hover:border-teal-600'
+                      : 'bg-white border-gray-200 hover:border-teal-300'
+                  }`}
                   onClick={() => handleOrderClick(order.id)}
                 >
-                  <div className="flex justify-between items-start mb-3">
+                  {/* Верхняя строка: ID, тип, дата */}
+                  <div className={`flex items-center justify-between px-3 py-2 border-b ${
+                    isDark ? 'bg-[#3a4451] border-gray-700' : 'bg-gray-50 border-gray-100'
+                  }`}>
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-800 font-semibold">#{order.id}</span>
-                      <span className="px-3 py-1 rounded-full text-xs font-medium text-white shadow-sm" style={{backgroundColor: getTypeColor(order.typeOrder)}}>
+                      <span className={`font-bold text-sm ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>#{order.id}</span>
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${getTypeStyle(order.typeOrder)}`}>
                         {order.typeOrder}
                       </span>
                     </div>
-                    <span className="text-gray-800 font-semibold">{order.result ? `${order.result.toLocaleString()} ₽` : '-'}</span>
+                    <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{formatDate(order.dateMeeting)}</span>
                   </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Клиент:</span>
-                      <span className="text-gray-800">{order.clientName}</span>
+                  
+                  {/* Основной контент */}
+                  <div className="px-3 py-2.5">
+                    {/* Клиент и город */}
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className={`font-medium text-sm ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{order.clientName || 'Без имени'}</span>
+                      <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{order.city}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Город:</span>
-                      <span className="text-gray-800">{order.city}</span>
+                    
+                    {/* Адрес */}
+                    <p className={`text-xs mb-2 line-clamp-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{order.address || '—'}</p>
+                    
+                    {/* Проблема */}
+                    <div className="flex items-start gap-1.5 mb-2">
+                      <span className={`text-xs shrink-0 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{order.typeEquipment}</span>
+                      <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>·</span>
+                      <span className={`text-xs line-clamp-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{order.problem || '—'}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Дата встречи:</span>
-                      <span className="text-gray-800">{order.dateMeeting ? new Date(order.dateMeeting).toLocaleDateString('ru-RU', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        timeZone: 'UTC'
-                      }) : '-'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Мастер:</span>
-                      <span className="text-gray-800">{order.master?.name || '-'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Проблема:</span>
-                      <span className="text-gray-800">{order.problem}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Статус:</span>
-                      <span className="px-3 py-1 rounded-full text-xs font-medium text-white shadow-sm" style={{backgroundColor: getStatusColor(order.statusOrder)}}>
+                  </div>
+                  
+                  {/* Нижняя строка: мастер, статус, сумма */}
+                  <div className={`flex items-center justify-between px-3 py-2 border-t ${
+                    isDark ? 'bg-[#3a4451] border-gray-700' : 'bg-gray-50 border-gray-100'
+                  }`}>
+                    <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{order.master?.name || 'Не назначен'}</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusStyle(order.statusOrder)}`}>
                         {order.statusOrder}
                       </span>
+                      {order.result && typeof order.result === 'number' && (
+                        <span className={`font-bold text-sm ${isDark ? 'text-teal-400' : 'text-teal-600'}`}>
+                          {order.result.toLocaleString()} ₽
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -491,95 +767,15 @@ function OrdersContent() {
             </div>
             )}
 
-
             {/* Пагинация */}
             {!loading && !error && sortedOrders.length > 0 && (pagination?.totalPages || 0) > 1 && (
-              <div className="mt-6 flex justify-center items-center gap-2 flex-wrap animate-fade-in">
-                <button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="px-3 py-2 bg-white border-2 border-teal-600 text-teal-600 hover:bg-teal-600 hover:text-white disabled:border-gray-300 disabled:text-gray-400 disabled:hover:bg-white disabled:hover:text-gray-400 rounded-lg transition-all duration-200 hover:shadow-md text-sm font-medium"
-                >
-                  ←
-                </button>
-                
-                {(() => {
-                  const totalPages = pagination?.totalPages || 0
-                  const pages = []
-                  
-                  // Показываем максимум 7 страниц
-                  const maxVisible = 7
-                  let startPage = Math.max(1, currentPage - 3)
-                  let endPage = Math.min(totalPages, startPage + maxVisible - 1)
-                  
-                  // Корректируем если не хватает страниц в конце
-                  if (endPage - startPage + 1 < maxVisible) {
-                    startPage = Math.max(1, endPage - maxVisible + 1)
-                  }
-                  
-                  // Добавляем первую страницу и многоточие если нужно
-                  if (startPage > 1) {
-                    pages.push(
-                      <button
-                        key={1}
-                        onClick={() => setCurrentPage(1)}
-                        className="px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium bg-white border-2 border-teal-600 text-teal-600 hover:bg-teal-600 hover:text-white hover:shadow-md"
-                      >
-                        1
-                      </button>
-                    )
-                    if (startPage > 2) {
-                      pages.push(
-                        <span key="ellipsis1" className="px-2 text-gray-500">...</span>
-                      )
-                    }
-                  }
-                  
-                  // Добавляем видимые страницы
-                  for (let i = startPage; i <= endPage; i++) {
-                    pages.push(
-                      <button
-                        key={i}
-                        onClick={() => setCurrentPage(i)}
-                        className={`px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
-                          currentPage === i
-                            ? 'bg-teal-600 text-white shadow-md'
-                            : 'bg-white border-2 border-teal-600 text-teal-600 hover:bg-teal-600 hover:text-white hover:shadow-md'
-                        }`}
-                      >
-                        {i}
-                      </button>
-                    )
-                  }
-                  
-                  // Добавляем последнюю страницу и многоточие если нужно
-                  if (endPage < totalPages) {
-                    if (endPage < totalPages - 1) {
-                      pages.push(
-                        <span key="ellipsis2" className="px-2 text-gray-500">...</span>
-                      )
-                    }
-                    pages.push(
-                      <button
-                        key={totalPages}
-                        onClick={() => setCurrentPage(totalPages)}
-                        className="px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium bg-white border-2 border-teal-600 text-teal-600 hover:bg-teal-600 hover:text-white hover:shadow-md"
-                      >
-                        {totalPages}
-                      </button>
-                    )
-                  }
-                  
-                  return pages
-                })()}
-                
-                <button
-                  onClick={() => setCurrentPage(Math.min(pagination?.totalPages || 0, currentPage + 1))}
-                  disabled={currentPage === (pagination?.totalPages || 0)}
-                  className="px-3 py-2 bg-white border-2 border-teal-600 text-teal-600 hover:bg-teal-600 hover:text-white disabled:border-gray-300 disabled:text-gray-400 disabled:hover:bg-white disabled:hover:text-gray-400 rounded-lg transition-all duration-200 hover:shadow-md text-sm font-medium"
-                >
-                  →
-                </button>
+              <div className="mt-6 animate-fade-in">
+                <OptimizedPagination
+                  currentPage={currentPage}
+                  totalPages={pagination?.totalPages || 0}
+                  onPageChange={setCurrentPage}
+                  isDark={isDark}
+                />
               </div>
             )}
           </div>
@@ -590,5 +786,16 @@ function OrdersContent() {
 }
 
 export default function OrdersPage() {
-  return <OrdersContent />
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#1e2530]">
+        <div className="text-center">
+          <LoadingSpinner size="lg" />
+          <p className="mt-4 text-gray-700 dark:text-gray-300">Загрузка заказов...</p>
+        </div>
+      </div>
+    }>
+      <OrdersContent />
+    </Suspense>
+  )
 }
