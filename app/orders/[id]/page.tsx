@@ -2,17 +2,14 @@
 
 import { useRouter, useParams } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Phone, MapPin, Calendar, User, Wrench, AlertTriangle, FileText, MessageSquare, Plus, Upload, Loader2, AlertCircle } from 'lucide-react'
+import { Loader2, ChevronLeft, Phone } from 'lucide-react'
 import apiClient from '@/lib/api'
-import { CallButton } from '@/components/CallButton'
 import { useMultipleFileUpload } from '@/hooks/useMultipleFileUpload'
 import { MultipleFileUpload } from '@/components/MultipleFileUpload'
-import { LoadingScreen } from '@/components/ui/loading-screen'
+import { LoadingScreen, LoadingSpinner } from '@/components/ui/loading-screen'
+import { useDesignStore } from '@/store/design.store'
 
 interface Order {
   id: number
@@ -33,6 +30,12 @@ interface Order {
   callId?: string | null
   bsoDoc?: string[] | null
   expenditureDoc?: string[] | null
+  expenditure?: number | null
+  clean?: number | null
+  masterChange?: number | null
+  prepayment?: number | null
+  dateClosmod?: string | null
+  comment?: string | null
   operator?: {
     id: number
     name: string
@@ -65,6 +68,11 @@ function OrderDetailPageContent() {
   const router = useRouter()
   const params = useParams()
   const id = params.id as string
+  
+  // Тема
+  const { theme } = useDesignStore()
+  const isDark = theme === 'dark'
+  
   const [order, setOrder] = useState<Order | null>(null)
   const [calls, setCalls] = useState<Call[]>([])
   const [recordingUrls, setRecordingUrls] = useState<{ [key: number]: string }>({})
@@ -76,7 +84,6 @@ function OrderDetailPageContent() {
   const [isUpdating, setIsUpdating] = useState(false)
   const [notifications, setNotifications] = useState<string[]>([])
   const [showModernBlock, setShowModernBlock] = useState(true)
-  const [showDocumentsTab, setShowDocumentsTab] = useState(false)
   const [showCloseButton, setShowCloseButton] = useState(false)
   const [validationError, setValidationError] = useState('')
   const [isCompleted, setIsCompleted] = useState(false)
@@ -88,34 +95,17 @@ function OrderDetailPageContent() {
   const [dateClosmod, setDateClosmod] = useState('')
   const [comment, setComment] = useState('')
 
-  // Хуки для множественной загрузки файлов (до 10 файлов каждого типа)
+  // Хуки для множественной загрузки файлов
   const bsoUpload = useMultipleFileUpload(10)
   const expenditureUpload = useMultipleFileUpload(10)
   
-  // Ref для предотвращения дублирующихся запросов (для React Strict Mode)
+  // Ref для предотвращения дублирующихся запросов
   const callsFetchedRef = useRef<Set<string>>(new Set())
   const orderFetchedRef = useRef(false)
 
-  // Функция для извлечения имени файла из URL
-  const getFileNameFromUrl = (url: string): string => {
-    try {
-      // Убираем query параметры (все после ?)
-      const urlWithoutQuery = url.split('?')[0]
-      // Извлекаем имя файла (последняя часть после /)
-      const fileName = urlWithoutQuery.split('/').pop() || 'файл'
-      return decodeURIComponent(fileName)
-    } catch {
-      return 'файл'
-    }
-  }
-
   // Функция для загрузки звонков
   const fetchCalls = async (orderId: string) => {
-    // Предотвращаем дублирующиеся запросы (для React Strict Mode)
-    if (callsFetchedRef.current.has(orderId)) {
-      return
-    }
-    
+    if (callsFetchedRef.current.has(orderId)) return
     callsFetchedRef.current.add(orderId)
     
     try {
@@ -124,8 +114,6 @@ function OrderDetailPageContent() {
         setCalls(response.data)
       }
     } catch {
-      // Тихо обрабатываем ошибку загрузки звонков
-      // Убираем из set при ошибке, чтобы можно было повторить
       callsFetchedRef.current.delete(orderId)
     }
   }
@@ -134,34 +122,21 @@ function OrderDetailPageContent() {
   useEffect(() => {
     const loadRecordingUrls = () => {
       const urls: { [key: number]: string } = {}
-      
       for (const call of calls) {
         if (call.recordingUrl) {
-          // Используем прямой S3 URL
           const s3Url = `https://s3.twcstorage.ru/f7eead03-crmfiles/${call.recordingUrl}`
           urls[call.id] = s3Url
         }
       }
-      
       setRecordingUrls(urls)
     }
-
-    if (calls.length > 0) {
-      loadRecordingUrls()
-    }
+    if (calls.length > 0) loadRecordingUrls()
   }, [calls])
-
 
   // Загружаем заказ из API
   useEffect(() => {
     const fetchOrder = async () => {
-      if (!id) return
-      
-      // Предотвращаем дублирующиеся запросы (для React Strict Mode)
-      if (orderFetchedRef.current) {
-        return
-      }
-      
+      if (!id || orderFetchedRef.current) return
       orderFetchedRef.current = true
       
       try {
@@ -176,64 +151,50 @@ function OrderDetailPageContent() {
           setTotalAmount(total)
           setExpenseAmount(expense)
           
-          // Загружаем звонки если есть callId
           if (response.data.callId) {
             await fetchCalls(response.data.id.toString())
           }
           
-              // Если статус "Готово", устанавливаем флаги и вычисляем значения
-              if (response.data.statusOrder === 'Готово') {
-                setIsCompleted(true)
-                const clean = response.data.clean || 0
-                const masterChange = response.data.masterChange || 0
-                setCleanAmount(clean.toString())
-                setMasterChange(masterChange.toString())
-              }
-              
-              // Загружаем данные модерна
-              setPrepayment(response.data.prepayment?.toString() || '')
-              setDateClosmod(response.data.dateClosmod ? new Date(response.data.dateClosmod).toISOString().slice(0, 16) : '')
-              setComment(response.data.comment || '')
-              
-              // Устанавливаем showModernBlock в зависимости от статуса
-              setShowModernBlock(response.data.statusOrder === 'Модерн')
-              
-              // Загружаем существующие файлы документов (массивы)
-              if (response.data.bsoDoc && Array.isArray(response.data.bsoDoc) && response.data.bsoDoc.length > 0) {
-                bsoUpload.setExistingPreviews(response.data.bsoDoc)
-              }
-              if (response.data.expenditureDoc && Array.isArray(response.data.expenditureDoc) && response.data.expenditureDoc.length > 0) {
-                expenditureUpload.setExistingPreviews(response.data.expenditureDoc)
-              }
+          if (response.data.statusOrder === 'Готово') {
+            setIsCompleted(true)
+            setCleanAmount((response.data.clean || 0).toString())
+            setMasterChange((response.data.masterChange || 0).toString())
+          }
           
-          // Валидация при загрузке
+          setPrepayment(response.data.prepayment?.toString() || '')
+          setDateClosmod(response.data.dateClosmod ? new Date(response.data.dateClosmod).toISOString().slice(0, 16) : '')
+          setComment(response.data.comment || '')
+          setShowModernBlock(response.data.statusOrder === 'Модерн')
+          
+          if (response.data.bsoDoc && Array.isArray(response.data.bsoDoc) && response.data.bsoDoc.length > 0) {
+            bsoUpload.setExistingPreviews(response.data.bsoDoc)
+          }
+          if (response.data.expenditureDoc && Array.isArray(response.data.expenditureDoc) && response.data.expenditureDoc.length > 0) {
+            expenditureUpload.setExistingPreviews(response.data.expenditureDoc)
+          }
+          
+          // Валидация
           const newNotifications: string[] = []
           const totalNum = parseFloat(total) || 0
           const expenseNum = parseFloat(expense) || 0
           
-          // Проверяем, нужен ли договор и прикреплен ли он
           if (totalNum > 5000 && (!response.data.bsoDoc || response.data.bsoDoc.length === 0)) {
             newNotifications.push('Итог больше 5000₽ - необходимо прикрепить Договор')
           }
-          
-          // Проверяем, нужен ли чек расхода и прикреплен ли он
           if (expenseNum > 1001 && (!response.data.expenditureDoc || response.data.expenditureDoc.length === 0)) {
             newNotifications.push('Расход больше 1001₽ - необходимо прикрепить чек расхода')
           }
-          
           setNotifications(newNotifications)
         } else {
           setError(response.error || 'Заказ не найден')
-          orderFetchedRef.current = false // Сбрасываем при ошибке
+          orderFetchedRef.current = false
         }
       } catch (error: any) {
         setError(error.message || 'Ошибка загрузки заказа')
-        orderFetchedRef.current = false // Сбрасываем при ошибке
-        // Если ошибка авторизации, перенаправляем на логин
+        orderFetchedRef.current = false
         if (error.message?.includes('401') || error.message?.includes('токен')) {
           router.push('/login')
         }
-        // Если недостаточно прав, перенаправляем на список заказов
         if (error.message?.includes('403') || error.message?.includes('Недостаточно прав')) {
           router.push('/orders')
         }
@@ -243,7 +204,7 @@ function OrderDetailPageContent() {
     }
 
     fetchOrder()
-  }, [id]) // ✅ Убрали router из зависимостей - он вызывает лишние рендеры
+  }, [id])
 
   // Переключаемся на вкладку "Информация" если активна скрытая вкладка
   useEffect(() => {
@@ -254,11 +215,10 @@ function OrderDetailPageContent() {
     }
   }, [order, activeTab])
 
-  // Очистка blob URL при размонтировании компонента
+  // Очистка blob URL
   useEffect(() => {
     const bsoCleanup = bsoUpload.cleanup
     const expenditureCleanup = expenditureUpload.cleanup
-    
     return () => {
       bsoCleanup()
       expenditureCleanup()
@@ -268,13 +228,9 @@ function OrderDetailPageContent() {
   // Функция для принятия заказа
   const handleAcceptOrder = async () => {
     if (!order) return
-    
     try {
       setIsUpdating(true)
-      const response = await apiClient.updateOrder(order.id.toString(), {
-        statusOrder: 'Принял'
-      })
-      
+      const response = await apiClient.updateOrder(order.id.toString(), { statusOrder: 'Принял' })
       if (response.success && response.data) {
         setOrder(response.data)
       } else {
@@ -290,13 +246,9 @@ function OrderDetailPageContent() {
   // Функция для отказа от заказа
   const handleDeclineOrder = async () => {
     if (!order) return
-    
     try {
       setIsUpdating(true)
-      const response = await apiClient.updateOrder(order.id.toString(), {
-        masterId: null
-      })
-      
+      const response = await apiClient.updateOrder(order.id.toString(), { masterId: null })
       if (response.success && response.data) {
         setOrder(response.data)
         router.push('/orders')
@@ -313,7 +265,6 @@ function OrderDetailPageContent() {
   // Функция для сохранения данных модерна
   const handleSaveModerData = async () => {
     if (!order) return
-    
     setIsUpdating(true)
     try {
       const updateData = {
@@ -321,12 +272,9 @@ function OrderDetailPageContent() {
         dateClosmod: dateClosmod ? new Date(dateClosmod + 'Z').toISOString() : null,
         comment: comment || null
       }
-      
       const response = await apiClient.updateOrder(order.id.toString(), updateData)
-      
       if (response.success) {
         setOrder(response.data)
-        // Показываем уведомление об успешном сохранении
         setNotifications(['Модерн записан!'])
         setTimeout(() => setNotifications([]), 4000)
       }
@@ -341,11 +289,9 @@ function OrderDetailPageContent() {
   // Функция для сохранения файлов
   const saveFiles = async () => {
     if (!order) return
-    
     const failedUploads: string[] = []
     
     try {
-      // Загружаем новые BSO файлы
       const newBsoFiles = bsoUpload.files.filter(f => f.file !== null).map(f => f.file!);
       let bsoDocPaths: string[] = [];
       
@@ -354,32 +300,23 @@ function OrderDetailPageContent() {
           newBsoFiles.map(file => apiClient.uploadFile(file, 'director/orders/bso_doc'))
         );
         
-        // Проверяем успешные и неуспешные загрузки
         bsoResults.forEach((result, index) => {
           if (result.status === 'rejected' || (result.status === 'fulfilled' && !result.value?.success)) {
             failedUploads.push(`Договор БСО: ${newBsoFiles[index].name}`)
           }
         })
         
-        // ВАЖНО: Используем KEY, а не URL!
         const newBsoPaths = bsoResults
           .filter((res): res is PromiseFulfilledResult<any> => 
             res.status === 'fulfilled' && res.value?.success && res.value?.data?.key)
           .map(res => res.value.data.key);
         
-        // Получаем существующие пути
-        const existingBsoPaths = bsoUpload.files
-          .filter(f => f.file === null)
-          .map(f => f.preview);
-        
+        const existingBsoPaths = bsoUpload.files.filter(f => f.file === null).map(f => f.preview);
         bsoDocPaths = [...existingBsoPaths, ...newBsoPaths];
       } else {
-        bsoDocPaths = bsoUpload.files
-          .filter(f => f.file === null)
-          .map(f => f.preview);
+        bsoDocPaths = bsoUpload.files.filter(f => f.file === null).map(f => f.preview);
       }
       
-      // Загружаем новые файлы расходов
       const newExpenditureFiles = expenditureUpload.files.filter(f => f.file !== null).map(f => f.file!);
       let expenditureDocPaths: string[] = [];
       
@@ -388,44 +325,30 @@ function OrderDetailPageContent() {
           newExpenditureFiles.map(file => apiClient.uploadFile(file, 'director/orders/expenditure_doc'))
         );
         
-        // Проверяем успешные и неуспешные загрузки
         expenditureResults.forEach((result, index) => {
           if (result.status === 'rejected' || (result.status === 'fulfilled' && !result.value?.success)) {
             failedUploads.push(`Чек расхода: ${newExpenditureFiles[index].name}`)
           }
         })
         
-        // ВАЖНО: Используем KEY, а не URL!
         const newExpenditurePaths = expenditureResults
           .filter((res): res is PromiseFulfilledResult<any> => 
             res.status === 'fulfilled' && res.value?.success && res.value?.data?.key)
           .map(res => res.value.data.key);
         
-        const existingExpenditurePaths = expenditureUpload.files
-          .filter(f => f.file === null)
-          .map(f => f.preview);
-        
+        const existingExpenditurePaths = expenditureUpload.files.filter(f => f.file === null).map(f => f.preview);
         expenditureDocPaths = [...existingExpenditurePaths, ...newExpenditurePaths];
       } else {
-        expenditureDocPaths = expenditureUpload.files
-          .filter(f => f.file === null)
-          .map(f => f.preview);
+        expenditureDocPaths = expenditureUpload.files.filter(f => f.file === null).map(f => f.preview);
       }
       
-      // Показываем ошибки если есть
       if (failedUploads.length > 0) {
         setNotifications([`Не удалось загрузить: ${failedUploads.join(', ')}`])
         setTimeout(() => setNotifications([]), 5000)
       }
       
-      // Обновляем заказ с массивами путей только если есть изменения
-      if (bsoDocPaths.length > 0 || expenditureDocPaths.length > 0 || 
-          newBsoFiles.length > 0 || newExpenditureFiles.length > 0) {
-        const updateData: any = {
-          bsoDoc: bsoDocPaths,
-          expenditureDoc: expenditureDocPaths,
-        };
-        
+      if (bsoDocPaths.length > 0 || expenditureDocPaths.length > 0 || newBsoFiles.length > 0 || newExpenditureFiles.length > 0) {
+        const updateData: any = { bsoDoc: bsoDocPaths, expenditureDoc: expenditureDocPaths };
         const response = await apiClient.updateOrder(order.id.toString(), updateData);
         if (response.success && response.data) {
           setOrder(response.data);
@@ -442,39 +365,27 @@ function OrderDetailPageContent() {
     
     try {
       setIsUpdating(true)
-      
-      // Сначала сохраняем файлы если есть новые
       await saveFiles()
       
-      // Подготавливаем данные для отправки
-      const updateData: any = {
-        statusOrder: newStatus
-      }
+      const updateData: any = { statusOrder: newStatus }
       
-      // Если статус "Готово", добавляем финансовые данные
       if (newStatus === 'Готово') {
         const total = parseFloat(totalAmount) || 0
         const expense = parseFloat(expenseAmount) || 0
         let clean = total - expense
         
-        // Проверка для заказов со статусом "Модерн": если прошло 7+ дней от даты встречи, чистыми минимум 3000
         if (order.statusOrder === 'Модерн' && order.dateMeeting) {
           const meetingDate = new Date(order.dateMeeting)
           const today = new Date()
           const daysDiff = Math.floor((today.getTime() - meetingDate.getTime()) / (1000 * 60 * 60 * 24))
-          
-          if (daysDiff >= 7 && clean < 3000) {
-            clean = 3000
-          }
+          if (daysDiff >= 7 && clean < 3000) clean = 3000
         }
         
-        // Новая логика: если чистыми <= 5000, то 60%, иначе 50%
-        const masterChange = clean <= 5000 ? clean * 0.6 : clean * 0.5
-        
+        const masterChangeVal = clean <= 5000 ? clean * 0.6 : clean * 0.5
         updateData.result = total
         updateData.expenditure = expense
         updateData.clean = clean
-        updateData.masterChange = masterChange
+        updateData.masterChange = masterChangeVal
         updateData.cashSubmissionStatus = 'Не отправлено'
       }
       
@@ -491,32 +402,21 @@ function OrderDetailPageContent() {
         if (newStatus === 'Готово') {
           setActiveTab('documents')
           setIsCompleted(true)
-          // Вычисляем чистыми и сдачу мастера для отображения
           const total = parseFloat(totalAmount) || 0
           const expense = parseFloat(expenseAmount) || 0
           let clean = total - expense
           
-          // Проверка для заказов со статусом "Модерн": если прошло 7+ дней от даты встречи, чистыми минимум 3000
           if (order.statusOrder === 'Модерн' && order.dateMeeting) {
             const meetingDate = new Date(order.dateMeeting)
             const today = new Date()
             const daysDiff = Math.floor((today.getTime() - meetingDate.getTime()) / (1000 * 60 * 60 * 24))
-            
-            if (daysDiff >= 7 && clean < 3000) {
-              clean = 3000
-            }
+            if (daysDiff >= 7 && clean < 3000) clean = 3000
           }
           
-          // Новая логика: если чистыми <= 5000, то 60%, иначе 50%
-          const masterChange = clean <= 5000 ? clean * 0.6 : clean * 0.5
+          const masterChangeVal = clean <= 5000 ? clean * 0.6 : clean * 0.5
           setCleanAmount(clean.toString())
-          setMasterChange(masterChange.toString())
+          setMasterChange(masterChangeVal.toString())
         }
-        
-        // Убираем автоматический редирект при статусе "Отказ" или "Незаказ"
-        // if (newStatus === 'Отказ' || newStatus === 'Незаказ') {
-        //   router.push('/orders')
-        // }
       } else {
         setError(response.error || 'Ошибка обновления заказа')
       }
@@ -530,26 +430,18 @@ function OrderDetailPageContent() {
   // Функция для проверки валидации сумм
   const validateAmounts = () => {
     if (!order) return
-    
     const newNotifications: string[] = []
-    
     const total = parseFloat(totalAmount) || 0
     const expense = parseFloat(expenseAmount) || 0
-    
-    // Проверяем наличие прикрепленных файлов (как сохраненных, так и новых)
     const hasBsoFiles = (order.bsoDoc && order.bsoDoc.length > 0) || bsoUpload.files.length > 0
     const hasExpenditureFiles = (order.expenditureDoc && order.expenditureDoc.length > 0) || expenditureUpload.files.length > 0
     
-    // Проверяем, нужен ли договор и прикреплен ли он
     if (total > 5000 && !hasBsoFiles) {
       newNotifications.push('Итог больше 5000₽ - необходимо прикрепить Договор')
     }
-    
-    // Проверяем, нужен ли чек расхода и прикреплен ли он
     if (expense > 1001 && !hasExpenditureFiles) {
       newNotifications.push('Расход больше 1001₽ - необходимо прикрепить чек расхода')
     }
-    
     setNotifications(newNotifications)
   }
 
@@ -576,107 +468,86 @@ function OrderDetailPageContent() {
     }
   }, [totalAmount, expenseAmount, bsoUpload.files, expenditureUpload.files])
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, string> = {
-      'Ожидает': 'bg-yellow-500/20 text-yellow-800 border-yellow-500/30',
-      'Принял': 'bg-blue-500/20 text-blue-800 border-blue-500/30',
-      'В пути': 'bg-purple-500/20 text-purple-800 border-purple-500/30',
-      'В работе': 'bg-orange-500/20 text-orange-800 border-orange-500/30',
-      'Готово': 'bg-green-500/20 text-green-800 border-green-500/30',
-      'Отказ': 'bg-red-500/20 text-red-800 border-red-500/30',
-      'Модерн': 'bg-cyan-500/20 text-cyan-800 border-cyan-500/30',
-      'Незаказ': 'bg-gray-500/20 text-gray-800 border-gray-500/30'
+  // Получить цвет статуса
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      'Ожидает': isDark ? 'bg-yellow-900/40 text-yellow-400' : 'bg-yellow-100 text-yellow-700',
+      'Принял': isDark ? 'bg-blue-900/40 text-blue-400' : 'bg-blue-100 text-blue-700',
+      'В пути': isDark ? 'bg-purple-900/40 text-purple-400' : 'bg-purple-100 text-purple-700',
+      'В работе': isDark ? 'bg-orange-900/40 text-orange-400' : 'bg-orange-100 text-orange-700',
+      'Готово': isDark ? 'bg-green-900/40 text-green-400' : 'bg-green-100 text-green-700',
+      'Отказ': isDark ? 'bg-red-900/40 text-red-400' : 'bg-red-100 text-red-700',
+      'Модерн': isDark ? 'bg-cyan-900/40 text-cyan-400' : 'bg-cyan-100 text-cyan-700',
+      'Незаказ': isDark ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-700'
     }
-
-    return (
-      <Badge className={variants[status] || 'bg-gray-500/20 text-gray-800 border-gray-500/30'}>
-        {status}
-      </Badge>
-    )
+    return colors[status] || (isDark ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-700')
   }
 
-  const getOrderTypeBadge = (orderType: string) => {
-    const variants: Record<string, string> = {
-      'Впервые': 'bg-green-500/20 text-green-800 border-green-500/30',
-      'Повтор': 'bg-blue-500/20 text-blue-800 border-blue-500/30',
-      'Гарантия': 'bg-purple-500/20 text-purple-800 border-purple-500/30'
+  // Получить цвет типа заказа
+  const getOrderTypeColor = (type: string) => {
+    const colors: Record<string, string> = {
+      'Впервые': isDark ? 'bg-green-900/40 text-green-400' : 'bg-green-100 text-green-700',
+      'Повтор': isDark ? 'bg-blue-900/40 text-blue-400' : 'bg-blue-100 text-blue-700',
+      'Гарантия': isDark ? 'bg-purple-900/40 text-purple-400' : 'bg-purple-100 text-purple-700'
     }
-
-    return (
-      <Badge className={variants[orderType] || 'bg-gray-500/20 text-gray-800 border-gray-500/30'}>
-        {orderType}
-      </Badge>
-    )
+    return colors[type] || (isDark ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-700')
   }
 
-  // Функция для рендеринга кнопок в зависимости от статуса
+  // Функция для рендеринга кнопок действий
   const renderActionButtons = () => {
     if (!order) return null
-
     const status = order.statusOrder
     const hasUnfulfilledRequirements = notifications.length > 0
+
+    const buttonBase = "flex-1 font-medium py-3 text-base rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
 
     switch (status) {
       case 'Ожидает':
         return (
           <>
-            <Button 
+            <button 
               onClick={handleAcceptOrder}
               disabled={isUpdating}
-              className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-4 text-base rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 border-0"
+              className={`${buttonBase} bg-[#0d5c4b] hover:bg-[#0a4a3c] text-white`}
             >
-              {isUpdating ? 'Обновление...' : 'Принять'}
-            </Button>
-            <Button 
+              {isUpdating ? <><Loader2 className="w-4 h-4 animate-spin" /> Обновление...</> : 'Принять'}
+            </button>
+            <button 
               onClick={handleDeclineOrder}
               disabled={isUpdating}
-              className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-4 text-base rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 border-0"
+              className={`${buttonBase} bg-red-600 hover:bg-red-700 text-white`}
             >
               {isUpdating ? 'Обновление...' : 'Отказаться'}
-            </Button>
+            </button>
           </>
         )
 
       case 'Принял':
         return (
-          <Button 
+          <button 
             onClick={() => handleUpdateStatus('В пути')}
             disabled={isUpdating}
-            className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-4 text-base rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 border-0"
+            className={`${buttonBase} bg-purple-600 hover:bg-purple-700 text-white`}
           >
-            {isUpdating ? (
-              <span className="flex items-center justify-center space-x-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Обновление...</span>
-              </span>
-            ) : (
-              'В пути'
-            )}
-          </Button>
+            {isUpdating ? <><Loader2 className="w-4 h-4 animate-spin" /> Обновление...</> : 'В пути'}
+          </button>
         )
 
       case 'В пути':
         return (
-          <Button 
+          <button 
             onClick={() => handleUpdateStatus('В работе')}
             disabled={isUpdating}
-            className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-4 text-base rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 border-0"
+            className={`${buttonBase} bg-orange-600 hover:bg-orange-700 text-white`}
           >
-            {isUpdating ? (
-              <span className="flex items-center justify-center space-x-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Обновление...</span>
-              </span>
-            ) : (
-              'В работе'
-            )}
-          </Button>
+            {isUpdating ? <><Loader2 className="w-4 h-4 animate-spin" /> Обновление...</> : 'В работе'}
+          </button>
         )
 
       case 'В работе':
         if (showCloseButton) {
           return (
-            <Button 
+            <button 
               onClick={() => {
                 if (validateRequiredFields()) {
                   const total = parseFloat(totalAmount) || 0
@@ -686,38 +557,38 @@ function OrderDetailPageContent() {
                 }
               }}
               disabled={isUpdating || hasUnfulfilledRequirements}
-              className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-4 text-base rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 border-0"
+              className={`${buttonBase} bg-[#0d5c4b] hover:bg-[#0a4a3c] text-white`}
             >
               {isUpdating ? 'Обновление...' : 'Провести'}
-            </Button>
+            </button>
           )
         }
         return (
           <>
-            <Button 
+            <button 
               onClick={() => handleUpdateStatus('Модерн')}
               disabled={isUpdating || hasUnfulfilledRequirements}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-4 text-base rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 border-0"
+              className={`${buttonBase} bg-blue-600 hover:bg-blue-700 text-white`}
             >
               {isUpdating ? 'Обновление...' : 'Модерн'}
-            </Button>
-            <Button 
+            </button>
+            <button 
               onClick={() => {
                 setShowCloseButton(true)
                 setActiveTab('documents')
               }}
               disabled={isUpdating || hasUnfulfilledRequirements}
-              className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-4 text-base rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 border-0"
+              className={`${buttonBase} bg-[#0d5c4b] hover:bg-[#0a4a3c] text-white`}
             >
               {isUpdating ? 'Обновление...' : 'Закрыть'}
-            </Button>
+            </button>
           </>
         )
 
       case 'Модерн':
         if (!showModernBlock) {
           return (
-            <Button 
+            <button 
               onClick={() => {
                 if (validateRequiredFields()) {
                   const total = parseFloat(totalAmount) || 0
@@ -727,42 +598,36 @@ function OrderDetailPageContent() {
                 }
               }}
               disabled={isUpdating || hasUnfulfilledRequirements}
-              className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-4 text-base rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 border-0"
+              className={`${buttonBase} bg-[#0d5c4b] hover:bg-[#0a4a3c] text-white`}
             >
               {isUpdating ? 'Обновление...' : 'Провести'}
-            </Button>
-          )
-        } else {
-          return (
-            <>
-              <Button 
-                onClick={handleSaveModerData}
-                disabled={isUpdating}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-4 text-base rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 border-0"
-              >
-                {isUpdating ? (
-                  <span className="flex items-center justify-center space-x-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Сохранение...</span>
-                  </span>
-                ) : (
-                  'Сохранить'
-                )}
-              </Button>
-              <Button 
-                onClick={() => setShowModernBlock(false)}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-4 text-base rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 border-0"
-              >
-                Закрыть заказ
-              </Button>
-            </>
+            </button>
           )
         }
+        return (
+          <>
+            <button 
+              onClick={handleSaveModerData}
+              disabled={isUpdating}
+              className={`${buttonBase} bg-blue-600 hover:bg-blue-700 text-white`}
+            >
+              {isUpdating ? <><Loader2 className="w-4 h-4 animate-spin" /> Сохранение...</> : 'Сохранить'}
+            </button>
+            <button 
+              onClick={() => setShowModernBlock(false)}
+              className={`${buttonBase} bg-[#0d5c4b] hover:bg-[#0a4a3c] text-white`}
+            >
+              Закрыть заказ
+            </button>
+          </>
+        )
 
       default:
         return null
     }
   }
+
+  // === РЕНДЕРИНГ ===
 
   if (loading) {
     return <LoadingScreen message="Загрузка заказа" />
@@ -770,17 +635,15 @@ function OrderDetailPageContent() {
 
   if (error) {
     return (
-      <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
-        <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
-          <div className="text-center">
-            <div className="text-red-300 text-lg mb-4">{error}</div>
-            <Button 
-              onClick={() => router.push('/orders')}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              Вернуться к списку заказов
-            </Button>
-          </div>
+      <div className={`min-h-screen flex items-center justify-center p-4 ${isDark ? 'bg-[#1e2530]' : 'bg-white'}`}>
+        <div className="text-center">
+          <p className={`text-lg mb-4 ${isDark ? 'text-red-400' : 'text-red-600'}`}>{error}</p>
+          <button 
+            onClick={() => router.push('/orders')}
+            className="px-6 py-2 bg-[#0d5c4b] hover:bg-[#0a4a3c] text-white rounded-lg transition-colors"
+          >
+            Вернуться к списку
+          </button>
         </div>
       </div>
     )
@@ -788,496 +651,443 @@ function OrderDetailPageContent() {
 
   if (!order) {
     return (
-      <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
-        <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
-          <div className="text-center">
-            <div className="text-white text-xl mb-4">Заказ не найден</div>
-            <Button onClick={() => router.push('/orders')} className="bg-green-600 hover:bg-green-700">
-              Вернуться к заказам
-            </Button>
-          </div>
+      <div className={`min-h-screen flex items-center justify-center p-4 ${isDark ? 'bg-[#1e2530]' : 'bg-white'}`}>
+        <div className="text-center">
+          <p className={`text-xl mb-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Заказ не найден</p>
+          <button 
+            onClick={() => router.push('/orders')}
+            className="px-6 py-2 bg-[#0d5c4b] hover:bg-[#0a4a3c] text-white rounded-lg transition-colors"
+          >
+            Вернуться к заказам
+          </button>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
-      <div className="container mx-auto px-2 sm:px-4 py-8 pt-4 md:pt-8 pb-24 md:pb-8">
-        <div className="max-w-none mx-auto">
-          <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in" style={{borderColor: '#114643'}}>
-            {/* Заголовок */}
-            <div className="mb-8">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <h1 className="text-3xl sm:text-4xl font-bold text-gray-800">
-                  Заказ №{order.id}
+    <div className={`min-h-screen transition-colors duration-300 ${isDark ? 'bg-[#1e2530]' : 'bg-white'}`}>
+      <div className="pb-24 md:pb-8">
+        {/* Шапка */}
+        <div className={`sticky top-0 z-40 ${isDark ? 'bg-[#2a3441]' : 'bg-white'} shadow-sm`}>
+          <div className={`flex items-center justify-between px-4 py-3 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => router.back()}
+                className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-[#3a4451]' : 'hover:bg-gray-100'}`}
+              >
+                <ChevronLeft className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+              </button>
+              <div>
+                <h1 className={`text-lg font-semibold ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
+                  Заказ #{order.id}
                 </h1>
-                <CallButton 
-                  orderId={order.id}
-                  clientPhone={order.phone}
-                  clientName={order.clientName}
-                />
               </div>
+              <span className={`px-2.5 py-1 text-xs font-medium rounded-lg ${getStatusColor(order.statusOrder)}`}>
+                {order.statusOrder}
+              </span>
             </div>
+            
+            {/* Кнопка звонка */}
+            <a 
+              href={`tel:${order.phone}`}
+              className="p-2.5 bg-[#0d5c4b] hover:bg-[#0a4a3c] text-white rounded-lg transition-colors"
+            >
+              <Phone className="w-5 h-5" />
+            </a>
+          </div>
 
-              {/* Вкладки */}
-              <Card className="bg-white border-gray-200 shadow-lg">
-                <div className="border-b border-gray-200">
-                  <nav className="flex space-x-2 sm:space-x-4 lg:space-x-8 px-2 sm:px-4 lg:px-6 overflow-x-auto">
-                    <button
-                      onClick={() => setActiveTab('info')}
-                      className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
-                        activeTab === 'info'
-                          ? 'border-teal-500 text-teal-600'
-                          : 'border-transparent text-gray-600 hover:text-teal-600 hover:border-gray-300'
-                      }`}
-                    >
-                      <span className="hidden sm:inline">Информация по заказу</span>
-                      <span className="sm:hidden">Информация</span>
-                    </button>
-                {(order.statusOrder === 'В работе' && showCloseButton) || (order.statusOrder !== 'Ожидает' && order.statusOrder !== 'Принял' && order.statusOrder !== 'В пути' && order.statusOrder !== 'В работе') && (
-                  <button
-                    onClick={() => setActiveTab('documents')}
-                      className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
-                        activeTab === 'documents'
-                          ? 'border-teal-500 text-teal-600'
-                          : 'border-transparent text-gray-600 hover:text-teal-600 hover:border-gray-300'
-                      }`}
-                  >
-                    <span>Итог</span>
-                  </button>
-                )}
-                {order.statusOrder !== 'Ожидает' && (
-                  <button
-                    onClick={() => setActiveTab('communications')}
-                    className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
-                      activeTab === 'communications'
-                        ? 'border-teal-500 text-teal-600'
-                        : 'border-transparent text-gray-600 hover:text-teal-600 hover:border-gray-300'
-                    }`}
-                  >
-                    <span className="hidden sm:inline">Записи звонков / Чат Авито</span>
-                    <span className="sm:hidden">Звонки / Чат</span>
-                  </button>
-                )}
-              </nav>
-            </div>
+          {/* Табы */}
+          <div className={`flex border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+            <button
+              onClick={() => setActiveTab('info')}
+              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors relative ${
+                activeTab === 'info'
+                  ? 'text-[#0d5c4b]'
+                  : isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Информация
+              {activeTab === 'info' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0d5c4b]" />}
+            </button>
+            
+            {((order.statusOrder === 'В работе' && showCloseButton) || 
+              !['Ожидает', 'Принял', 'В пути', 'В работе'].includes(order.statusOrder)) && (
+              <button
+                onClick={() => setActiveTab('documents')}
+                className={`flex-1 px-4 py-3 text-sm font-medium transition-colors relative ${
+                  activeTab === 'documents'
+                    ? 'text-[#0d5c4b]'
+                    : isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Итог
+                {activeTab === 'documents' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0d5c4b]" />}
+              </button>
+            )}
+            
+            {order.statusOrder !== 'Ожидает' && (
+              <button
+                onClick={() => setActiveTab('communications')}
+                className={`flex-1 px-4 py-3 text-sm font-medium transition-colors relative ${
+                  activeTab === 'communications'
+                    ? 'text-[#0d5c4b]'
+                    : isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <span className="hidden sm:inline">Звонки / Чат</span>
+                <span className="sm:hidden">Связь</span>
+                {activeTab === 'communications' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0d5c4b]" />}
+              </button>
+            )}
+          </div>
+        </div>
 
-            <CardContent className="p-6">
-              {/* Вкладка: Информация по заказу */}
-              {activeTab === 'info' && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Основная информация */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-gray-800 mb-4">Основная информация</h3>
-                      <div className="space-y-3">
-                        <div className="flex items-center space-x-3">
-                          <div>
-                            <p className="text-sm text-gray-600">Рекламная компания</p>
-                            <p className="text-gray-800 font-medium">{order.rk}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-3">
-                          <div>
-                            <p className="text-sm text-gray-600">Город</p>
-                            <p className="text-gray-800 font-medium">{order.city}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-3">
-                          <div>
-                            <p className="text-sm text-gray-600">Имя аккаунта</p>
-                            <p className="text-gray-800 font-medium">{order.avitoName || order.rk}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-3">
-                          <div>
-                            <p className="text-sm text-gray-600">Тип заказа</p>
-                            <div className="mt-1">{getOrderTypeBadge(order.typeOrder)}</div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-3">
-                          <div>
-                            <p className="text-sm text-gray-600">Статус</p>
-                            <div className="mt-1">{getStatusBadge(order.statusOrder)}</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Информация о клиенте */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-gray-800 mb-4">Информация о клиенте</h3>
-                      <div className="space-y-3">
-                        <div className="flex items-center space-x-3">
-                          <div>
-                            <p className="text-sm text-gray-600">Имя клиента</p>
-                            <p className="text-gray-800 font-medium">{order.clientName}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-3">
-                          <div>
-                            <p className="text-sm text-gray-600">Телефон</p>
-                            <p className="text-gray-800 font-medium">{order.phone}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-start space-x-3">
-                          <div className="flex-1">
-                            <p className="text-sm text-gray-600">Адрес</p>
-                            <p className="text-gray-800 font-medium">{order.address}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+        {/* Контент */}
+        <div className="p-4 space-y-4">
+          {/* Вкладка: Информация */}
+          {activeTab === 'info' && (
+            <div className="space-y-4">
+              {/* Блок: Заказ */}
+              <div className={`rounded-xl shadow-sm ${isDark ? 'bg-[#2a3441]' : 'bg-gray-50'}`}>
+                <div className={`px-4 py-2.5 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                  <h3 className={`font-medium text-sm ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Заказ</h3>
+                </div>
+                <div className={`grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x ${isDark ? 'divide-gray-700' : 'divide-gray-200'}`}>
+                  <div className="p-4">
+                    <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Тип</div>
+                    <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${getOrderTypeColor(order.typeOrder)}`}>
+                      {order.typeOrder || '-'}
+                    </span>
                   </div>
-
-                  {/* Техническая информация */}
-                  <div className="pt-6 border-t border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Техническая информация</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="flex items-center space-x-3">
-                        <div>
-                          <p className="text-sm text-gray-600">Направление</p>
-                          <p className="text-gray-800 font-medium">{order.typeEquipment}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-3">
-                        <div>
-                          <p className="text-sm text-gray-600">Дата встречи</p>
-                          <p className="text-gray-800 font-medium">{new Date(order.dateMeeting).toLocaleDateString('ru-RU', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            timeZone: 'UTC'
-                          })}</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                      <div className="mt-4">
-                        <div className="flex items-start space-x-3">
-                          <div className="flex-1">
-                            <p className="text-sm text-gray-600">Проблема</p>
-                            <p className="text-gray-800 font-medium">{order.problem}</p>
-                          </div>
-                        </div>
-                      </div>
-                    
-                    {order.note && (
-                      <div className="mt-4">
-                        <div className="flex items-start space-x-3">
-                          <div className="flex-1">
-                            <p className="text-sm text-gray-600">Примечания</p>
-                            <p className="text-gray-800 font-medium whitespace-pre-line text-sm">{order.note}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                  <div className="p-4">
+                    <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>РК</div>
+                    <div className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{order.rk || '-'}</div>
+                  </div>
+                  <div className="p-4">
+                    <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Источник</div>
+                    <div className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{order.avitoName || order.rk || '-'}</div>
+                  </div>
+                  <div className="p-4">
+                    <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Направление</div>
+                    <div className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{order.typeEquipment || '-'}</div>
                   </div>
                 </div>
-              )}
+              </div>
 
-              {/* Вкладка: Сумма и документы */}
-              {activeTab === 'documents' && ((order.statusOrder === 'В работе' && showCloseButton) || (order.statusOrder !== 'Ожидает' && order.statusOrder !== 'Принял' && order.statusOrder !== 'В пути' && order.statusOrder !== 'В работе')) && (
-                <div className="space-y-6">
-                  {/* Блок модерна - показывается при статусе Модерн и флаге showModernBlock */}
-                  {order.statusOrder === 'Модерн' && showModernBlock && (
-                    <div className="space-y-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                      <h3 className="text-lg font-semibold text-gray-800 mb-4">Информация по модерну</h3>
-                      
-                      <div className="space-y-4">
-                        {/* Уведомления для модерна */}
-                        {notifications.length > 0 && (
-                          <div className="space-y-2">
-                            {notifications.map((notification, index) => (
-                              <div key={index} className={`p-3 rounded-lg border ${
-                                notification.includes('Модерн записан') 
-                                  ? 'bg-green-50 border-green-200 text-green-700' 
-                                  : 'bg-red-50 border-red-200 text-red-700'
-                              }`}>
-                                <p className="text-sm font-medium text-center">{notification}</p>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="prepayment" className="text-gray-700 font-medium">Сумма предоплаты</Label>
-                          <div className="relative">
-                            <Input
-                              id="prepayment"
-                              type="number"
-                              placeholder="0"
-                              value={prepayment}
-                              onChange={(e) => setPrepayment(e.target.value)}
-                              className="bg-white border-gray-200 text-gray-800 placeholder-gray-400 pr-8"
-                            />
-                            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">₽</span>
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="closingDate" className="text-gray-700 font-medium">Дата закрытия</Label>
-                          <Input
-                            id="closingDate"
-                            type="datetime-local"
-                            value={dateClosmod}
-                            onChange={(e) => setDateClosmod(e.target.value)}
-                            className="bg-white border-gray-200 text-gray-800"
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="comment" className="text-gray-700 font-medium">Комментарий</Label>
-                          <textarea
-                            id="comment"
-                            rows={4}
-                            placeholder="Введите комментарий..."
-                            value={comment}
-                            onChange={(e) => setComment(e.target.value)}
-                            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                          />
-                        </div>
-                      </div>
-                      
-                    </div>
-                  )}
+              {/* Блок: Клиент */}
+              <div className={`rounded-xl shadow-sm ${isDark ? 'bg-[#2a3441]' : 'bg-gray-50'}`}>
+                <div className={`px-4 py-2.5 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                  <h3 className={`font-medium text-sm ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Клиент</h3>
+                </div>
+                <div className={`grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x ${isDark ? 'divide-gray-700' : 'divide-gray-200'}`}>
+                  <div className="p-4">
+                    <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Город</div>
+                    <div className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{order.city || '-'}</div>
+                  </div>
+                  <div className="p-4 col-span-2 sm:col-span-1">
+                    <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Имя</div>
+                    <div className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{order.clientName || '-'}</div>
+                  </div>
+                  <div className="p-4">
+                    <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Телефон</div>
+                    <a href={`tel:${order.phone}`} className="text-sm font-medium text-[#0d5c4b]">{order.phone || '-'}</a>
+                  </div>
+                  <div className="p-4 col-span-2 sm:col-span-1">
+                    <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Адрес</div>
+                    <div className={`text-sm ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{order.address || '-'}</div>
+                  </div>
+                </div>
+              </div>
 
-                  {/* Поля ввода сумм - показываются если НЕ статус Модерн или блок модерна скрыт */}
-                  {(order.statusOrder !== 'Модерн' || !showModernBlock) && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="total" className="text-gray-700 font-medium">Итог</Label>
-                        <div className="relative">
-                          <Input
-                            id="total"
-                            type="number"
-                            placeholder="0"
-                            value={totalAmount}
-                            onChange={(e) => setTotalAmount(e.target.value)}
-                            disabled={isCompleted || order.statusOrder === 'Готово'}
-                            className={`bg-white border-gray-200 text-gray-800 placeholder-gray-400 pr-8 ${(isCompleted || order.statusOrder === 'Готово') ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          />
-                          <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">₽</span>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="expense" className="text-gray-700 font-medium">Расход</Label>
-                        <div className="relative">
-                          <Input
-                            id="expense"
-                            type="number"
-                            placeholder="0"
-                            value={expenseAmount}
-                            onChange={(e) => setExpenseAmount(e.target.value)}
-                            disabled={isCompleted || order.statusOrder === 'Готово'}
-                            className={`bg-white border-gray-200 text-gray-800 placeholder-gray-400 pr-8 ${(isCompleted || order.statusOrder === 'Готово') ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          />
-                          <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">₽</span>
-                        </div>
+              {/* Блок: Детали */}
+              <div className={`rounded-xl shadow-sm ${isDark ? 'bg-[#2a3441]' : 'bg-gray-50'}`}>
+                <div className={`px-4 py-2.5 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                  <h3 className={`font-medium text-sm ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Детали</h3>
+                </div>
+                <div className="p-4 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Дата встречи</div>
+                      <div className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
+                        {order.dateMeeting ? new Date(order.dateMeeting).toLocaleDateString('ru-RU', {
+                          day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC'
+                        }) : '-'}
                       </div>
                     </div>
-                  )}
-
-                  {/* Текст "Чистыми" и "Сдача мастера" - показывается после завершения или при статусе "Готово" */}
-                  {(isCompleted || order.statusOrder === 'Готово') && (
-                    <div className="pt-4 border-t border-gray-200">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                          <p className="text-gray-700 font-medium">Чистыми:</p>
-                          <p className="text-green-600 text-lg font-semibold">{cleanAmount}₽</p>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <p className="text-gray-700 font-medium">Сдача мастера:</p>
-                          <p className="text-blue-600 text-lg font-semibold">{masterChange}₽</p>
-                        </div>
-                      </div>
+                  </div>
+                  <div>
+                    <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Проблема</div>
+                    <div className={`text-sm ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{order.problem || '-'}</div>
+                  </div>
+                  {order.note && (
+                    <div>
+                      <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Примечания</div>
+                      <div className={`text-sm whitespace-pre-line ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{order.note}</div>
                     </div>
                   )}
+                </div>
+              </div>
+            </div>
+          )}
 
-                  {/* Уведомления о валидации - показываются если НЕ статус Модерн или блок модерна скрыт */}
-                  {(order.statusOrder !== 'Модерн' || !showModernBlock) && notifications.length > 0 && (
-                    <div className="space-y-2">
+          {/* Вкладка: Итог и документы */}
+          {activeTab === 'documents' && ((order.statusOrder === 'В работе' && showCloseButton) || !['Ожидает', 'Принял', 'В пути', 'В работе'].includes(order.statusOrder)) && (
+            <div className="space-y-4">
+              {/* Блок модерна */}
+              {order.statusOrder === 'Модерн' && showModernBlock && (
+                <div className={`rounded-xl p-4 ${isDark ? 'bg-purple-900/30 border border-purple-700' : 'bg-purple-50 border border-purple-200'}`}>
+                  <h3 className={`font-medium mb-4 ${isDark ? 'text-purple-300' : 'text-purple-800'}`}>Информация по модерну</h3>
+                  
+                  {notifications.length > 0 && (
+                    <div className="mb-4 space-y-2">
                       {notifications.map((notification, index) => (
-                        <div key={index} className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                          <p className="text-yellow-700 text-sm font-medium">{notification}</p>
+                        <div key={index} className={`p-3 rounded-lg ${
+                          notification.includes('Модерн записан') 
+                            ? isDark ? 'bg-green-900/40 text-green-400' : 'bg-green-100 text-green-700'
+                            : isDark ? 'bg-red-900/40 text-red-400' : 'bg-red-100 text-red-700'
+                        }`}>
+                          <p className="text-sm font-medium text-center">{notification}</p>
                         </div>
                       ))}
                     </div>
                   )}
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>Сумма предоплаты</Label>
+                      <div className="relative mt-1">
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={prepayment}
+                          onChange={(e) => setPrepayment(e.target.value)}
+                          className={`pr-8 ${isDark ? 'bg-[#3a4451] border-gray-600 text-gray-100' : 'bg-white border-gray-300'}`}
+                        />
+                        <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>₽</span>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>Дата закрытия</Label>
+                      <Input
+                        type="datetime-local"
+                        value={dateClosmod}
+                        onChange={(e) => setDateClosmod(e.target.value)}
+                        className={`mt-1 ${isDark ? 'bg-[#3a4451] border-gray-600 text-gray-100' : 'bg-white border-gray-300'}`}
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>Комментарий</Label>
+                      <textarea
+                        rows={3}
+                        placeholder="Введите комментарий..."
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                        className={`w-full mt-1 px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-[#0d5c4b] ${
+                          isDark ? 'bg-[#3a4451] border-gray-600 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-800 placeholder-gray-400'
+                        }`}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
-                  {/* Документы - показываются если НЕ статус Модерн или блок модерна скрыт */}
-                  {(order.statusOrder !== 'Модерн' || !showModernBlock) && (
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-gray-800">Документы</h3>
-                      <div className="space-y-3">
-                        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                          <MultipleFileUpload
-                            label="Договор БСО"
-                            files={bsoUpload.files}
-                            dragOver={bsoUpload.dragOver}
-                            setDragOver={bsoUpload.setDragOver}
-                            handleFiles={bsoUpload.handleFiles}
-                            removeFile={bsoUpload.removeFile}
-                            disabled={order.statusOrder === 'Готово' || order.statusOrder === 'Незаказ' || order.statusOrder === 'Отказ'}
-                            canAddMore={bsoUpload.canAddMore}
-                          />
-                        </div>
-                        
-                        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                          <MultipleFileUpload
-                            label="Чеки расходов"
-                            files={expenditureUpload.files}
-                            dragOver={expenditureUpload.dragOver}
-                            setDragOver={expenditureUpload.setDragOver}
-                            handleFiles={expenditureUpload.handleFiles}
-                            removeFile={expenditureUpload.removeFile}
-                            disabled={order.statusOrder === 'Готово' || order.statusOrder === 'Незаказ' || order.statusOrder === 'Отказ'}
-                            canAddMore={expenditureUpload.canAddMore}
-                          />
-                        </div>
+              {/* Поля ввода сумм */}
+              {(order.statusOrder !== 'Модерн' || !showModernBlock) && (
+                <div className={`rounded-xl shadow-sm p-4 ${isDark ? 'bg-[#2a3441]' : 'bg-gray-50'}`}>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>Итог</Label>
+                      <div className="relative mt-1">
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={totalAmount}
+                          onChange={(e) => setTotalAmount(e.target.value)}
+                          disabled={isCompleted || order.statusOrder === 'Готово'}
+                          className={`pr-8 ${isDark ? 'bg-[#3a4451] border-gray-600 text-gray-100' : 'bg-white border-gray-300'} ${
+                            (isCompleted || order.statusOrder === 'Готово') ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
+                        />
+                        <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>₽</span>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label className={isDark ? 'text-gray-300' : 'text-gray-700'}>Расход</Label>
+                      <div className="relative mt-1">
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={expenseAmount}
+                          onChange={(e) => setExpenseAmount(e.target.value)}
+                          disabled={isCompleted || order.statusOrder === 'Готово'}
+                          className={`pr-8 ${isDark ? 'bg-[#3a4451] border-gray-600 text-gray-100' : 'bg-white border-gray-300'} ${
+                            (isCompleted || order.statusOrder === 'Готово') ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
+                        />
+                        <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>₽</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Чистыми и Сдача мастера */}
+                  {(isCompleted || order.statusOrder === 'Готово') && (
+                    <div className={`mt-4 pt-4 border-t grid grid-cols-2 gap-4 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                      <div>
+                        <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Чистыми</div>
+                        <div className="text-lg font-semibold text-[#0d5c4b]">{cleanAmount}₽</div>
+                      </div>
+                      <div>
+                        <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Сдача мастера</div>
+                        <div className={`text-lg font-semibold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{masterChange}₽</div>
                       </div>
                     </div>
                   )}
-
                 </div>
               )}
 
-              {/* Вкладка: Записи звонков / Чат Авито */}
-              {activeTab === 'communications' && order.statusOrder !== 'Ожидает' && (
-                <div className="space-y-6">
-                  {/* Записи звонков */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-800">Записи звонков</h3>
-                    <div className="space-y-3">
-                      {calls.length > 0 ? (
-                        calls.map((call) => (
-                          <div key={call.id} className="p-3 sm:p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 space-y-2 sm:space-y-0">
-                              <div className="flex items-center space-x-2">
-                                <span className="text-gray-800 font-medium text-sm sm:text-base">
-                                  {call.status === 'incoming' ? 'Входящий' : 'Исходящий'} звонок
-                                </span>
-                              </div>
-                              <span className="text-xs sm:text-sm text-gray-500">
-                                {new Date(call.dateCreate).toLocaleString('ru-RU')}
-                              </span>
-                            </div>
-                            {recordingUrls[call.id] && (
-                              <div className="mt-3">
-                                <audio 
-                                  controls 
-                                  className="w-full h-10 sm:h-12"
-                                  style={{ 
-                                    background: 'transparent',
-                                    border: 'none',
-                                    outline: 'none'
-                                  }}
-                                >
-                                  <source src={recordingUrls[call.id]} type="audio/mpeg" />
-                                  Ваш браузер не поддерживает аудио элемент.
-                                </audio>
-                              </div>
-                            )}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
-                          <p className="text-gray-600">Записи звонков не найдены</p>
-                        </div>
-                      )}
+              {/* Уведомления */}
+              {(order.statusOrder !== 'Модерн' || !showModernBlock) && notifications.length > 0 && (
+                <div className="space-y-2">
+                  {notifications.map((notification, index) => (
+                    <div key={index} className={`p-3 rounded-lg ${isDark ? 'bg-yellow-900/40 border border-yellow-700' : 'bg-yellow-50 border border-yellow-200'}`}>
+                      <p className={`text-sm font-medium ${isDark ? 'text-yellow-400' : 'text-yellow-700'}`}>{notification}</p>
                     </div>
-                  </div>
-
-                  {/* Чат Авито */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-800">Чат Авито</h3>
-                    {order.avitoChatId && order.avitoName ? (
-                      <button
-                        onClick={() => router.push(`/orders/${order.id}/avito`)}
-                        className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg transition-all duration-200 hover:shadow-md font-medium"
-                      >
-                        Открыть чат Авито
-                      </button>
-                    ) : (
-                      <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
-                        <div className="flex items-center justify-center space-x-2 mb-2">
-                          <span className="text-gray-700 font-medium">Чат Авито не настроен</span>
-                        </div>
-                        <p className="text-gray-500 text-sm">
-                          У этого заказа не указан ID чата Авито или имя аккаунта
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                  ))}
                 </div>
               )}
-            </CardContent>
-          </Card>
 
-          {/* Кнопки действий - для десктопа (inline) */}
-          <div className="hidden md:block mt-6 md:mt-8 pb-4">
-            {/* Уведомление о заблокированных кнопках */}
-            {notifications.length > 0 && order?.statusOrder === 'В работе' && (
-              <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-700 text-sm font-medium text-center">
-                  Завершить заказ можно только после прикрепления всех необходимых документов
-                </p>
-              </div>
-            )}
-            
-            {/* Ошибка валидации */}
-            {validationError && (
-              <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-700 text-sm font-medium text-center">
-                  {validationError}
-                </p>
-              </div>
-            )}
-            
-            <div className="flex space-x-3 w-full max-w-2xl mx-auto">
-              {renderActionButtons()}
+              {/* Документы */}
+              {(order.statusOrder !== 'Модерн' || !showModernBlock) && (
+                <div className={`rounded-xl shadow-sm p-4 space-y-4 ${isDark ? 'bg-[#2a3441]' : 'bg-gray-50'}`}>
+                  <h3 className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Документы</h3>
+                  <MultipleFileUpload
+                    label="Договор БСО"
+                    files={bsoUpload.files}
+                    dragOver={bsoUpload.dragOver}
+                    setDragOver={bsoUpload.setDragOver}
+                    handleFiles={bsoUpload.handleFiles}
+                    removeFile={bsoUpload.removeFile}
+                    disabled={['Готово', 'Незаказ', 'Отказ'].includes(order.statusOrder)}
+                    canAddMore={bsoUpload.canAddMore}
+                  />
+                  <MultipleFileUpload
+                    label="Чеки расходов"
+                    files={expenditureUpload.files}
+                    dragOver={expenditureUpload.dragOver}
+                    setDragOver={expenditureUpload.setDragOver}
+                    handleFiles={expenditureUpload.handleFiles}
+                    removeFile={expenditureUpload.removeFile}
+                    disabled={['Готово', 'Незаказ', 'Отказ'].includes(order.statusOrder)}
+                    canAddMore={expenditureUpload.canAddMore}
+                  />
+                </div>
+              )}
             </div>
-          </div>
+          )}
+
+          {/* Вкладка: Звонки и Чат */}
+          {activeTab === 'communications' && order.statusOrder !== 'Ожидает' && (
+            <div className="space-y-4">
+              {/* Записи звонков */}
+              <div className={`rounded-xl shadow-sm ${isDark ? 'bg-[#2a3441]' : 'bg-gray-50'}`}>
+                <div className={`px-4 py-2.5 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                  <h3 className={`font-medium text-sm ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Записи звонков</h3>
+                </div>
+                <div className="p-4">
+                  {calls.length > 0 ? (
+                    <div className="space-y-3">
+                      {calls.map((call) => (
+                        <div key={call.id} className={`p-3 rounded-lg ${isDark ? 'bg-[#3a4451]' : 'bg-white border border-gray-200'}`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
+                              {call.status === 'incoming' ? 'Входящий' : 'Исходящий'}
+                            </span>
+                            <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                              {new Date(call.dateCreate).toLocaleString('ru-RU')}
+                            </span>
+                          </div>
+                          {recordingUrls[call.id] && (
+                            <audio controls className="w-full h-10">
+                              <source src={recordingUrls[call.id]} type="audio/mpeg" />
+                            </audio>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className={`text-center text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Записи не найдены</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Чат Авито */}
+              <div className={`rounded-xl shadow-sm ${isDark ? 'bg-[#2a3441]' : 'bg-gray-50'}`}>
+                <div className={`px-4 py-2.5 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                  <h3 className={`font-medium text-sm ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Чат Авито</h3>
+                </div>
+                <div className="p-4">
+                  {order.avitoChatId && order.avitoName ? (
+                    <button
+                      onClick={() => router.push(`/orders/${order.id}/avito`)}
+                      className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
+                    >
+                      Открыть чат Авито
+                    </button>
+                  ) : (
+                    <p className={`text-center text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      Чат Авито не настроен
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Кнопки действий - десктоп */}
+        <div className="hidden md:block px-4 mt-4">
+          {notifications.length > 0 && order?.statusOrder === 'В работе' && (
+            <div className={`mb-3 p-3 rounded-lg ${isDark ? 'bg-red-900/40 border border-red-700' : 'bg-red-50 border border-red-200'}`}>
+              <p className={`text-sm font-medium text-center ${isDark ? 'text-red-400' : 'text-red-600'}`}>
+                Завершить заказ можно только после прикрепления всех документов
+              </p>
+            </div>
+          )}
+          
+          {validationError && (
+            <div className={`mb-3 p-3 rounded-lg ${isDark ? 'bg-red-900/40 border border-red-700' : 'bg-red-50 border border-red-200'}`}>
+              <p className={`text-sm font-medium text-center ${isDark ? 'text-red-400' : 'text-red-600'}`}>{validationError}</p>
+            </div>
+          )}
+          
+          <div className="flex gap-3 max-w-2xl mx-auto">
+            {renderActionButtons()}
           </div>
         </div>
-        
-        {/* Фиксированные кнопки на мобильных устройствах */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 z-50 bg-gradient-to-t from-[#114643] via-[#114643] to-transparent pt-6">
-          <div className="max-w-md mx-auto">
-            {/* Уведомление о заблокированных кнопках для мобильных */}
-            {notifications.length > 0 && order?.statusOrder === 'В работе' && (
-              <div className="mb-3 p-3 bg-red-500/20 border border-red-400/50 rounded-lg backdrop-blur-sm">
-                <p className="text-red-100 text-sm font-medium text-center">
-                  Завершить заказ можно только после прикрепления всех необходимых документов
-                </p>
-              </div>
-            )}
-            
-            {/* Ошибка валидации для мобильных */}
-            {validationError && (
-              <div className="mb-3 p-3 bg-red-500/20 border border-red-400/50 rounded-lg backdrop-blur-sm">
-                <p className="text-red-100 text-sm font-medium text-center">
-                  {validationError}
-                </p>
-              </div>
-            )}
-            
-            <div className="flex space-x-3 w-full">
-              {renderActionButtons()}
-            </div>
+      </div>
+      
+      {/* Кнопки действий - мобильные */}
+      <div className={`md:hidden fixed bottom-0 left-0 right-0 p-4 z-50 ${isDark ? 'bg-[#1e2530]' : 'bg-white'} border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+        {notifications.length > 0 && order?.statusOrder === 'В работе' && (
+          <div className={`mb-3 p-2 rounded-lg ${isDark ? 'bg-red-900/40' : 'bg-red-50'}`}>
+            <p className={`text-xs font-medium text-center ${isDark ? 'text-red-400' : 'text-red-600'}`}>
+              Прикрепите все документы
+            </p>
           </div>
+        )}
+        
+        {validationError && (
+          <div className={`mb-3 p-2 rounded-lg ${isDark ? 'bg-red-900/40' : 'bg-red-50'}`}>
+            <p className={`text-xs font-medium text-center ${isDark ? 'text-red-400' : 'text-red-600'}`}>{validationError}</p>
+          </div>
+        )}
+        
+        <div className="flex gap-3">
+          {renderActionButtons()}
         </div>
       </div>
     </div>
@@ -1287,4 +1097,3 @@ function OrderDetailPageContent() {
 export default function OrderDetailPage() {
   return <OrderDetailPageContent />
 }
-
