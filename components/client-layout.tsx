@@ -1,9 +1,10 @@
 'use client'
 
-import React, { Component, ReactNode } from 'react'
+import React, { Component, ReactNode, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import AuthGuard from '@/components/auth-guard'
 import { TokenRefresher } from '@/components/TokenRefresher'
+import { useDesignStore } from '@/store/design.store'
 
 // Error Boundary для перехвата критических ошибок
 interface ErrorBoundaryState {
@@ -69,6 +70,24 @@ interface ClientLayoutProps {
 export default function ClientLayout({ children }: ClientLayoutProps) {
   const pathname = usePathname()
   const isPublicPage = PUBLIC_PATHS.some(path => pathname === path || pathname.startsWith(path + '/'))
+  
+  // Получаем тему из store
+  const theme = useDesignStore((state) => state.theme)
+  const isDark = theme === 'dark'
+  
+  // Синхронизируем класс dark на html элементе при изменении темы
+  useEffect(() => {
+    const html = document.documentElement
+    if (isDark) {
+      html.classList.add('dark')
+      html.style.backgroundColor = '#1e2530'
+      html.style.colorScheme = 'dark'
+    } else {
+      html.classList.remove('dark')
+      html.style.backgroundColor = ''
+      html.style.colorScheme = ''
+    }
+  }, [isDark])
 
   return (
     <ErrorBoundary>

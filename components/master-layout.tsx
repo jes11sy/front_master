@@ -56,7 +56,7 @@ const MasterLayout = React.memo<MasterLayoutProps>(({ children }) => {
   return (
     <>
       <SidebarNavigation />
-      <main className="pt-16 md:pt-0 md:ml-64">{children}</main>
+      <main className="main-content pt-16 md:pt-0 md:ml-56 min-h-screen">{children}</main>
     </>
   )
 })

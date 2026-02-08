@@ -1,15 +1,13 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-// Убрали все иконки из lucide-react
 import { apiClient } from '@/lib/api'
 import { LoadingSpinner } from '@/components/ui/loading-screen'
+import { OptimizedPagination } from '@/components/ui/optimized-pagination'
+import { useDesignStore } from '@/store/design.store'
 
 interface Order {
   id: number
@@ -65,7 +63,11 @@ interface CashSubmission {
   }
 }
 
-export default function PaymentsPage() {
+function PaymentsContent() {
+  // Тема из store
+  const { theme } = useDesignStore()
+  const isDark = theme === 'dark'
+
   const [orders, setOrders] = useState<Order[]>([])
   const [cashSubmissions, setCashSubmissions] = useState<CashSubmission[]>([])
   const [loading, setLoading] = useState(true)
@@ -75,69 +77,32 @@ export default function PaymentsPage() {
   const [showSubmissionModal, setShowSubmissionModal] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [notifications, setNotifications] = useState<string[]>([])
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [showFilters, setShowFilters] = useState(false)
+  const [statusTab, setStatusTab] = useState<string>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
 
-  // Сброс пагинации при изменении фильтра
+  // Сброс пагинации при изменении таба
   useEffect(() => {
     setCurrentPage(1)
-  }, [statusFilter])
+  }, [statusTab])
 
-  // Функции фильтрации
-  const getFilteredOrders = () => {
-    const ordersArray = Array.isArray(orders) ? orders : []
-    if (statusFilter === 'all' || statusFilter === 'Не отправлено') {
-      // Исключаем not_submitted - они не должны отображаться
-      return ordersArray.filter(order => order.cashSubmissionStatus === 'Не отправлено')
-    }
-    return []
-  }
-
-  const getFilteredSubmissions = () => {
-    const cashSubmissionsArray = Array.isArray(cashSubmissions) ? cashSubmissions : []
-    if (statusFilter === 'all') {
-      return cashSubmissionsArray
-    }
-    return cashSubmissionsArray.filter(submission => submission.cashSubmissionStatus === statusFilter)
-  }
-
-  // Функции пагинации
+  // Функции фильтрации по табам
   const getAllFilteredItems = () => {
-    // Проверяем, что это массивы
     const ordersArray = Array.isArray(orders) ? orders : []
     const cashSubmissionsArray = Array.isArray(cashSubmissions) ? cashSubmissions : []
     
-    // Фильтруем cashSubmissions - исключаем not_submitted и null
     const filteredSubmissions = cashSubmissionsArray.filter(
       submission => submission.cashSubmissionStatus && submission.cashSubmissionStatus !== 'not_submitted'
     )
     
-    if (statusFilter === 'all') {
-      // Показываем все: не отправленные заказы + все сдачи (исключая not_submitted)
+    if (statusTab === 'all') {
       const notSubmittedOrders = ordersArray.filter(order => order.cashSubmissionStatus === 'Не отправлено')
       return [...notSubmittedOrders, ...filteredSubmissions]
-    } else if (statusFilter === 'Не отправлено') {
-      // Показываем только не отправленные заказы (исключая not_submitted)
+    } else if (statusTab === 'Не отправлено') {
       return ordersArray.filter(order => order.cashSubmissionStatus === 'Не отправлено')
     } else {
-      // Показываем только сдачи с определенным статусом
-      return filteredSubmissions.filter(submission => submission.cashSubmissionStatus === statusFilter)
+      return filteredSubmissions.filter(submission => submission.cashSubmissionStatus === statusTab)
     }
-  }
-
-  const getCurrentPageItems = () => {
-    const allItems = getAllFilteredItems()
-    const sortedItems = sortItemsByStatus(allItems)
-    const startIndex = (currentPage - 1) * itemsPerPage
-    const endIndex = startIndex + itemsPerPage
-    return sortedItems.slice(startIndex, endIndex)
-  }
-
-  const getTotalPages = () => {
-    const allItems = getAllFilteredItems()
-    return Math.ceil(allItems.length / itemsPerPage)
   }
 
   // Функция сортировки по статусам
@@ -158,6 +123,19 @@ export default function PaymentsPage() {
       
       return orderA - orderB
     })
+  }
+
+  const getCurrentPageItems = () => {
+    const allItems = getAllFilteredItems()
+    const sortedItems = sortItemsByStatus(allItems)
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    return sortedItems.slice(startIndex, endIndex)
+  }
+
+  const getTotalPages = () => {
+    const allItems = getAllFilteredItems()
+    return Math.ceil(allItems.length / itemsPerPage)
   }
 
   // Суммы для отображения
@@ -181,11 +159,6 @@ export default function PaymentsPage() {
       }, 0)
   }
 
-  const getTotalPendingSum = () => {
-    return getNotSubmittedSum() + getOnReviewSum()
-  }
-
-  // Функция для форматирования чисел
   const formatNumber = (num: number) => {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
   }
@@ -199,13 +172,11 @@ export default function PaymentsPage() {
     try {
       setLoading(true)
       
-      // Загружаем заказы со статусом "Готово"
       const ordersResponse = await apiClient.getOrders({ status: 'Готово' })
       if (ordersResponse.success) {
         setOrders(ordersResponse.data || [])
       }
 
-      // Загружаем отправленные сдачи
       const submissionsResponse = await apiClient.getMasterCashSubmissions()
       if (submissionsResponse && submissionsResponse.data) {
         setCashSubmissions(submissionsResponse.data || [])
@@ -218,7 +189,6 @@ export default function PaymentsPage() {
     }
   }
 
-  // Функции для работы с сдачей на проверку
   const handleSubmitCash = (order: Order) => {
     setSelectedOrder(order)
     setSubmissionAmount(order.masterChange?.toString() || '')
@@ -242,7 +212,7 @@ export default function PaymentsPage() {
         setSelectedOrder(null)
         setSubmissionAmount('')
         setReceiptFile(null)
-        loadData() // Перезагружаем данные
+        loadData()
       } else {
         setNotifications([result.error || 'Ошибка отправки сдачи'])
       }
@@ -254,380 +224,357 @@ export default function PaymentsPage() {
     }
   }
 
-  const getCashSubmissionStatusBadge = (status: string) => {
-    const variants = {
-      'На проверке': 'bg-yellow-500/20 text-yellow-800 border-yellow-500/30',
-      'Одобрено': 'bg-green-500/20 text-green-800 border-green-500/30',
-      'Отклонено': 'bg-red-500/20 text-red-800 border-red-500/30',
+  // Стили статуса сдачи
+  const getSubmissionStatusStyle = (status: string) => {
+    if (isDark) {
+      switch (status) {
+        case 'На проверке': return 'bg-yellow-700 text-white'
+        case 'Одобрено': return 'bg-green-700 text-white'
+        case 'Отклонено': return 'bg-red-700 text-white'
+        case 'Не отправлено': return 'bg-gray-600 text-white'
+        default: return 'bg-gray-600 text-white'
+      }
     }
-    
-    const labels = {
-      'На проверке': 'На проверке',
-      'Одобрено': 'Подтверждено',
-      'Отклонено': 'Отклонено',
+    switch (status) {
+      case 'На проверке': return 'bg-yellow-500 text-white'
+      case 'Одобрено': return 'bg-green-600 text-white'
+      case 'Отклонено': return 'bg-red-600 text-white'
+      case 'Не отправлено': return 'bg-gray-500 text-white'
+      default: return 'bg-gray-500 text-white'
     }
-
-    return (
-      <Badge className={variants[status as keyof typeof variants]}>
-        {labels[status as keyof typeof labels] || status}
-      </Badge>
-    )
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'На проверке': return 'На проверке'
+      case 'Одобрено': return 'Подтверждено'
+      case 'Отклонено': return 'Отклонено'
+      case 'Не отправлено': return 'Не отправлена'
+      default: return status
+    }
   }
 
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return '-'
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) return '-'
+      
+      const day = String(date.getUTCDate()).padStart(2, '0')
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+      const year = date.getUTCFullYear()
+      const hours = String(date.getUTCHours()).padStart(2, '0')
+      const minutes = String(date.getUTCMinutes()).padStart(2, '0')
+      
+      return `${day}.${month}.${year} ${hours}:${minutes}`
+    } catch {
+      return '-'
+    }
+  }
 
   return (
-    <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
-        <div className="container mx-auto px-2 sm:px-4 py-8 pt-4 md:pt-8">
-          <div className="max-w-none mx-auto">
-          {/* Суммы */}
-          <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in mb-8" style={{borderColor: '#114643'}}>
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-800 text-center">Сдача на проверку</h2>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="text-center">
-                <div className="text-sm text-gray-600 mb-1">Не сдано</div>
-                <div className="text-lg font-bold text-gray-800">{formatNumber(getNotSubmittedSum())} ₽</div>
-              </div>
-              <div className="text-center">
-                <div className="text-sm text-gray-600 mb-1">На проверке</div>
-                <div className="text-lg font-bold text-gray-800">{formatNumber(getOnReviewSum())} ₽</div>
-              </div>
-              <div className="text-center">
-                <div className="text-sm text-gray-600 mb-1">Общая сумма</div>
-                <div className="text-xl font-bold text-teal-600">{formatNumber(getNotSubmittedSum() + getOnReviewSum())} ₽</div>
-              </div>
-            </div>
-          </div>
+    <div className={`min-h-screen transition-colors duration-300 ${
+      isDark ? 'bg-[#1e2530]' : 'bg-white'
+    }`}>
+      <div className="px-4 py-6">
+        <div className="w-full">
 
           {/* Уведомления */}
           {notifications.length > 0 && (
             <div className="fixed top-20 right-4 z-50 space-y-2">
               {notifications.map((notification, index) => (
-                <div key={index} className="bg-teal-500/20 text-teal-800 border border-teal-500/30 px-4 py-2 rounded-lg">
+                <div key={index} className={`px-4 py-2 rounded-lg ${
+                  isDark ? 'bg-teal-900/50 text-teal-300 border border-teal-700' : 'bg-teal-500/20 text-teal-800 border border-teal-500/30'
+                }`}>
                   {notification}
                 </div>
               ))}
             </div>
           )}
 
-
-          {/* Объединенная таблица с фильтром */}
-          <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in" style={{borderColor: '#114643'}}>
-            <div className="mb-6">
-              {/* Фильтр */}
-              <div className="mb-6">
-                <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="flex items-center gap-2 text-left cursor-pointer group"
-                >
-                  <h3 className="text-lg font-semibold text-gray-700 group-hover:text-teal-600 transition-colors duration-200">
-                    Фильтр
-                  </h3>
-                  <svg
-                    className={`w-5 h-5 text-gray-600 group-hover:text-teal-600 transition-all duration-200 ${
-                      showFilters ? 'rotate-180' : ''
-                    }`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                
-                {showFilters && (
-                  <div className="relative z-50 animate-slide-in-right mt-4">
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-full sm:w-64 bg-white border-gray-300 text-gray-800">
-                        <SelectValue placeholder="Выберите статус" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white border-gray-300">
-                        <SelectItem value="all" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
-                          Все статусы
-                        </SelectItem>
-                        <SelectItem value="Не отправлено" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
-                          Не отправлена
-                        </SelectItem>
-                        <SelectItem value="На проверке" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
-                          На проверке
-                        </SelectItem>
-                        <SelectItem value="Одобрено" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
-                          Подтверждено
-                        </SelectItem>
-                        <SelectItem value="Отклонено" className="text-gray-800 focus:text-white focus:bg-teal-600 hover:text-white hover:bg-teal-600">
-                          Отклонено
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
+          {/* Суммы */}
+          <div className={`rounded-xl p-4 mb-6 border ${
+            isDark ? 'bg-[#2a3441] border-gray-700' : 'bg-gray-50 border-gray-200'
+          }`}>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Не сдано</div>
+                <div className={`text-base font-bold ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{formatNumber(getNotSubmittedSum())} ₽</div>
+              </div>
+              <div className="text-center">
+                <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>На проверке</div>
+                <div className={`text-base font-bold ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{formatNumber(getOnReviewSum())} ₽</div>
+              </div>
+              <div className="text-center">
+                <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Всего</div>
+                <div className={`text-lg font-bold ${isDark ? 'text-teal-400' : 'text-teal-600'}`}>{formatNumber(getNotSubmittedSum() + getOnReviewSum())} ₽</div>
               </div>
             </div>
-            <div>
-              {loading ? (
-                <div className="flex flex-col items-center justify-center py-8">
-                  <LoadingSpinner size="lg" variant="dark" />
-                  <div className="text-gray-600 mt-4">Загрузка...</div>
-                </div>
-              ) : (
-                <>
-                  {/* Десктопная таблица */}
-                  <div className="hidden md:block overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-gray-300 hover:bg-gray-50">
-                      <TableHead className="text-gray-700">Заказ</TableHead>
-                          <TableHead className="text-gray-700">Клиент</TableHead>
-                      <TableHead className="text-gray-700">Сумма</TableHead>
-                          <TableHead className="text-gray-700">Статус сдачи</TableHead>
-                          <TableHead className="text-gray-700">Дата закрытия</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                      <TableBody>
-                        {getCurrentPageItems().map((item) => {
-                          const isOrder = item.cashSubmissionStatus === 'Не отправлено'
-                          return (
-                            <TableRow 
-                              key={isOrder ? item.id : `submission-${item.id}`} 
-                              className="border-gray-200 hover:bg-gray-50 cursor-pointer" 
-                              onClick={() => isOrder && handleSubmitCash(item)}
-                            >
-                              <TableCell className="text-gray-800 font-medium">#{item.id}</TableCell>
-                              <TableCell className="text-gray-600">{item.clientName}</TableCell>
-                              <TableCell className="text-gray-800 font-semibold">
-                                {item.masterChange?.toLocaleString('ru-RU')} ₽
-                              </TableCell>
-                              <TableCell>
-                                {isOrder ? (
-                                  <Badge className="bg-gray-500/20 text-gray-800 border-gray-500/30">
-                                    Не отправлена
-                                  </Badge>
-                                ) : (
-                                  getCashSubmissionStatusBadge(item.cashSubmissionStatus || '')
-                                )}
-                              </TableCell>
-                              <TableCell className="text-gray-600">
-                                {isOrder ? (
-                                  item.closingData ? formatDate(item.closingData) : '-'
-                                ) : (
-                                  item.cashSubmissionDate ? formatDate(item.cashSubmissionDate) : '-'
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          )
-                        })}
-                      </TableBody>
-                </Table>
-              </div>
-
-                  {/* Мобильные карточки */}
-                  <div className="md:hidden space-y-3">
-                    {getCurrentPageItems().map((item) => {
-                      const isOrder = item.cashSubmissionStatus === 'Не отправлено'
-                      return (
-                        <div 
-                          key={isOrder ? item.id : `submission-${item.id}`}
-                          className="bg-gray-50 rounded-lg p-4 border border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors"
-                          onClick={() => isOrder && handleSubmitCash(item)}
-                        >
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex items-center space-x-2">
-                              <span className="text-gray-800 font-semibold text-lg">#{item.id}</span>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-gray-800 font-semibold text-sm">
-                                {item.masterChange?.toLocaleString('ru-RU')} ₽
-                              </div>
-                              <div className="mt-1">
-                                {isOrder ? (
-                                  <Badge className="bg-gray-500/20 text-gray-800 border-gray-500/30 text-xs">
-                                    Не отправлена
-                                  </Badge>
-                                ) : (
-                                  getCashSubmissionStatusBadge(item.cashSubmissionStatus || '')
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-600 text-sm">Клиент:</span>
-                              <span className="text-gray-800 text-sm font-medium">{item.clientName}</span>
-                            </div>
-                            
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-600 text-sm">
-                                {isOrder ? 'Дата закрытия:' : 'Дата отправки:'}
-                              </span>
-                              <span className="text-gray-700 text-sm">
-                                {isOrder ? (
-                                  item.closingData ? formatDate(item.closingData) : '-'
-                                ) : (
-                                  item.cashSubmissionDate ? formatDate(item.cashSubmissionDate) : '-'
-                                )}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                    
-                    {getCurrentPageItems().length === 0 && (
-                      <div className="text-center py-8 text-gray-600">
-                        Нет заказов для сдачи
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-            
-            {/* Пагинация */}
-            {getTotalPages() > 1 && (
-              <div className="flex items-center justify-between px-6 py-4 border-t border-gray-300">
-                <div className="text-sm text-gray-600">
-                  Показано {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, getAllFilteredItems().length)} из {getAllFilteredItems().length} заказов
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                    className="text-gray-600 hover:text-teal-600 hover:bg-teal-50 disabled:opacity-50"
-                  >
-                    Назад
-                  </Button>
-                  
-                  <div className="flex items-center space-x-1">
-                    {Array.from({ length: Math.min(5, getTotalPages()) }, (_, i) => {
-                      const pageNum = i + 1
-                      return (
-                        <Button
-                          key={pageNum}
-                          variant={pageNum === currentPage ? "default" : "ghost"}
-                          size="sm"
-                          onClick={() => setCurrentPage(pageNum)}
-                          className={`${
-                            pageNum === currentPage
-                              ? 'bg-teal-600 hover:bg-teal-700 text-white'
-                              : 'text-gray-600 hover:text-teal-600 hover:bg-teal-50'
-                          } w-8 h-8 p-0`}
-                        >
-                          {pageNum}
-                        </Button>
-                      )
-                    })}
-                  </div>
-                  
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, getTotalPages()))}
-                    disabled={currentPage === getTotalPages()}
-                    className="text-gray-600 hover:text-teal-600 hover:bg-teal-50 disabled:opacity-50"
-                  >
-                    Вперед
-                  </Button>
-                </div>
-              </div>
-            )}
           </div>
+
+          {/* Табы статусов */}
+          <div className="mb-4 animate-slide-in-left">
+            <div className="flex-1 min-w-0 overflow-x-auto scrollbar-hide">
+              <div className={`flex gap-1 p-1 rounded-lg w-max ${
+                isDark ? 'bg-[#2a3441]' : 'bg-gray-100'
+              }`}>
+                {[
+                  { id: 'all', label: 'Все' },
+                  { id: 'Не отправлено', label: 'Не сдано' },
+                  { id: 'На проверке', label: 'На проверке' },
+                  { id: 'Одобрено', label: 'Подтверждено' },
+                  { id: 'Отклонено', label: 'Отклонено' },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setStatusTab(tab.id)}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap ${
+                      statusTab === tab.id
+                        ? isDark 
+                          ? 'bg-[#0d5c4b] text-white shadow-sm'
+                          : 'bg-[#0d5c4b] text-white shadow-sm'
+                        : isDark
+                          ? 'text-gray-400 hover:text-gray-200 hover:bg-[#3a4451]'
+                          : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Состояние загрузки */}
+          {loading && (
+            <div className="text-center py-8 animate-fade-in">
+              <div className="flex justify-center mb-4">
+                <LoadingSpinner size="lg" />
+              </div>
+              <p className={`font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Загрузка...</p>
+            </div>
+          )}
+
+          {/* Пустое состояние */}
+          {!loading && getCurrentPageItems().length === 0 && (
+            <div className="text-center py-8 animate-fade-in">
+              <p className={`font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Нет записей для отображения</p>
+            </div>
+          )}
+
+          {/* Десктопная таблица */}
+          {!loading && getCurrentPageItems().length > 0 && (
+            <div className="hidden md:block animate-fade-in">
+              <table className={`w-full border-collapse text-xs rounded-lg shadow-lg ${
+                isDark ? 'bg-[#2a3441]' : 'bg-white'
+              }`}>
+                <thead>
+                  <tr className={`border-b-2 ${isDark ? 'bg-[#3a4451] border-[#0d5c4b]' : 'bg-gray-50 border-[#0d5c4b]'}`}>
+                    <th className={`text-left py-2 px-3 font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Заказ</th>
+                    <th className={`text-left py-2 px-3 font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Клиент</th>
+                    <th className={`text-left py-2 px-3 font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Сумма</th>
+                    <th className={`text-center py-2 px-3 font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Статус</th>
+                    <th className={`text-left py-2 px-3 font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Дата</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {getCurrentPageItems().map((item) => {
+                    const isOrder = item.cashSubmissionStatus === 'Не отправлено'
+                    return (
+                      <tr 
+                        key={isOrder ? item.id : `submission-${item.id}`}
+                        className={`border-b transition-colors cursor-pointer ${
+                          isDark 
+                            ? 'border-gray-700 hover:bg-[#3a4451]'
+                            : 'border-gray-200 hover:bg-teal-50'
+                        }`}
+                        onClick={() => isOrder && handleSubmitCash(item)}
+                      >
+                        <td className={`py-2 px-3 font-medium ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>#{item.id}</td>
+                        <td className={`py-2 px-3 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{item.clientName}</td>
+                        <td className={`py-2 px-3 font-semibold ${isDark ? 'text-teal-400' : 'text-gray-800'}`}>
+                          {item.masterChange?.toLocaleString('ru-RU')} ₽
+                        </td>
+                        <td className="py-2 px-3 text-center">
+                          <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${getSubmissionStatusStyle(item.cashSubmissionStatus || 'Не отправлено')}`}>
+                            {getStatusLabel(item.cashSubmissionStatus || 'Не отправлено')}
+                          </span>
+                        </td>
+                        <td className={`py-2 px-3 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>
+                          {isOrder 
+                            ? formatDate(item.closingData)
+                            : formatDate(item.cashSubmissionDate)
+                          }
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Мобильные карточки */}
+          {!loading && getCurrentPageItems().length > 0 && (
+            <div className="md:hidden space-y-3 animate-fade-in">
+              {getCurrentPageItems().map((item) => {
+                const isOrder = item.cashSubmissionStatus === 'Не отправлено'
+                return (
+                  <div 
+                    key={isOrder ? item.id : `submission-${item.id}`}
+                    className={`rounded-xl overflow-hidden border cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md ${
+                      isDark 
+                        ? 'bg-[#2a3441] border-gray-700 hover:border-teal-600'
+                        : 'bg-white border-gray-200 hover:border-teal-300'
+                    }`}
+                    onClick={() => isOrder && handleSubmitCash(item)}
+                  >
+                    {/* Верхняя строка */}
+                    <div className={`flex items-center justify-between px-3 py-2 border-b ${
+                      isDark ? 'bg-[#3a4451] border-gray-700' : 'bg-gray-50 border-gray-100'
+                    }`}>
+                      <span className={`font-bold text-sm ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>#{item.id}</span>
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${getSubmissionStatusStyle(item.cashSubmissionStatus || 'Не отправлено')}`}>
+                        {getStatusLabel(item.cashSubmissionStatus || 'Не отправлено')}
+                      </span>
+                    </div>
+                    
+                    {/* Основной контент */}
+                    <div className="px-3 py-2.5">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className={`font-medium text-sm ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{item.clientName || 'Без имени'}</span>
+                        <span className={`font-bold text-sm ${isDark ? 'text-teal-400' : 'text-teal-600'}`}>
+                          {item.masterChange?.toLocaleString('ru-RU')} ₽
+                        </span>
+                      </div>
+                      <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                        {isOrder ? 'Закрыт: ' : 'Отправлено: '}
+                        {isOrder ? formatDate(item.closingData) : formatDate(item.cashSubmissionDate)}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Пагинация */}
+          {!loading && getTotalPages() > 1 && (
+            <div className="mt-6 animate-fade-in">
+              <OptimizedPagination
+                currentPage={currentPage}
+                totalPages={getTotalPages()}
+                onPageChange={setCurrentPage}
+                isDark={isDark}
+              />
+            </div>
+          )}
 
           {/* Модальное окно для отправки сдачи */}
           {showSubmissionModal && selectedOrder && (
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-              <div className="bg-white border border-gray-300 rounded-xl shadow-2xl w-full max-w-md">
+              <div className={`rounded-xl shadow-2xl w-full max-w-md ${
+                isDark ? 'bg-[#2a3441] border border-gray-700' : 'bg-white border border-gray-200'
+              }`}>
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-semibold text-gray-800">Отправить сдачу на проверку</h2>
+                    <h2 className={`text-lg font-semibold ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>Отправить сдачу</h2>
                     <button
                       onClick={() => setShowSubmissionModal(false)}
-                      className="text-gray-600 hover:text-gray-800 transition-colors"
+                      className={`p-2 rounded-lg transition-colors ${
+                        isDark ? 'text-gray-400 hover:text-gray-200 hover:bg-[#3a4451]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                      }`}
                     >
-                      Закрыть
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
                     </button>
                   </div>
                   
                   <div className="space-y-5">
-                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                      <div className="text-sm text-gray-600 mb-1">Заказ</div>
-                      <div className="text-gray-800 font-medium">#{selectedOrder.id} • {selectedOrder.clientName}</div>
+                    <div className={`rounded-lg p-4 ${
+                      isDark ? 'bg-[#3a4451]' : 'bg-gray-50'
+                    }`}>
+                      <div className={`text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Заказ</div>
+                      <div className={`font-medium ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>#{selectedOrder.id} • {selectedOrder.clientName}</div>
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                         Сумма сдачи
                       </label>
                       <Input
                         type="number"
                         value={submissionAmount}
                         readOnly
-                        className="bg-gray-100 border-gray-300 text-gray-800 cursor-not-allowed opacity-75"
+                        className={`cursor-not-allowed opacity-75 ${
+                          isDark ? 'bg-[#3a4451] border-gray-600 text-gray-100' : 'bg-gray-100 border-gray-300 text-gray-800'
+                        }`}
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                         Чек/скриншот перевода
                       </label>
-                      <div className="relative">
-                        <Input
-                          type="file"
-                          accept="image/*,.pdf"
-                          onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
-                          className="bg-white border-gray-300 text-gray-800 file:bg-gray-100 file:border-gray-300 file:text-gray-700 file:rounded-md file:px-3 file:py-1 file:mr-3 file:text-sm hover:file:bg-gray-200 focus:border-teal-500 focus:ring-teal-500/20"
-                        />
-                        {receiptFile && (
-                          <div className="mt-2 text-sm text-teal-600">
-                            Файл выбран: {receiptFile.name}
-                          </div>
-                        )}
-                      </div>
+                      <Input
+                        type="file"
+                        accept="image/*,.pdf"
+                        onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
+                        className={`${
+                          isDark 
+                            ? 'bg-[#3a4451] border-gray-600 text-gray-100 file:bg-[#2a3441] file:border-gray-600 file:text-gray-300'
+                            : 'bg-white border-gray-300 text-gray-800 file:bg-gray-100 file:border-gray-300 file:text-gray-700'
+                        } file:rounded-md file:px-3 file:py-1 file:mr-3 file:text-sm`}
+                      />
+                      {receiptFile && (
+                        <div className={`mt-2 text-sm ${isDark ? 'text-teal-400' : 'text-teal-600'}`}>
+                          Файл: {receiptFile.name}
+                        </div>
+                      )}
                     </div>
 
-                    <div className="flex space-x-3 pt-4">
-                      <Button
+                    <div className="flex gap-3 pt-4">
+                      <button
                         onClick={handleSubmitCashSubmission}
                         disabled={submitting}
-                        className="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 text-base disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="flex-1 px-4 py-3 bg-teal-500 hover:bg-teal-600 text-white rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {submitting ? (
-                          <div className="flex items-center justify-center">
-                            Отправка...
-                          </div>
-                        ) : (
-                          'Отправить'
-                        )}
-                      </Button>
-                      <Button
+                        {submitting ? 'Отправка...' : 'Отправить'}
+                      </button>
+                      <button
                         onClick={() => setShowSubmissionModal(false)}
-                        variant="outline"
-                        className="flex-1 border-2 border-gray-300 text-gray-800 bg-white hover:bg-gray-100 hover:text-gray-900 hover:border-gray-400 font-semibold py-3 text-base transition-colors"
+                        className={`flex-1 px-4 py-3 rounded-lg transition-colors font-medium border-2 ${
+                          isDark 
+                            ? 'border-gray-600 text-gray-300 hover:bg-[#3a4451]'
+                            : 'border-gray-300 text-gray-700 hover:bg-gray-100'
+                        }`}
                       >
                         Отмена
-                      </Button>
+                      </button>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           )}
-          </div>
         </div>
       </div>
+    </div>
   )
 }
 
+export default function PaymentsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#1e2530]">
+        <div className="text-center">
+          <LoadingSpinner size="lg" />
+          <p className="mt-4 text-gray-700 dark:text-gray-300">Загрузка...</p>
+        </div>
+      </div>
+    }>
+      <PaymentsContent />
+    </Suspense>
+  )
+}

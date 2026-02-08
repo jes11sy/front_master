@@ -1,16 +1,10 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-// Убрали все иконки из lucide-react
-import apiClient from '@/lib/api'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { LoadingSpinner } from '@/components/ui/loading-screen'
+import { useDesignStore } from '@/store/design.store'
+import apiClient from '@/lib/api'
+import { Loader2, Filter, X, Download } from 'lucide-react'
 
 // Интерфейс статистики
 interface CityStatistics {
@@ -22,294 +16,382 @@ interface CityStatistics {
   salary: number
 }
 
-
 export default function StatisticsPage() {
   const router = useRouter()
-  const [period, setPeriod] = useState('custom')
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
-  const [isFilterVisible, setIsFilterVisible] = useState(false)
+  const { theme } = useDesignStore()
+  const isDark = theme === 'dark'
+  
   const [cityStatistics, setCityStatistics] = useState<CityStatistics[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  
+  // Фильтры
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [draftStartDate, setDraftStartDate] = useState('')
+  const [draftEndDate, setDraftEndDate] = useState('')
+  const [showFilterDrawer, setShowFilterDrawer] = useState(false)
 
-  // Загружаем статистику из API
-  useEffect(() => {
-    const fetchStatistics = async () => {
-      try {
-        setLoading(true)
-        const response = await apiClient.getMasterStatistics({
-          startDate: startDate || undefined,
-          endDate: endDate || undefined
-        })
-        
-        if (response.success && response.data) {
-          setCityStatistics(response.data)
-        } else {
-          setError(response.error || 'Ошибка загрузки статистики')
-        }
-      } catch (error: any) {
-        setError(error.message || 'Ошибка загрузки статистики')
-        // Если ошибка авторизации, перенаправляем на логин
-        if (error.message?.includes('401') || error.message?.includes('токен')) {
-          router.push('/login')
-        }
-      } finally {
-        setLoading(false)
+  // Быстрые периоды
+  const quickPeriods = [
+    { label: 'Сегодня', getValue: () => {
+      const today = new Date().toISOString().split('T')[0]
+      return { start: today, end: today }
+    }},
+    { label: 'Вчера', getValue: () => {
+      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+      return { start: yesterday, end: yesterday }
+    }},
+    { label: 'Неделя', getValue: () => {
+      const end = new Date().toISOString().split('T')[0]
+      const start = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
+      return { start, end }
+    }},
+    { label: 'Месяц', getValue: () => {
+      const end = new Date().toISOString().split('T')[0]
+      const start = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]
+      return { start, end }
+    }},
+  ]
+
+  // Подсчёт активных фильтров
+  const activeFiltersCount = [startDate, endDate].filter(Boolean).length
+
+  // Загрузка статистики
+  const loadStatistics = async (filters?: { startDate?: string; endDate?: string }) => {
+    try {
+      setLoading(true)
+      setError('')
+      const response = await apiClient.getMasterStatistics({
+        startDate: filters?.startDate || undefined,
+        endDate: filters?.endDate || undefined
+      })
+      
+      if (response.success && response.data) {
+        setCityStatistics(response.data)
+      } else {
+        setError(response.error || 'Ошибка загрузки статистики')
       }
-    }
-
-    fetchStatistics()
-  }, [startDate, endDate]) // ✅ Убрали router - он используется только в catch блоке
-
-  const handlePeriodChange = (value: string) => {
-    // Если нажали на уже активную кнопку - сбрасываем фильтр
-    if (period === value) {
-      // Для "Произвольный" не сбрасываем, а просто оставляем как есть
-      if (value !== 'custom') {
-        setPeriod('custom')
-        setStartDate('')
-        setEndDate('')
+    } catch (error: any) {
+      setError(error.message || 'Ошибка загрузки статистики')
+      if (error.message?.includes('401') || error.message?.includes('токен')) {
+        router.push('/login')
       }
-      return
-    }
-    
-    setPeriod(value)
-    const today = new Date()
-    
-    // Функция для форматирования дат в локальном часовом поясе
-    const formatDate = (date: Date) => {
-      const year = date.getFullYear()
-      const month = String(date.getMonth() + 1).padStart(2, '0')
-      const day = String(date.getDate()).padStart(2, '0')
-      return `${year}-${month}-${day}`
-    }
-    
-    switch (value) {
-      case 'day':
-        // Текущий день
-        const todayStr = formatDate(today)
-        setStartDate(todayStr)
-        setEndDate(todayStr)
-        break
-      case 'week':
-        // Неделя с понедельника по воскресенье
-        const weekStart = new Date(today)
-        // Получаем понедельник текущей недели
-        const dayOfWeek = today.getDay()
-        const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
-        weekStart.setDate(today.getDate() + daysToMonday)
-        
-        const weekEnd = new Date(weekStart)
-        weekEnd.setDate(weekStart.getDate() + 6) // Воскресенье
-        
-        setStartDate(formatDate(weekStart))
-        setEndDate(formatDate(weekEnd))
-        break
-      case 'month':
-        // Месяц с 1 числа по последнее число текущего месяца
-        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
-        const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0)
-        
-        setStartDate(formatDate(monthStart))
-        setEndDate(formatDate(monthEnd))
-        break
-      case 'custom':
-        setStartDate('')
-        setEndDate('')
-        break
+    } finally {
+      setLoading(false)
     }
   }
 
+  useEffect(() => {
+    // При загрузке устанавливаем фильтр по текущему месяцу
+    const now = new Date()
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+    const startDateStr = firstDay.toISOString().split('T')[0]
+    
+    setStartDate(startDateStr)
+    setDraftStartDate(startDateStr)
+    loadStatistics({ startDate: startDateStr })
+  }, [])
+
+  // Открытие drawer
+  const openFilterDrawer = () => {
+    setDraftStartDate(startDate)
+    setDraftEndDate(endDate)
+    setShowFilterDrawer(true)
+  }
+
+  // Сброс черновых фильтров
+  const resetFilters = () => {
+    setDraftStartDate('')
+    setDraftEndDate('')
+  }
+
+  // Применить фильтры
+  const applyFilters = () => {
+    setStartDate(draftStartDate)
+    setEndDate(draftEndDate)
+    setShowFilterDrawer(false)
+    loadStatistics({ startDate: draftStartDate, endDate: draftEndDate })
+  }
+
+  // Сброс всех фильтров
+  const clearAllFilters = () => {
+    setStartDate('')
+    setEndDate('')
+    loadStatistics()
+  }
+
+  // Форматирование чисел
+  const formatNumber = (num: number) => {
+    return new Intl.NumberFormat('ru-RU').format(num)
+  }
 
   return (
-    <div className="min-h-screen" style={{backgroundColor: '#114643'}}>
-        <div className="container mx-auto px-2 sm:px-4 py-8 pt-4 md:pt-8">
-          <div className="max-w-none mx-auto">
-          {/* Statistics Table with Filter */}
-          <div className="backdrop-blur-lg shadow-2xl rounded-2xl p-6 md:p-16 border bg-white/95 hover:bg-white transition-all duration-500 hover:shadow-3xl transform hover:scale-[1.01] animate-fade-in" style={{borderColor: '#114643'}}>
-            <div className="mb-6">
-              {/* Date Filter */}
-              <div className="mb-6">
+    <div className={`min-h-screen transition-colors duration-300 ${isDark ? 'bg-[#1e2530]' : 'bg-white'}`}>
+      <div className="px-6 py-6">
+        <div className="max-w-4xl">
+          
+          {/* Заголовок и фильтры */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h1 className={`text-xl font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+                Статистика
+              </h1>
+              
+              <div className="flex items-center gap-2">
+                {/* Кнопка фильтров */}
                 <button
-                  onClick={() => setIsFilterVisible(!isFilterVisible)}
-                  className="flex items-center gap-2 text-left cursor-pointer group"
+                  onClick={openFilterDrawer}
+                  className={`relative p-2 rounded-lg transition-all duration-200 ${
+                    isDark 
+                      ? 'bg-[#3a4451] hover:bg-[#4a5461] text-gray-300 hover:text-[#0d5c4b]' 
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-[#0d5c4b]'
+                  }`}
+                  title="Фильтры"
                 >
-                  <h3 className="text-lg font-semibold text-gray-700 group-hover:text-teal-600 transition-colors duration-200">
-                    Фильтр
-                  </h3>
-                  <svg
-                    className={`w-5 h-5 text-gray-600 group-hover:text-teal-600 transition-all duration-200 ${
-                      isFilterVisible ? 'rotate-180' : ''
-                    }`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+                  <Filter className="w-5 h-5" />
+                  {activeFiltersCount > 0 && (
+                    <span className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#0d5c4b] rounded-full border-2 ${isDark ? 'border-[#2a3441]' : 'border-white'}`} />
+                  )}
                 </button>
-                
-                {isFilterVisible && (
-                  <div className="relative z-50 space-y-4 animate-slide-in-right mt-4">
-                    {/* Period Selection */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                      {[
-                        { value: 'day', label: 'День' },
-                        { value: 'week', label: 'Неделя' },
-                        { value: 'month', label: 'Месяц' },
-                        { value: 'custom', label: 'Произвольный' }
-                      ].map((option) => (
+              </div>
+            </div>
+
+            {/* Активные фильтры как теги */}
+            {activeFiltersCount > 0 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                {startDate && (
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${
+                    isDark ? 'bg-[#0d5c4b]/20 text-[#0d5c4b] border-[#0d5c4b]/30' : 'bg-[#daece2] text-[#0d5c4b] border-[#0d5c4b]/20'
+                  }`}>
+                    От: {new Date(startDate).toLocaleDateString('ru-RU')}
+                    <button 
+                      onClick={() => { setStartDate(''); loadStatistics({ endDate: endDate || undefined }) }} 
+                      className="ml-1 hover:opacity-70"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+                {endDate && (
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${
+                    isDark ? 'bg-[#0d5c4b]/20 text-[#0d5c4b] border-[#0d5c4b]/30' : 'bg-[#daece2] text-[#0d5c4b] border-[#0d5c4b]/20'
+                  }`}>
+                    До: {new Date(endDate).toLocaleDateString('ru-RU')}
+                    <button 
+                      onClick={() => { setEndDate(''); loadStatistics({ startDate: startDate || undefined }) }} 
+                      className="ml-1 hover:opacity-70"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+                <button
+                  onClick={clearAllFilters}
+                  className={`text-xs transition-colors ${isDark ? 'text-gray-400 hover:text-red-400' : 'text-gray-500 hover:text-red-500'}`}
+                >
+                  Сбросить
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Sidebar Drawer для фильтров */}
+          {showFilterDrawer && (
+            <>
+              {/* Overlay */}
+              <div 
+                className="fixed inset-0 bg-black/30 z-40 transition-opacity duration-300"
+                onClick={() => setShowFilterDrawer(false)}
+              />
+              
+              {/* Drawer */}
+              <div className={`fixed top-16 md:top-0 right-0 h-[calc(100%-4rem)] md:h-full w-full sm:w-80 shadow-xl z-50 transform transition-transform duration-300 ease-out overflow-y-auto ${
+                isDark ? 'bg-[#2a3441]' : 'bg-white'
+              }`}>
+                {/* Header */}
+                <div className={`sticky top-0 border-b px-4 py-3 flex items-center justify-between z-10 ${
+                  isDark ? 'bg-[#2a3441] border-gray-700' : 'bg-white border-gray-200'
+                }`}>
+                  <h2 className={`text-lg font-semibold ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>Фильтры</h2>
+                  <button
+                    onClick={() => setShowFilterDrawer(false)}
+                    className={`p-2 rounded-lg transition-colors ${
+                      isDark ? 'text-gray-400 hover:text-gray-200 hover:bg-[#3a4451]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="p-4 space-y-4">
+                  {/* Секция: Период */}
+                  <div className="space-y-3">
+                    <h3 className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      Период
+                    </h3>
+                    
+                    <div className="grid grid-cols-2 gap-2">
+                      {quickPeriods.map((period) => (
                         <button
-                          key={option.value}
-                          onClick={() => handlePeriodChange(option.value)}
-                          className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 text-center ${
-                            period === option.value
-                              ? 'bg-teal-600 text-white border border-teal-500 shadow-lg shadow-teal-500/25'
-                              : 'bg-gray-100 text-gray-700 hover:bg-teal-50 hover:text-teal-600 border border-gray-300'
+                          key={period.label}
+                          onClick={() => {
+                            const { start, end } = period.getValue()
+                            setDraftStartDate(start)
+                            setDraftEndDate(end)
+                          }}
+                          className={`px-3 py-2 border rounded-lg text-sm font-medium transition-all duration-200 ${
+                            isDark 
+                              ? 'bg-[#3a4451] hover:bg-[#0d5c4b]/20 border-gray-600 hover:border-[#0d5c4b] text-gray-300 hover:text-[#0d5c4b]' 
+                              : 'bg-gray-50 hover:bg-[#daece2] border-gray-200 hover:border-[#0d5c4b] text-gray-700 hover:text-[#0d5c4b]'
                           }`}
                         >
-                          {option.label}
+                          {period.label}
                         </button>
                       ))}
                     </div>
-
-                    {/* Date Range Selection */}
-                    {period === 'custom' && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 bg-gray-50 rounded-lg">
-                        <div className="space-y-1">
-                          <Label htmlFor="startDate" className="text-gray-700 text-xs">Дата начала</Label>
-                          <Input
-                            id="startDate"
-                            type="date"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                            className="bg-white border-gray-300 text-gray-800 focus:border-teal-500 text-sm h-9"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label htmlFor="endDate" className="text-gray-700 text-xs">Дата окончания</Label>
-                          <Input
-                            id="endDate"
-                            type="date"
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                            className="bg-white border-gray-300 text-gray-800 focus:border-teal-500 text-sm h-9"
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Selected Period Display */}
-                    {period !== 'custom' && (startDate || endDate) && (
-                      <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg border border-gray-300">
-                        <span className="text-xs text-gray-700">
-                          Период: {new Date(startDate).toLocaleDateString('ru-RU')} - {new Date(endDate).toLocaleDateString('ru-RU')}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-            <div>
-              {loading ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <LoadingSpinner size="lg" variant="dark" />
-                  <div className="text-gray-600 mt-4">Загрузка статистики...</div>
-                </div>
-              ) : error ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-red-600">{error}</div>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-gray-300">
-                        <th className="text-left py-3 px-4 text-gray-700 font-medium">Город</th>
-                        <th className="text-right py-3 px-4 text-gray-700 font-medium">Закрытые заказы</th>
-                        <th className="text-right py-3 px-4 text-gray-700 font-medium">Модерны</th>
-                        <th className="text-right py-3 px-4 text-gray-700 font-medium">Оборот</th>
-                        <th className="text-right py-3 px-4 text-gray-700 font-medium">Средний чек</th>
-                        <th className="text-right py-3 px-4 text-gray-700 font-medium">Зарплата</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {cityStatistics.map((stat, index) => (
-                        <tr 
-                          key={index} 
-                          className={`border-b border-gray-200 ${
-                            stat.city === 'ИТОГО' 
-                              ? 'bg-teal-50 font-semibold' 
-                              : 'hover:bg-gray-50'
+                    
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>С</label>
+                        <input
+                          type="date"
+                          value={draftStartDate}
+                          onChange={(e) => setDraftStartDate(e.target.value)}
+                          className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0d5c4b] focus:border-transparent transition-all ${
+                            isDark ? 'bg-[#3a4451] border-gray-600 text-gray-200' : 'bg-gray-50 border-gray-200 text-gray-800'
                           }`}
-                        >
-                          <td className="py-3 px-4">
-                            <span className={`${
-                              stat.city === 'ИТОГО' 
-                                ? 'text-teal-800 font-bold' 
-                                : 'text-gray-800'
-                            }`}>
-                              {stat.city}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <span className={`${
-                              stat.city === 'ИТОГО' 
-                                ? 'text-teal-800 font-bold' 
-                                : 'text-gray-600'
-                            }`}>
-                              {stat.closedOrders}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <span className={`${
-                              stat.city === 'ИТОГО' 
-                                ? 'text-teal-800 font-bold' 
-                                : 'text-gray-600'
-                            }`}>
-                              {stat.modernOrders}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <span className={`${
-                              stat.city === 'ИТОГО' 
-                                ? 'text-teal-800 font-bold' 
-                                : 'text-gray-600'
-                            }`}>
-                              {stat.totalRevenue.toLocaleString('ru-RU')} ₽
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <span className={`${
-                              stat.city === 'ИТОГО' 
-                                ? 'text-teal-800 font-bold' 
-                                : 'text-gray-600'
-                            }`}>
-                              {stat.averageCheck.toLocaleString('ru-RU')} ₽
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <span className={`${
-                              stat.city === 'ИТОГО' 
-                                ? 'text-teal-800 font-bold' 
-                                : 'text-gray-600'
-                            }`}>
-                              {stat.salary.toLocaleString('ru-RU')} ₽
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                        />
+                      </div>
+                      <div>
+                        <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>По</label>
+                        <input
+                          type="date"
+                          value={draftEndDate}
+                          onChange={(e) => setDraftEndDate(e.target.value)}
+                          className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0d5c4b] focus:border-transparent transition-all ${
+                            isDark ? 'bg-[#3a4451] border-gray-600 text-gray-200' : 'bg-gray-50 border-gray-200 text-gray-800'
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className={`sticky bottom-0 border-t px-4 py-3 flex gap-2 ${
+                  isDark ? 'bg-[#2a3441] border-gray-700' : 'bg-white border-gray-200'
+                }`}>
+                  <button
+                    onClick={resetFilters}
+                    className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isDark ? 'bg-[#3a4451] hover:bg-[#4a5461] text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                    }`}
+                  >
+                    Сбросить
+                  </button>
+                  <button
+                    onClick={applyFilters}
+                    className="flex-1 px-4 py-2 bg-[#0d5c4b] hover:bg-[#0a4a3c] text-white rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Применить
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Состояние загрузки */}
+          {loading && (
+            <div className="text-center py-16">
+              <Loader2 className={`h-8 w-8 animate-spin mx-auto ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+              <p className={`mt-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Загрузка статистики...</p>
+            </div>
+          )}
+
+          {/* Ошибка */}
+          {error && !loading && (
+            <div className="text-center py-16">
+              <p className="text-red-500 mb-4">{error}</p>
+              <button 
+                onClick={() => loadStatistics({ startDate, endDate })}
+                className="px-4 py-2 bg-[#0d5c4b] hover:bg-[#0a4a3c] text-white rounded-lg transition-colors"
+              >
+                Попробовать снова
+              </button>
+            </div>
+          )}
+
+          {/* Таблица статистики */}
+          {!loading && !error && (
+            <div className="overflow-x-auto -mx-6 px-6">
+              <table className={`w-full text-sm ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                <thead>
+                  <tr className={`border-b-2 ${isDark ? 'border-[#0d5c4b]/50' : 'border-[#0d5c4b]/30'}`}>
+                    <th className={`text-left py-3 px-4 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Город</th>
+                    <th className={`text-right py-3 px-4 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Закрыто</th>
+                    <th className={`text-right py-3 px-4 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Модерны</th>
+                    <th className={`text-right py-3 px-4 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Оборот</th>
+                    <th className={`text-right py-3 px-4 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Ср. чек</th>
+                    <th className={`text-right py-3 px-4 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Зарплата</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cityStatistics.map((stat, index) => {
+                    const isTotal = stat.city === 'ИТОГО'
+                    return (
+                      <tr 
+                        key={index} 
+                        className={`border-b transition-colors ${
+                          isTotal 
+                            ? isDark ? 'bg-[#0d5c4b]/20 border-[#0d5c4b]/30' : 'bg-[#daece2] border-[#0d5c4b]/20'
+                            : isDark ? 'border-gray-700 hover:bg-[#3a4451]' : 'border-gray-100 hover:bg-gray-50'
+                        }`}
+                      >
+                        <td className={`py-3 px-4 ${isTotal ? 'font-bold' : 'font-medium'} ${
+                          isTotal 
+                            ? isDark ? 'text-[#0d5c4b]' : 'text-[#0d5c4b]'
+                            : isDark ? 'text-gray-200' : 'text-gray-800'
+                        }`}>
+                          {stat.city}
+                        </td>
+                        <td className={`py-3 px-4 text-right ${isTotal ? 'font-bold' : ''}`}>
+                          {stat.closedOrders}
+                        </td>
+                        <td className={`py-3 px-4 text-right ${isTotal ? 'font-bold' : ''}`}>
+                          {stat.modernOrders}
+                        </td>
+                        <td className={`py-3 px-4 text-right font-semibold ${
+                          isDark ? 'text-[#0d5c4b]' : 'text-[#0d5c4b]'
+                        }`}>
+                          {formatNumber(stat.totalRevenue)} ₽
+                        </td>
+                        <td className={`py-3 px-4 text-right ${isTotal ? 'font-bold' : ''}`}>
+                          {formatNumber(stat.averageCheck)} ₽
+                        </td>
+                        <td className={`py-3 px-4 text-right font-semibold ${
+                          isDark ? 'text-amber-400' : 'text-amber-600'
+                        }`}>
+                          {formatNumber(stat.salary)} ₽
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+
+              {/* Пустое состояние */}
+              {cityStatistics.length === 0 && (
+                <div className={`text-center py-16 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Нет данных для отображения
                 </div>
               )}
             </div>
-          </div>
-          </div>
+          )}
+
         </div>
       </div>
+    </div>
   )
 }
-
