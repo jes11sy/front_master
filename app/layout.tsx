@@ -40,47 +40,69 @@ export default function RootLayout({
   return (
     <html lang="ru" suppressHydrationWarning>
       <head>
-        {/* Скрипт инициализации темы - ДОЛЖЕН быть первым, чтобы избежать мелькания */}
+        {/* Критические стили - ДОЛЖНЫ быть первыми для предотвращения мерцания */}
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              /* Базовые стили до загрузки React */
+              html, body {
+                background-color: white;
+              }
+              html.dark, html.dark body {
+                background-color: #1e2530 !important;
+              }
+              /* Навигация */
+              nav.nav-main, aside.sidebar-main, header.header-main, main.main-content {
+                background-color: white !important;
+                transition: none !important;
+              }
+              html.dark nav.nav-main, html.dark aside.sidebar-main, html.dark header.header-main, html.dark main.main-content {
+                background-color: #1e2530 !important;
+              }
+              nav.nav-main, aside.sidebar-main, header.header-main {
+                border-color: #e5e7eb !important;
+              }
+              html.dark nav.nav-main, html.dark aside.sidebar-main, html.dark header.header-main {
+                border-color: rgba(255, 255, 255, 0.15) !important;
+              }
+              /* Скрываем контент пока тема не определена */
+              html:not(.theme-ready) body {
+                visibility: hidden;
+              }
+              html.theme-ready body {
+                visibility: visible;
+              }
+            `,
+          }}
+        />
+        {/* Скрипт инициализации темы - ДОЛЖЕН быть сразу после стилей */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
                 try {
                   var stored = localStorage.getItem('design-storage');
+                  var isDark = false;
                   if (stored) {
                     var data = JSON.parse(stored);
-                    var theme = data.state && data.state.theme;
-                    if (theme === 'dark') {
-                      document.documentElement.classList.add('dark');
-                      document.documentElement.style.backgroundColor = '#1e2530';
-                      document.documentElement.style.colorScheme = 'dark';
-                    }
+                    isDark = data.state && data.state.theme === 'dark';
                   }
-                  // Добавляем класс hydrated после небольшой задержки для плавных переходов
+                  if (isDark) {
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.style.backgroundColor = '#1e2530';
+                    document.documentElement.style.colorScheme = 'dark';
+                    document.body && (document.body.style.backgroundColor = '#1e2530');
+                  }
+                  // Показываем контент сразу после определения темы
+                  document.documentElement.classList.add('theme-ready');
+                  // Добавляем класс hydrated для плавных переходов
                   requestAnimationFrame(function() {
                     document.documentElement.classList.add('hydrated');
                   });
-                } catch (e) {}
+                } catch (e) {
+                  document.documentElement.classList.add('theme-ready');
+                }
               })();
-            `,
-          }}
-        />
-        {/* Критические стили для предотвращения мерцания */}
-        <style
-          dangerouslySetInnerHTML={{
-            __html: `
-              nav.nav-main, aside.sidebar-main, header.header-main, main.main-content {
-                background-color: white !important;
-              }
-              html.dark nav.nav-main, html.dark aside.sidebar-main, html.dark header.header-main, html.dark main.main-content {
-                background-color: #1e2530 !important;
-              }
-              nav.nav-main, aside.sidebar-main, header.header-main {
-                border-color: #e5e7eb;
-              }
-              html.dark nav.nav-main, html.dark aside.sidebar-main, html.dark header.header-main {
-                border-color: rgba(255, 255, 255, 0.15);
-              }
             `,
           }}
         />

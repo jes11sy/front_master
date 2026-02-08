@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useDesignStore } from '@/store/design.store'
 import { useAuthStore } from '@/store/auth.store'
 import { Sun, Moon, User, Menu, X } from 'lucide-react'
+import apiClient from '@/lib/api'
 
 // Навигационные элементы с иконками
 const navigationItems = [
@@ -17,11 +18,38 @@ const navigationItems = [
 ]
 
 export function Navigation() {
-  const { user } = useAuthStore()
+  const { user, updateUser } = useAuthStore()
   const { theme, toggleTheme } = useDesignStore()
   const pathname = usePathname()
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [masterName, setMasterName] = useState<string | null>(null)
+
+  // Загружаем имя мастера из профиля
+  useEffect(() => {
+    const fetchMasterName = async () => {
+      // Если имя уже есть в user, не загружаем
+      if (user?.name) {
+        setMasterName(user.name)
+        return
+      }
+      
+      try {
+        const response = await apiClient.getMasterProfile()
+        if (response.success && response.data?.name) {
+          setMasterName(response.data.name)
+          // Обновляем user в store
+          updateUser({ name: response.data.name })
+        }
+      } catch (error) {
+        // Игнорируем ошибки - используем login как fallback
+      }
+    }
+    
+    if (user) {
+      fetchMasterName()
+    }
+  }, [user, updateUser])
 
   // Закрываем меню при смене маршрута
   useEffect(() => {
@@ -47,7 +75,7 @@ export function Navigation() {
     return false
   }
 
-  const userName = user?.name || user?.login
+  const userName = masterName || user?.name || user?.login
 
   return (
     <>

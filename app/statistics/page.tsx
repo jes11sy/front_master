@@ -47,9 +47,11 @@ export default function StatisticsPage() {
       const start = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
       return { start, end }
     }},
-    { label: 'Месяц', getValue: () => {
-      const end = new Date().toISOString().split('T')[0]
-      const start = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]
+    { label: 'Тек. месяц', getValue: () => {
+      const now = new Date()
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+      const start = firstDay.toISOString().split('T')[0]
+      const end = now.toISOString().split('T')[0]
       return { start, end }
     }},
   ]
@@ -83,14 +85,17 @@ export default function StatisticsPage() {
   }
 
   useEffect(() => {
-    // При загрузке устанавливаем фильтр по текущему месяцу
+    // При загрузке устанавливаем фильтр по текущему месяцу (с 1-го числа по сегодня)
     const now = new Date()
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
     const startDateStr = firstDay.toISOString().split('T')[0]
+    const endDateStr = now.toISOString().split('T')[0]
     
     setStartDate(startDateStr)
+    setEndDate(endDateStr)
     setDraftStartDate(startDateStr)
-    loadStatistics({ startDate: startDateStr })
+    setDraftEndDate(endDateStr)
+    loadStatistics({ startDate: startDateStr, endDate: endDateStr })
   }, [])
 
   // Открытие drawer
@@ -131,30 +136,24 @@ export default function StatisticsPage() {
       <div className="px-6 py-6">
         <div className="max-w-4xl">
           
-          {/* Заголовок и фильтры */}
+          {/* Фильтры */}
           <div className="mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h1 className={`text-xl font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                Статистика
-              </h1>
-              
-              <div className="flex items-center gap-2">
-                {/* Кнопка фильтров */}
-                <button
-                  onClick={openFilterDrawer}
-                  className={`relative p-2 rounded-lg transition-all duration-200 ${
-                    isDark 
-                      ? 'bg-[#3a4451] hover:bg-[#4a5461] text-gray-300 hover:text-[#0d5c4b]' 
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-[#0d5c4b]'
-                  }`}
-                  title="Фильтры"
-                >
-                  <Filter className="w-5 h-5" />
-                  {activeFiltersCount > 0 && (
-                    <span className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-[#0d5c4b] rounded-full border-2 ${isDark ? 'border-[#2a3441]' : 'border-white'}`} />
-                  )}
-                </button>
-              </div>
+            <div className="flex items-center justify-end mb-4">
+              {/* Кнопка фильтров */}
+              <button
+                onClick={openFilterDrawer}
+                className={`relative p-2 rounded-lg transition-all duration-200 ${
+                  isDark 
+                    ? 'bg-[#2a3441] hover:bg-[#3a4451] text-gray-400 hover:text-teal-400' 
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-teal-600'
+                }`}
+                title="Фильтры"
+              >
+                <Filter className="w-5 h-5" />
+                {activeFiltersCount > 0 && (
+                  <span className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-teal-500 rounded-full border-2 ${isDark ? 'border-[#1e2530]' : 'border-white'}`} />
+                )}
+              </button>
             </div>
 
             {/* Активные фильтры как теги */}

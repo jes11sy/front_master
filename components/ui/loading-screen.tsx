@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import { useDesignStore } from '@/store/design.store'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useSyncExternalStore } from 'react'
 
 interface LoadingScreenProps {
   /** Текст под спиннером (не используется в новом дизайне) */
@@ -15,24 +15,33 @@ interface LoadingScreenProps {
 
 /**
  * Хук для определения темы без мелькания
- * Сначала проверяет CSS класс dark на html, потом синхронизируется со store
+ * Использует useSyncExternalStore для синхронной проверки DOM
  */
 function useThemeWithoutFlash() {
   const { theme } = useDesignStore()
-  const [isDark, setIsDark] = useState(() => {
-    // На сервере или при первом рендере проверяем CSS класс
-    if (typeof window !== 'undefined') {
-      return document.documentElement.classList.contains('dark')
-    }
-    return false
-  })
-
+  
+  // Проверяем DOM синхронно
+  const isDarkFromDOM = useSyncExternalStore(
+    // subscribe - подписываемся на изменения класса
+    (callback) => {
+      if (typeof window === 'undefined') return () => {}
+      const observer = new MutationObserver(callback)
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+      return () => observer.disconnect()
+    },
+    // getSnapshot - получаем текущее значение на клиенте
+    () => typeof window !== 'undefined' && document.documentElement.classList.contains('dark'),
+    // getServerSnapshot - значение на сервере
+    () => false
+  )
+  
+  // После гидратации используем store
+  const [hydrated, setHydrated] = useState(false)
   useEffect(() => {
-    // После гидратации синхронизируемся со store
-    setIsDark(theme === 'dark')
-  }, [theme])
-
-  return isDark
+    setHydrated(true)
+  }, [])
+  
+  return hydrated ? theme === 'dark' : isDarkFromDOM
 }
 
 /**
@@ -51,14 +60,24 @@ export function LoadingScreen({
 
   const content = (
     <div className="flex flex-col items-center justify-center px-4">
-      {/* Логотип */}
-      <div className="mb-8">
+      {/* Логотип - показываем оба и скрываем один через CSS для избежания мерцания */}
+      <div className="mb-8 relative">
+        {/* Светлый логотип - скрывается в темной теме */}
         <Image 
-          src={isDark ? "/images/images/logo_dark_v2.png" : "/images/images/logo_light_v2.png"} 
+          src="/images/images/logo_light_v2.png"
           alt="MasterCRM" 
           width={200} 
           height={50} 
-          className="h-12 w-auto" 
+          className={`h-12 w-auto transition-opacity duration-0 ${isDark ? 'opacity-0 absolute' : 'opacity-100'}`}
+          priority
+        />
+        {/* Темный логотип - показывается в темной теме */}
+        <Image 
+          src="/images/images/logo_dark_v2.png"
+          alt="MasterCRM" 
+          width={200} 
+          height={50} 
+          className={`h-12 w-auto transition-opacity duration-0 ${isDark ? 'opacity-100' : 'opacity-0 absolute'}`}
           priority
         />
       </div>
