@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useDesignStore } from '@/store/design.store'
 import { useAuthStore } from '@/store/auth.store'
 import { Sun, Moon, User, Menu, X, Bell } from 'lucide-react'
+import { NotificationsModal } from './push/NotificationsModal'
 
 // Навигационные элементы с иконками
 const navigationItems = [
@@ -22,6 +23,7 @@ export function Navigation() {
   const pathname = usePathname()
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [notificationsModalOpen, setNotificationsModalOpen] = useState(false)
 
   // Закрываем меню при смене маршрута
   useEffect(() => {
@@ -66,8 +68,9 @@ export function Navigation() {
           />
         </Link>
         <div className="flex items-center gap-1">
-          {/* Notifications - placeholder для будущего функционала */}
+          {/* Notifications */}
           <button
+            onClick={() => setNotificationsModalOpen(true)}
             className={`p-2 transition-colors ${
               theme === 'dark' ? 'text-gray-300 hover:text-[#0d5c4b]' : 'text-gray-600 hover:text-[#0d5c4b]'
             }`}
@@ -274,8 +277,9 @@ export function Navigation() {
             <Moon className={`h-4 w-4 transition-colors ${theme === 'dark' ? 'text-[#0d5c4b]' : 'text-gray-400'}`} />
           </div>
 
-          {/* Notifications - placeholder для будущего функционала */}
+          {/* Notifications */}
           <button
+            onClick={() => setNotificationsModalOpen(true)}
             className="nav-icon-hover relative flex items-center gap-2 px-3 py-2 text-sm font-normal group"
           >
             <span 
@@ -332,6 +336,12 @@ export function Navigation() {
           </Link>
         </div>
       </nav>
+
+      {/* Notifications Modal */}
+      <NotificationsModal 
+        isOpen={notificationsModalOpen} 
+        onClose={() => setNotificationsModalOpen(false)} 
+      />
     </>
   )
 }
