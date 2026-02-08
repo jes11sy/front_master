@@ -25,36 +25,6 @@ interface Notification {
   orderId?: number
 }
 
-// Моковые данные для демонстрации (потом заменятся на реальные)
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'order_created',
-    title: 'Новый заказ #12345',
-    message: 'Создан новый заказ на установку кондиционера',
-    read: false,
-    createdAt: new Date(Date.now() - 5 * 60000).toISOString(),
-    orderId: 12345
-  },
-  {
-    id: '2',
-    type: 'order_edited',
-    title: 'Изменение в заказе #12340',
-    message: 'Обновлено время выезда',
-    read: false,
-    createdAt: new Date(Date.now() - 30 * 60000).toISOString(),
-    orderId: 12340
-  },
-  {
-    id: '3',
-    type: 'info',
-    title: 'Системное уведомление',
-    message: 'Обновление системы завершено успешно',
-    read: true,
-    createdAt: new Date(Date.now() - 2 * 3600000).toISOString(),
-  }
-]
-
 // Навигационные элементы с иконками
 const navigationItems = [
   { name: 'Заказы', href: '/orders', icon: '/images/images/navigate/orders.svg' },
@@ -363,7 +333,7 @@ export function SidebarNavigation() {
   
   // Состояние для уведомлений
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications)
+  const [notifications, setNotifications] = useState<Notification[]>([])
   const notificationsButtonRef = useRef<HTMLDivElement>(null)
   const notificationsPanelRef = useRef<HTMLDivElement>(null)
   const mobileNotificationsPanelRef = useRef<HTMLDivElement>(null)
