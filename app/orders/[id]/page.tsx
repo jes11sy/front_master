@@ -735,8 +735,7 @@ function OrderDetailPageContent() {
                     : isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                <span className="hidden sm:inline">Звонки / Чат</span>
-                <span className="sm:hidden">Связь</span>
+                Звонки / Чат
                 {activeTab === 'communications' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0d5c4b]" />}
               </button>
             )}
