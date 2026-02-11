@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 
-const API_URL = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-  ? 'http://localhost:3000/api/v1'
-  : 'https://api.lead-schem.ru/api/v1'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.lead-schem.ru/api/v1'
 
 export interface Notification {
   id: string
@@ -32,6 +30,7 @@ export function useNotifications() {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'X-Use-Cookies': 'true',
         },
       })
 
@@ -61,6 +60,7 @@ export function useNotifications() {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'X-Use-Cookies': 'true',
         },
         body: JSON.stringify({ notificationId }),
       })
@@ -85,7 +85,9 @@ export function useNotifications() {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'X-Use-Cookies': 'true',
         },
+        body: '{}',
       })
 
       if (response.ok) {
@@ -103,6 +105,9 @@ export function useNotifications() {
       const response = await fetch(`${API_URL}/notifications/${notificationId}`, {
         method: 'DELETE',
         credentials: 'include',
+        headers: {
+          'X-Use-Cookies': 'true',
+        },
       })
 
       if (response.ok) {
