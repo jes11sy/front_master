@@ -74,27 +74,55 @@ self.addEventListener('notificationclick', (event) => {
     targetUrl = `/orders/${data.orderId}`;
   }
 
+  console.log('[SW Master] Target URL:', targetUrl);
+
+  // Формируем полный URL для корректной работы в PWA
+  const fullUrl = new URL(targetUrl, self.location.origin).href;
+  console.log('[SW Master] Full URL:', fullUrl);
+
   event.waitUntil(
     self.clients
       .matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
-        // Ищем уже открытое окно
+        console.log('[SW Master] Found clients:', clientList.length);
+        
+        // Ищем уже открытое окно PWA
         for (const client of clientList) {
           if (client.url.includes(self.location.origin) && 'focus' in client) {
+            console.log('[SW Master] Found existing client, navigating to:', fullUrl);
+            
+            // Сначала фокусируемся на окне
             client.focus();
+            
+            // Отправляем сообщение для навигации через Next.js router
             client.postMessage({
               type: 'NOTIFICATION_CLICK',
+              url: targetUrl,
               data: data,
             });
-            if (targetUrl !== '/orders') {
-              client.navigate(targetUrl);
+            
+            // Также пробуем navigate (на случай если postMessage не сработает)
+            if ('navigate' in client) {
+              return client.navigate(fullUrl).catch((err) => {
+                console.warn('[SW Master] navigate() failed:', err);
+              });
             }
-            return;
+            
+            return Promise.resolve();
           }
         }
-        // Открываем новое окно
+        
+        // Если нет открытых окон - открываем новое
+        console.log('[SW Master] No existing windows, opening new:', fullUrl);
         if (self.clients.openWindow) {
-          return self.clients.openWindow(targetUrl);
+          return self.clients.openWindow(fullUrl);
+        }
+      })
+      .catch((error) => {
+        console.error('[SW Master] Error handling notification click:', error);
+        // В случае ошибки все равно пробуем открыть новое окно
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(fullUrl);
         }
       })
   );

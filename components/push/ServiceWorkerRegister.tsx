@@ -1,12 +1,15 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 /**
  * Компонент для регистрации Service Worker
  * Регистрирует SW при монтировании
  */
 export function ServiceWorkerRegister() {
+  const router = useRouter();
+
   useEffect(() => {
     // Проверяем поддержку
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
@@ -20,6 +23,19 @@ export function ServiceWorkerRegister() {
     //   console.log('[SW Master] Skipping registration on localhost');
     //   return;
     // }
+
+    // Обработчик сообщений от Service Worker
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'NOTIFICATION_CLICK') {
+        const url = event.data.url;
+        if (url) {
+          console.log('[SW Master Client] Navigating to:', url);
+          router.push(url);
+        }
+      }
+    };
+
+    navigator.serviceWorker.addEventListener('message', handleMessage);
 
     // Регистрируем SW
     navigator.serviceWorker
@@ -38,7 +54,11 @@ export function ServiceWorkerRegister() {
       .catch((error) => {
         console.error('[SW Master] Registration failed:', error);
       });
-  }, []);
+
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', handleMessage);
+    };
+  }, [router]);
 
   return null;
 }
