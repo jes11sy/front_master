@@ -1007,6 +1007,7 @@ class ApiClient {
   async sendTestPush() {
     return this.request<{ success: boolean }>('/push/master/test', {
       method: 'POST',
+      body: JSON.stringify({}),
     })
   }
 }
