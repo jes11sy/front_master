@@ -6,8 +6,8 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useDesignStore } from '@/store/design.store'
 import { useAuthStore } from '@/store/auth.store'
-import { Sun, Moon, User, Menu, X, Bell, Check, FileText, Info, GripHorizontal, BellRing } from 'lucide-react'
-import { usePushNotifications } from '@/hooks/usePushNotifications'
+import { Sun, Moon, User, Menu, X, Bell, Check, FileText, Info, GripHorizontal } from 'lucide-react'
+import { useNotifications } from '@/hooks/useNotifications'
 
 // Ключ для localStorage
 const NOTIFICATIONS_POSITION_KEY = 'master-notifications-panel-position'
@@ -60,67 +60,8 @@ const getNotificationIcon = (type: string) => {
   }
 }
 
-// Компонент переключателя Push-уведомлений
-function PushNotificationToggle() {
-  const {
-    isSupported,
-    isSubscribed,
-    permission,
-    isLoading,
-    error,
-    isIOSPWARequired,
-    subscribe,
-    unsubscribe,
-    isSubscribing,
-    isUnsubscribing,
-  } = usePushNotifications()
-
-  // Не показываем если не поддерживается
-  if (!isSupported && !isLoading && !isIOSPWARequired) {
-    return null
-  }
-
-  const isProcessing = isLoading || isSubscribing || isUnsubscribing
-  const isDenied = permission === 'denied'
-
-  return (
-    <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1a1f2e] flex-shrink-0">
-      {/* iOS инструкция */}
-      {isIOSPWARequired ? (
-        <div className="text-xs text-gray-500 dark:text-gray-400">
-          <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">Для push-уведомлений:</p>
-          <p>Добавьте приложение на домашний экран</p>
-        </div>
-      ) : isDenied ? (
-        <div className="text-xs text-gray-500 dark:text-gray-400">
-          <p className="font-medium text-amber-600 dark:text-amber-400">Push заблокированы</p>
-          <p>Разрешите в настройках браузера</p>
-        </div>
-      ) : (
-        <button
-          onClick={isSubscribed ? unsubscribe : subscribe}
-          disabled={isProcessing}
-          className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-            isSubscribed
-              ? 'bg-[#0d5c4b]/10 text-[#0d5c4b] dark:text-[#10b981] hover:bg-[#0d5c4b]/20'
-              : 'bg-[#0d5c4b] text-white hover:bg-[#0a4a3c]'
-          } disabled:opacity-50 disabled:cursor-not-allowed`}
-        >
-          <BellRing className={`h-4 w-4 ${isSubscribed ? 'animate-pulse' : ''}`} />
-          {isProcessing
-            ? 'Загрузка...'
-            : isSubscribed
-              ? 'Push включены'
-              : 'Включить push'
-          }
-        </button>
-      )}
-      {error && !isDenied && !isIOSPWARequired && (
-        <p className="text-xs text-red-500 mt-1 text-center">{error}</p>
-      )}
-    </div>
-  )
-}
+// Компонент переключателя Push-уведомлений убран
+// Управление push-уведомлениями теперь только в профиле
 
 // Вынесено за пределы компонента, чтобы React не пересоздавал при каждом рендере
 interface MenuContentProps {
@@ -313,7 +254,12 @@ export function SidebarNavigation() {
   
   // Состояние для уведомлений
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
-  const [notifications, setNotifications] = useState<Notification[]>([])
+  const { 
+    notifications, 
+    unreadCount, 
+    markAsRead: markNotificationAsRead,
+    markAllAsRead: markAllNotificationsAsRead,
+  } = useNotifications()
   const notificationsButtonRef = useRef<HTMLDivElement>(null)
   const notificationsPanelRef = useRef<HTMLDivElement>(null)
   const mobileNotificationsPanelRef = useRef<HTMLDivElement>(null)
@@ -322,9 +268,6 @@ export function SidebarNavigation() {
   const [panelPosition, setPanelPosition] = useState(DEFAULT_POSITION)
   const [isDragging, setIsDragging] = useState(false)
   const dragOffset = useRef({ x: 0, y: 0 })
-  
-  // Подсчёт непрочитанных
-  const unreadCount = notifications.filter(n => !n.read).length
 
   // Загружаем позицию из localStorage
   useEffect(() => {
@@ -417,23 +360,23 @@ export function SidebarNavigation() {
     setIsNotificationsOpen(false)
   }, [])
 
-  // Прочитать все (пока без функционала)
+  // Прочитать все
   const markAllAsRead = useCallback(() => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
-  }, [])
+    markAllNotificationsAsRead()
+  }, [markAllNotificationsAsRead])
 
-  // Клик по уведомлению (пока без функционала, только закрытие)
-  const handleNotificationClick = useCallback((notification: Notification) => {
+  // Клик по уведомлению
+  const handleNotificationClick = useCallback(async (notification: Notification) => {
     // Помечаем как прочитанное
-    setNotifications(prev => prev.map(n => 
-      n.id === notification.id ? { ...n, read: true } : n
-    ))
+    if (!notification.read) {
+      await markNotificationAsRead(notification.id)
+    }
     // Если есть orderId - переходим к заказу
     if (notification.orderId) {
-      router.push(`/orders?id=${notification.orderId}`)
+      router.push(`/orders/${notification.orderId}`)
       closeNotifications()
     }
-  }, [router, closeNotifications])
+  }, [router, closeNotifications, markNotificationAsRead])
 
   // Стабильная ссылка на колбэк закрытия мобильного меню
   const closeMobileMenu = useCallback(() => setIsMobileMenuOpen(false), [])
@@ -561,8 +504,6 @@ export function SidebarNavigation() {
                     </div>
                   )}
                 </div>
-                {/* Push Notifications Toggle - Mobile */}
-                <PushNotificationToggle />
               </div>
             )}
           </div>
@@ -709,9 +650,6 @@ export function SidebarNavigation() {
               </div>
             )}
           </div>
-          
-          {/* Push Notifications Toggle */}
-          <PushNotificationToggle />
         </div>
       )}
     </>

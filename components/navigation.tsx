@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useDesignStore } from '@/store/design.store'
 import { useAuthStore } from '@/store/auth.store'
+import { useNotifications } from '@/hooks/useNotifications'
 import { Sun, Moon, User, Menu, X, Bell } from 'lucide-react'
 import { NotificationsModal } from './push/NotificationsModal'
 
@@ -24,6 +25,7 @@ export function Navigation() {
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [notificationsModalOpen, setNotificationsModalOpen] = useState(false)
+  const { unreadCount } = useNotifications()
 
   // Закрываем меню при смене маршрута
   useEffect(() => {
@@ -71,12 +73,17 @@ export function Navigation() {
           {/* Notifications */}
           <button
             onClick={() => setNotificationsModalOpen(true)}
-            className={`p-2 transition-colors ${
+            className={`p-2 transition-colors relative ${
               theme === 'dark' ? 'text-gray-300 hover:text-[#0d5c4b]' : 'text-gray-600 hover:text-[#0d5c4b]'
             }`}
             aria-label="Уведомления"
           >
             <Bell className="h-6 w-6" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
           </button>
           {/* Mobile Menu Button */}
           <button
@@ -295,9 +302,16 @@ export function Navigation() {
                 />
               </svg>
             </span>
-            <Bell className={`h-[18px] w-[18px] transition-colors duration-200 ${
-              theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-            }`} />
+            <div className="relative">
+              <Bell className={`h-[18px] w-[18px] transition-colors duration-200 ${
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+              }`} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </div>
             <span className={`transition-colors duration-200 ${
               theme === 'dark' ? 'text-gray-200' : 'text-gray-800'
             } group-hover:text-[#0d5c4b]`}>
