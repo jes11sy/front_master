@@ -122,6 +122,27 @@ export default function RootLayout({
             });
           `}
         </Script>
+        <Script id="sw-message-handler" strategy="afterInteractive">
+          {`
+            // Глобальный обработчик сообщений от Service Worker
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.addEventListener('message', function(event) {
+                console.log('[SW Master Global] Message received:', event.data);
+                
+                if (event.data?.type === 'NOTIFICATION_CLICK') {
+                  const url = event.data.url;
+                  console.log('[SW Master Global] Notification click, navigating to:', url);
+                  
+                  if (url) {
+                    // Используем window.location для надежной навигации в PWA
+                    window.location.href = url;
+                  }
+                }
+              });
+              console.log('[SW Master Global] Message handler installed');
+            }
+          `}
+        </Script>
       </head>
       <body className="font-myriad transition-colors duration-0">
         <ServiceWorkerRegister />
