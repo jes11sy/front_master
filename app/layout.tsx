@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import '../styles/globals.css'
 import { ToastProvider } from '@/components/ui/toast'
-import MasterLayout from '@/components/master-layout'
 import { LayoutProvider } from '@/components/layout-context'
 import ClientLayout from '@/components/client-layout'
 import Script from 'next/script'
@@ -129,9 +128,7 @@ export default function RootLayout({
         <LayoutProvider>
           <ToastProvider>
             <ClientLayout>
-              <MasterLayout>
-                {children}
-              </MasterLayout>
+              {children}
             </ClientLayout>
             {/* PushPermissionBanner убран - системный диалог вызывается из настроек */}
           </ToastProvider>

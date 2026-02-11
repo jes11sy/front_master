@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import AuthGuard from '@/components/auth-guard'
 import { TokenRefresher } from '@/components/TokenRefresher'
 import { useDesignStore } from '@/store/design.store'
+import MasterLayout from '@/components/master-layout'
 
 // Error Boundary для перехвата критических ошибок
 interface ErrorBoundaryState {
@@ -96,8 +97,12 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
         // Публичные страницы без AuthGuard
         <>{children}</>
       ) : (
-        // Защищённые страницы с AuthGuard (MasterLayout уже внутри children)
-        <AuthGuard>{children}</AuthGuard>
+        // Защищённые страницы с AuthGuard
+        <AuthGuard>
+          <MasterLayout>
+            {children}
+          </MasterLayout>
+        </AuthGuard>
       )}
     </ErrorBoundary>
   )
