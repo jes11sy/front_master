@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth.store'
 import { useDesignStore } from '@/store/design.store'
 import apiClient from '@/lib/api'
-import { User, Edit2, LogOut, Eye, EyeOff, Save, X, Loader2, FileText, Camera } from 'lucide-react'
+import { User, Edit2, LogOut, Eye, EyeOff, Save, X, Loader2, FileText, Camera, Bell, BellOff } from 'lucide-react'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
 
 // Интерфейс профиля мастера
 interface MasterProfile {
@@ -48,6 +49,21 @@ export default function ProfilePage() {
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [passwordError, setPasswordError] = useState<string | null>(null)
+
+  // Push Notifications
+  const {
+    isSupported: pushSupported,
+    isSubscribed: pushSubscribed,
+    permission: pushPermission,
+    isLoading: pushLoading,
+    error: pushError,
+    isSubscribing,
+    isUnsubscribing,
+    subscribe: subscribePush,
+    unsubscribe: unsubscribePush,
+    isIOSPWARequired,
+    isIOS,
+  } = usePushNotifications()
 
   // Загружаем профиль мастера из API
   useEffect(() => {
@@ -415,6 +431,84 @@ export default function ProfilePage() {
                   Сохранить пароль
                 </button>
               </div>
+            )}
+          </div>
+
+          {/* Push-уведомления */}
+          <div className={`py-2 border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                {pushLoading ? (
+                  <>
+                    <Bell className={`h-4 w-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+                    <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Push-уведомления</span>
+                  </>
+                ) : !pushSupported ? (
+                  <>
+                    <BellOff className={`h-4 w-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+                    <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Push-уведомления</span>
+                  </>
+                ) : (
+                  <>
+                    {pushSubscribed ? (
+                      <Bell className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <BellOff className={`h-4 w-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+                    )}
+                    <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Push-уведомления</span>
+                  </>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                {pushLoading ? (
+                  <span className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Проверка...</span>
+                ) : !pushSupported ? (
+                  <span className={`text-sm ${isDark ? 'text-yellow-400' : 'text-yellow-600'}`}>
+                    {isIOSPWARequired ? 'Нужен PWA' : 'Не поддерживается'}
+                  </span>
+                ) : (
+                  <>
+                    <span className={`text-sm ${pushSubscribed ? 'text-green-600' : isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                      {pushSubscribed ? 'Включены' : 'Отключены'}
+                    </span>
+                    <button
+                      onClick={pushSubscribed ? unsubscribePush : subscribePush}
+                      disabled={isSubscribing || isUnsubscribing}
+                      className={`text-sm transition-colors disabled:opacity-50 ${
+                        isDark ? 'text-[#0d5c4b] hover:text-[#0a4a3c]' : 'text-[#0d5c4b] hover:text-[#0a4a3c]'
+                      }`}
+                    >
+                      {isSubscribing || isUnsubscribing ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : pushSubscribed ? (
+                        'Отключить'
+                      ) : (
+                        'Включить'
+                      )}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Ошибки или подсказки */}
+            {!pushLoading && (
+              <>
+                {pushError && (
+                  <p className={`text-xs mt-2 ${isDark ? 'text-red-400' : 'text-red-500'}`}>{pushError}</p>
+                )}
+                {pushPermission === 'denied' && (
+                  <p className={`text-xs mt-2 ${isDark ? 'text-yellow-400' : 'text-yellow-600'}`}>
+                    Разрешите в настройках браузера
+                  </p>
+                )}
+                {isIOSPWARequired && (
+                  <p className={`text-xs mt-2 ${isDark ? 'text-yellow-400' : 'text-yellow-600'}`}>
+                    Добавьте приложение на домашний экран
+                  </p>
+                )}
+              </>
             )}
           </div>
 
