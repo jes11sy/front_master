@@ -91,15 +91,13 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
 
   return (
     <ErrorBoundary>
+      {!isPublicPage && <TokenRefresher />}
       {isPublicPage ? (
-        // Публичные страницы без AuthGuard и TokenRefresher
+        // Публичные страницы без AuthGuard
         <>{children}</>
       ) : (
-        // Защищённые страницы с AuthGuard и TokenRefresher
-        <>
-          <TokenRefresher />
-          <AuthGuard>{children}</AuthGuard>
-        </>
+        // Защищённые страницы с AuthGuard (MasterLayout уже внутри children)
+        <AuthGuard>{children}</AuthGuard>
       )}
     </ErrorBoundary>
   )

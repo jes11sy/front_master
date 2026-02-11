@@ -128,11 +128,11 @@ export default function RootLayout({
         <ServiceWorkerRegister />
         <LayoutProvider>
           <ToastProvider>
-            <MasterLayout>
-              <ClientLayout>
+            <ClientLayout>
+              <MasterLayout>
                 {children}
-              </ClientLayout>
-            </MasterLayout>
+              </MasterLayout>
+            </ClientLayout>
             {/* PushPermissionBanner убран - системный диалог вызывается из настроек */}
           </ToastProvider>
         </LayoutProvider>
