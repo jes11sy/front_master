@@ -25,9 +25,11 @@ COPY . .
 
 # Build arguments для переменных окружения
 ARG NEXT_PUBLIC_API_URL=https://api.test-shem.ru/api/v1
+ARG NEXT_PUBLIC_VAPID_PUBLIC_KEY
 
 # Устанавливаем как ENV для использования в сборке
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_VAPID_PUBLIC_KEY=$NEXT_PUBLIC_VAPID_PUBLIC_KEY
 ENV NODE_ENV=production
 
 # Собираем приложение
