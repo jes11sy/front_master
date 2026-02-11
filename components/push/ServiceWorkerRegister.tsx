@@ -26,11 +26,20 @@ export function ServiceWorkerRegister() {
 
     // Обработчик сообщений от Service Worker
     const handleMessage = (event: MessageEvent) => {
+      console.log('[SW Master Client] Message received:', event.data);
+      
       if (event.data?.type === 'NOTIFICATION_CLICK') {
         const url = event.data.url;
+        console.log('[SW Master Client] Notification click, navigating to:', url);
+        
         if (url) {
-          console.log('[SW Master Client] Navigating to:', url);
+          // Используем router.push для навигации в PWA
           router.push(url);
+          
+          // Также пытаемся focus на окне (для PWA)
+          if (window.focus) {
+            window.focus();
+          }
         }
       }
     };
