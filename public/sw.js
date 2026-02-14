@@ -3,6 +3,65 @@
 
 const CACHE_NAME = 'master-cache-v1';
 
+// Функция проверки настроек уведомлений
+async function checkNotificationSettings(data) {
+  try {
+    // Получаем настройки из IndexedDB
+    const disabledCitiesStr = await getFromIndexedDB('master-push-disabled-cities');
+    const disabledTypesStr = await getFromIndexedDB('master-push-disabled-types');
+    
+    const disabledCities = disabledCitiesStr ? JSON.parse(disabledCitiesStr) : [];
+    const disabledTypes = disabledTypesStr ? JSON.parse(disabledTypesStr) : [];
+    
+    // Проверяем город
+    if (data.data?.city && disabledCities.includes(data.data.city)) {
+      console.log('[SW Master] Notification blocked by city filter:', data.data.city);
+      return false;
+    }
+    
+    // Проверяем тип уведомления
+    if (data.type && disabledTypes.includes(data.type)) {
+      console.log('[SW Master] Notification blocked by type filter:', data.type);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.warn('[SW Master] Error checking notification settings:', error);
+    return true; // По умолчанию показываем уведомление
+  }
+}
+
+// Функция для работы с IndexedDB в Service Worker
+async function getFromIndexedDB(key) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('master-settings', 1);
+    
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains('settings')) {
+        resolve(null);
+        return;
+      }
+      
+      const transaction = db.transaction(['settings'], 'readonly');
+      const store = transaction.objectStore('settings');
+      const getRequest = store.get(key);
+      
+      getRequest.onerror = () => reject(getRequest.error);
+      getRequest.onsuccess = () => resolve(getRequest.result?.value || null);
+    };
+    
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains('settings')) {
+        db.createObjectStore('settings', { keyPath: 'key' });
+      }
+    };
+  });
+}
+
 // Обработка push-уведомлений
 self.addEventListener('push', (event) => {
   console.log('[SW Master] Push event received');
@@ -29,30 +88,37 @@ self.addEventListener('push', (event) => {
     };
   }
 
-  // Опции уведомления
-  const options = {
-    body: data.body || data.message || '',
-    icon: data.icon || '/images/images/pwa_light.png',
-    badge: data.badge || '/images/images/favicon.png',
-    tag: data.tag || data.type || 'default',
-    renotify: true,
-    requireInteraction: data.type === 'order_assigned', // Назначение заказа требует внимания
-    vibrate: [200, 100, 200],
-    data: {
-      url: data.url || '/orders',
-      type: data.type,
-      orderId: data.orderId,
-      ...(data.data || {}),
-    },
-  };
-
-  const title = data.title || 'Новые Схемы';
-  console.log('[SW Master] Showing notification:', title);
-  
   event.waitUntil(
-    self.registration.showNotification(title, options)
-      .then(() => console.log('[SW Master] Notification shown successfully'))
-      .catch(err => console.error('[SW Master] Failed to show notification:', err))
+    checkNotificationSettings(data).then(shouldShow => {
+      if (!shouldShow) {
+        console.log('[SW Master] Notification filtered out by user settings');
+        return;
+      }
+
+      // Опции уведомления
+      const options = {
+        body: data.body || data.message || '',
+        icon: data.icon || '/images/images/pwa_light.png',
+        badge: data.badge || '/images/images/favicon.png',
+        tag: data.tag || data.type || 'default',
+        renotify: true,
+        requireInteraction: data.type === 'order_assigned', // Назначение заказа требует внимания
+        vibrate: [200, 100, 200],
+        data: {
+          url: data.url || '/orders',
+          type: data.type,
+          orderId: data.orderId,
+          ...(data.data || {}),
+        },
+      };
+
+      const title = data.title || 'Новые Схемы';
+      console.log('[SW Master] Showing notification:', title);
+      
+      return self.registration.showNotification(title, options)
+        .then(() => console.log('[SW Master] Notification shown successfully'))
+        .catch(err => console.error('[SW Master] Failed to show notification:', err));
+    })
   );
 });
 
