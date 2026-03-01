@@ -5,9 +5,10 @@
 
 export interface Order {
   id: number
-  statusOrder: string
+  statusId: number
+  status?: { id: number; name: string; code?: string }
   dateMeeting: string
-  closingData?: string
+  closingAt?: string
   [key: string]: any
 }
 
@@ -33,8 +34,8 @@ const STATUS_ORDER: Record<string, number> = {
 export function sortOrders<T extends Order>(orders: T[]): T[] {
   return [...orders].sort((a, b) => {
     // Сначала сортируем по статусу
-    const statusA = STATUS_ORDER[a.statusOrder] || 999
-    const statusB = STATUS_ORDER[b.statusOrder] || 999
+    const statusA = STATUS_ORDER[a.status?.name || ''] || 999
+    const statusB = STATUS_ORDER[b.status?.name || ''] || 999
     
     if (statusA !== statusB) {
       return statusA - statusB
@@ -43,13 +44,13 @@ export function sortOrders<T extends Order>(orders: T[]): T[] {
     // Внутри статуса сортируем по дате
     // Для статусов Готово, Отказ, Незаказ - по дате закрытия
     // Для остальных - по дате встречи
-    const useClosingDate = ['Готово', 'Отказ', 'Незаказ'].includes(a.statusOrder)
+    const useClosingDate = ['Готово', 'Отказ', 'Незаказ'].includes(a.status?.name || '')
     
     const dateA = useClosingDate 
-      ? (a.closingData || a.dateMeeting)
+      ? (a.closingAt || a.dateMeeting)
       : a.dateMeeting
     const dateB = useClosingDate 
-      ? (b.closingData || b.dateMeeting)
+      ? (b.closingAt || b.dateMeeting)
       : b.dateMeeting
 
     return new Date(dateA).getTime() - new Date(dateB).getTime()

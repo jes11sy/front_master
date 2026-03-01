@@ -2,7 +2,7 @@ name: Simple Docker Deploy
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, dev ]
 
 jobs:
   deploy:
@@ -34,12 +34,16 @@ jobs:
 
     - name: Tag image
       run: |
-        docker tag mastercrm-frontend:latest ${{ secrets.DOCKER_USERNAME }}/mastercrm-frontend:latest
-        docker tag mastercrm-frontend:latest ${{ secrets.DOCKER_USERNAME }}/mastercrm-frontend:main
-        docker tag mastercrm-frontend:latest ${{ secrets.DOCKER_USERNAME }}/mastercrm-frontend:main-${{ github.sha }}
+        docker tag mastercrm-frontend:latest ${{ secrets.DOCKER_USERNAME }}/mastercrm-frontend:${{ github.ref_name }}
+        docker tag mastercrm-frontend:latest ${{ secrets.DOCKER_USERNAME }}/mastercrm-frontend:${{ github.ref_name }}-${{ github.sha }}
+        if [ "${{ github.ref_name }}" = "main" ]; then
+          docker tag mastercrm-frontend:latest ${{ secrets.DOCKER_USERNAME }}/mastercrm-frontend:latest
+        fi
 
     - name: Push to Docker Hub
       run: |
-        docker push ${{ secrets.DOCKER_USERNAME }}/mastercrm-frontend:latest
-        docker push ${{ secrets.DOCKER_USERNAME }}/mastercrm-frontend:main
-        docker push ${{ secrets.DOCKER_USERNAME }}/mastercrm-frontend:main-${{ github.sha }}
+        docker push ${{ secrets.DOCKER_USERNAME }}/mastercrm-frontend:${{ github.ref_name }}
+        docker push ${{ secrets.DOCKER_USERNAME }}/mastercrm-frontend:${{ github.ref_name }}-${{ github.sha }}
+        if [ "${{ github.ref_name }}" = "main" ]; then
+          docker push ${{ secrets.DOCKER_USERNAME }}/mastercrm-frontend:latest
+        fi

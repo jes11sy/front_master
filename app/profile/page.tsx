@@ -13,14 +13,14 @@ interface MasterProfile {
   id: number
   name: string
   login: string
-  cities: string[]
-  statusWork: string
-  dateCreate: string
+  cityIds: number[]
+  cities?: { id: number; name: string }[]
+  status: string
   note: string | null
   tgId: string | null
   chatId: string | null
-  passportDoc: string | null
-  contractDoc: string | null
+  passport: string | null
+  contract: string | null
   createdAt: string
   updatedAt: string
 }
@@ -378,11 +378,11 @@ export default function ProfilePage() {
                 </h1>
                 <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>{profileData?.login}</p>
                 <span className={`inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded ${
-                  profileData?.statusWork === 'active' 
+                  profileData?.status === 'active' 
                     ? isDark ? 'bg-green-900/40 text-green-400' : 'bg-green-100 text-green-700'
                     : isDark ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-600'
                 }`}>
-                  {profileData?.statusWork === 'active' ? 'Активен' : profileData?.statusWork || 'Мастер'}
+                  {profileData?.status === 'active' ? 'Активен' : profileData?.status === 'inactive' ? 'Уволен' : profileData?.status || 'Мастер'}
                 </span>
               </div>
             </div>
@@ -429,7 +429,7 @@ export default function ProfilePage() {
             <div className={`flex justify-between items-center py-2 border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
               <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Дата регистрации</span>
               <span className={isDark ? 'text-gray-200' : 'text-gray-900'}>
-                {profileData?.createdAt ? formatDate(profileData.createdAt) : profileData?.dateCreate ? formatDate(profileData.dateCreate) : 'Не указана'}
+                {profileData?.createdAt ? formatDate(profileData.createdAt) : 'Не указана'}
               </span>
             </div>
 
@@ -489,14 +489,14 @@ export default function ProfilePage() {
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => handleFileUpload('passportDoc', e)}
+                      onChange={(e) => handleFileUpload('passport', e)}
                       className="hidden"
                     />
                   </label>
                 ) : (
                   <div className={`flex items-center gap-2 py-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                     <FileText className="h-4 w-4" />
-                    <span className="text-sm">{profileData?.passportDoc || 'Не загружен'}</span>
+                    <span className="text-sm">{profileData?.passport || 'Не загружен'}</span>
                   </div>
                 )}
               </div>
@@ -513,14 +513,14 @@ export default function ProfilePage() {
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => handleFileUpload('contractDoc', e)}
+                      onChange={(e) => handleFileUpload('contract', e)}
                       className="hidden"
                     />
                   </label>
                 ) : (
                   <div className={`flex items-center gap-2 py-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                     <FileText className="h-4 w-4" />
-                    <span className="text-sm">{profileData?.contractDoc || 'Не загружен'}</span>
+                    <span className="text-sm">{profileData?.contract || 'Не загружен'}</span>
                   </div>
                 )}
               </div>

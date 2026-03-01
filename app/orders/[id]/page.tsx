@@ -14,19 +14,21 @@ import { useDesignStore } from '@/store/design.store'
 
 interface Order {
   id: number
-  rk: string
-  city: string
+  rkId: number
+  rk?: { id: number; name: string }
+  cityId: number
+  city?: { id: number; name: string }
   typeOrder: string
   clientName: string
   phone: string
   address: string
   dateMeeting: string
-  statusOrder: string
+  statusId: number
+  status?: { id: number; name: string; code: string }
   result: number | null
-  avitoName: string | null
   avitoChatId: string | null
-  typeEquipment: string
-  problem: string
+  equipmentTypeId: number
+  equipmentType?: { id: number; name: string }
   note: string | null
   callId?: string | null
   bsoDoc?: string[] | null
@@ -37,6 +39,8 @@ interface Order {
   prepayment?: number | null
   dateClosmod?: string | null
   comment?: string | null
+  createdAt: string
+  closingAt?: string | null
   operator?: {
     id: number
     name: string
@@ -47,15 +51,18 @@ interface Order {
     name: string
     cities: string
   }
+  avito?: { id: number; name: string }
 }
 
 interface Call {
   id: number
-  rk: string
-  city: string
+  rkId?: number
+  rk?: { id: number; name: string }
+  cityId?: number
+  city?: { id: number; name: string }
   phoneClient: string
   phoneAts: string
-  dateCreate: string
+  createdAt: string
   status: string
   recordingPath?: string | null
   recordingUrl?: string | null
@@ -156,7 +163,7 @@ function OrderDetailPageContent() {
             await fetchCalls(response.data.id.toString())
           }
           
-          if (response.data.statusOrder === 'Готово') {
+          if (response.data.status?.name === 'Готово') {
             setIsCompleted(true)
             setCleanAmount((response.data.clean || 0).toString())
             setMasterChange((response.data.masterChange || 0).toString())
@@ -165,7 +172,7 @@ function OrderDetailPageContent() {
           setPrepayment(response.data.prepayment?.toString() || '')
           setDateClosmod(response.data.dateClosmod ? new Date(response.data.dateClosmod).toISOString().slice(0, 16) : '')
           setComment(response.data.comment || '')
-          setShowModernBlock(response.data.statusOrder === 'Модерн')
+          setShowModernBlock(response.data.status?.name === 'Модерн')
           
           if (response.data.bsoDoc && Array.isArray(response.data.bsoDoc) && response.data.bsoDoc.length > 0) {
             bsoUpload.setExistingPreviews(response.data.bsoDoc)
@@ -209,9 +216,9 @@ function OrderDetailPageContent() {
 
   // Переключаемся на вкладку "Информация" если активна скрытая вкладка
   useEffect(() => {
-    if (order && order.statusOrder === 'Ожидает' && (activeTab === 'documents' || activeTab === 'communications')) {
+    if (order && order.status?.name === 'Ожидает' && (activeTab === 'documents' || activeTab === 'communications')) {
       setActiveTab('info')
-    } else if (order && (order.statusOrder === 'Принял' || order.statusOrder === 'В пути') && activeTab === 'documents') {
+    } else if (order && (order.status?.name === 'Принял' || order.status?.name === 'В пути') && activeTab === 'documents') {
       setActiveTab('info')
     }
   }, [order, activeTab])
@@ -231,7 +238,7 @@ function OrderDetailPageContent() {
     if (!order) return
     try {
       setIsUpdating(true)
-      const response = await apiClient.updateOrder(order.id.toString(), { statusOrder: 'Принял' })
+      const response = await apiClient.updateOrder(order.id.toString(), { statusName: 'Принял' })
       if (response.success && response.data) {
         setOrder(response.data)
       } else {
@@ -368,14 +375,14 @@ function OrderDetailPageContent() {
       setIsUpdating(true)
       await saveFiles()
       
-      const updateData: any = { statusOrder: newStatus }
+      const updateData: any = { statusName: newStatus }
       
       if (newStatus === 'Готово') {
         const total = parseFloat(totalAmount) || 0
         const expense = parseFloat(expenseAmount) || 0
         let clean = total - expense
         
-        if (order.statusOrder === 'Модерн' && order.dateMeeting) {
+        if (order.status?.name === 'Модерн' && order.dateMeeting) {
           const meetingDate = new Date(order.dateMeeting)
           const today = new Date()
           const daysDiff = Math.floor((today.getTime() - meetingDate.getTime()) / (1000 * 60 * 60 * 24))
@@ -407,7 +414,7 @@ function OrderDetailPageContent() {
           const expense = parseFloat(expenseAmount) || 0
           let clean = total - expense
           
-          if (order.statusOrder === 'Модерн' && order.dateMeeting) {
+          if (order.status?.name === 'Модерн' && order.dateMeeting) {
             const meetingDate = new Date(order.dateMeeting)
             const today = new Date()
             const daysDiff = Math.floor((today.getTime() - meetingDate.getTime()) / (1000 * 60 * 60 * 24))
@@ -497,7 +504,7 @@ function OrderDetailPageContent() {
   // Функция для рендеринга кнопок действий
   const renderActionButtons = () => {
     if (!order) return null
-    const status = order.statusOrder
+    const status = order.status?.name || ''
     const hasUnfulfilledRequirements = notifications.length > 0
 
     const buttonBase = "flex-1 font-medium py-3 text-base rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
@@ -684,8 +691,8 @@ function OrderDetailPageContent() {
                   Заказ #{order.id}
                 </h1>
               </div>
-              <span className={`px-2.5 py-1 text-xs font-medium rounded-lg ${getStatusColor(order.statusOrder)}`}>
-                {order.statusOrder}
+              <span className={`px-2.5 py-1 text-xs font-medium rounded-lg ${getStatusColor(order.status?.name || '')}`}>
+                {order.status?.name || '-'}
               </span>
             </div>
             
@@ -711,8 +718,8 @@ function OrderDetailPageContent() {
               {activeTab === 'info' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0d5c4b]" />}
             </button>
             
-            {((order.statusOrder === 'В работе' && showCloseButton) || 
-              !['Ожидает', 'Принял', 'В пути', 'В работе'].includes(order.statusOrder)) && (
+            {((order.status?.name === 'В работе' && showCloseButton) || 
+              !['Ожидает', 'Принял', 'В пути', 'В работе'].includes(order.status?.name || '')) && (
               <button
                 onClick={() => setActiveTab('documents')}
                 className={`flex-1 px-4 py-3 text-sm font-medium transition-colors relative ${
@@ -726,7 +733,7 @@ function OrderDetailPageContent() {
               </button>
             )}
             
-            {order.statusOrder !== 'Ожидает' && (
+            {order.status?.name !== 'Ожидает' && (
               <button
                 onClick={() => setActiveTab('communications')}
                 className={`flex-1 px-4 py-3 text-sm font-medium transition-colors relative ${
@@ -761,15 +768,15 @@ function OrderDetailPageContent() {
                   </div>
                   <div className="p-4">
                     <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>РК</div>
-                    <div className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{order.rk || '-'}</div>
+                    <div className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{order.rk?.name || '-'}</div>
                   </div>
                   <div className="p-4">
                     <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Источник</div>
-                    <div className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{order.avitoName || order.rk || '-'}</div>
+                    <div className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{order.avito?.name || order.rk?.name || '-'}</div>
                   </div>
                   <div className="p-4">
                     <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Направление</div>
-                    <div className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{order.typeEquipment || '-'}</div>
+                    <div className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{order.equipmentType?.name || '-'}</div>
                   </div>
                 </div>
               </div>
@@ -782,7 +789,7 @@ function OrderDetailPageContent() {
                 <div className={`grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x ${isDark ? 'divide-gray-700' : 'divide-gray-200'}`}>
                   <div className="p-4">
                     <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Город</div>
-                    <div className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{order.city || '-'}</div>
+                    <div className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{order.city?.name || '-'}</div>
                   </div>
                   <div className="p-4 col-span-2 sm:col-span-1">
                     <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Имя</div>
@@ -816,8 +823,8 @@ function OrderDetailPageContent() {
                     </div>
                   </div>
                   <div>
-                    <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Проблема</div>
-                    <div className={`text-sm ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{order.problem || '-'}</div>
+                    <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Комментарий</div>
+                    <div className={`text-sm ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{order.comment || '-'}</div>
                   </div>
                   {order.note && (
                     <div>
@@ -831,10 +838,10 @@ function OrderDetailPageContent() {
           )}
 
           {/* Вкладка: Итог и документы */}
-          {activeTab === 'documents' && ((order.statusOrder === 'В работе' && showCloseButton) || !['Ожидает', 'Принял', 'В пути', 'В работе'].includes(order.statusOrder)) && (
+          {activeTab === 'documents' && ((order.status?.name === 'В работе' && showCloseButton) || !['Ожидает', 'Принял', 'В пути', 'В работе'].includes(order.status?.name || '')) && (
             <div className="space-y-4">
               {/* Блок модерна */}
-              {order.statusOrder === 'Модерн' && showModernBlock && (
+              {order.status?.name === 'Модерн' && showModernBlock && (
                 <div className={`rounded-xl p-4 ${isDark ? 'bg-[#2a3441] border border-gray-700' : 'bg-gray-50 border border-gray-200'}`}>
                   <h3 className={`font-medium mb-4 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Информация по модерну</h3>
                   
@@ -894,7 +901,7 @@ function OrderDetailPageContent() {
               )}
 
               {/* Поля ввода сумм */}
-              {(order.statusOrder !== 'Модерн' || !showModernBlock) && (
+              {(order.status?.name !== 'Модерн' || !showModernBlock) && (
                 <div className={`rounded-xl shadow-sm p-4 ${isDark ? 'bg-[#2a3441]' : 'bg-gray-50'}`}>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -905,9 +912,9 @@ function OrderDetailPageContent() {
                           placeholder="0"
                           value={totalAmount}
                           onChange={(e) => setTotalAmount(e.target.value)}
-                          disabled={isCompleted || order.statusOrder === 'Готово'}
+                          disabled={isCompleted || order.status?.name === 'Готово'}
                           className={`pr-8 ${isDark ? 'bg-[#3a4451] border-gray-600 text-gray-100' : 'bg-white border-gray-300'} ${
-                            (isCompleted || order.statusOrder === 'Готово') ? 'opacity-50 cursor-not-allowed' : ''
+                            (isCompleted || order.status?.name === 'Готово') ? 'opacity-50 cursor-not-allowed' : ''
                           }`}
                         />
                         <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>₽</span>
@@ -922,9 +929,9 @@ function OrderDetailPageContent() {
                           placeholder="0"
                           value={expenseAmount}
                           onChange={(e) => setExpenseAmount(e.target.value)}
-                          disabled={isCompleted || order.statusOrder === 'Готово'}
+                          disabled={isCompleted || order.status?.name === 'Готово'}
                           className={`pr-8 ${isDark ? 'bg-[#3a4451] border-gray-600 text-gray-100' : 'bg-white border-gray-300'} ${
-                            (isCompleted || order.statusOrder === 'Готово') ? 'opacity-50 cursor-not-allowed' : ''
+                            (isCompleted || order.status?.name === 'Готово') ? 'opacity-50 cursor-not-allowed' : ''
                           }`}
                         />
                         <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>₽</span>
@@ -933,7 +940,7 @@ function OrderDetailPageContent() {
                   </div>
                   
                   {/* Чистыми и Сдача мастера */}
-                  {(isCompleted || order.statusOrder === 'Готово') && (
+                  {(isCompleted || order.status?.name === 'Готово') && (
                     <div className={`mt-4 pt-4 border-t grid grid-cols-2 gap-4 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
                       <div>
                         <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Чистыми</div>
@@ -949,7 +956,7 @@ function OrderDetailPageContent() {
               )}
 
               {/* Уведомления */}
-              {(order.statusOrder !== 'Модерн' || !showModernBlock) && notifications.length > 0 && (
+              {(order.status?.name !== 'Модерн' || !showModernBlock) && notifications.length > 0 && (
                 <div className="space-y-2">
                   {notifications.map((notification, index) => (
                     <div key={index} className={`p-3 rounded-lg ${isDark ? 'bg-yellow-900/40 border border-yellow-700' : 'bg-yellow-50 border border-yellow-200'}`}>
@@ -960,7 +967,7 @@ function OrderDetailPageContent() {
               )}
 
               {/* Документы */}
-              {(order.statusOrder !== 'Модерн' || !showModernBlock) && (
+              {(order.status?.name !== 'Модерн' || !showModernBlock) && (
                 <div className={`rounded-xl shadow-sm p-4 space-y-4 ${isDark ? 'bg-[#2a3441]' : 'bg-gray-50'}`}>
                   <h3 className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Документы</h3>
                   <MultipleFileUpload
@@ -970,7 +977,7 @@ function OrderDetailPageContent() {
                     setDragOver={bsoUpload.setDragOver}
                     handleFiles={bsoUpload.handleFiles}
                     removeFile={bsoUpload.removeFile}
-                    disabled={['Готово', 'Незаказ', 'Отказ'].includes(order.statusOrder)}
+                    disabled={['Готово', 'Незаказ', 'Отказ'].includes(order.status?.name || '')}
                     canAddMore={bsoUpload.canAddMore}
                   />
                   <MultipleFileUpload
@@ -980,7 +987,7 @@ function OrderDetailPageContent() {
                     setDragOver={expenditureUpload.setDragOver}
                     handleFiles={expenditureUpload.handleFiles}
                     removeFile={expenditureUpload.removeFile}
-                    disabled={['Готово', 'Незаказ', 'Отказ'].includes(order.statusOrder)}
+                    disabled={['Готово', 'Незаказ', 'Отказ'].includes(order.status?.name || '')}
                     canAddMore={expenditureUpload.canAddMore}
                   />
                 </div>
@@ -989,7 +996,7 @@ function OrderDetailPageContent() {
           )}
 
           {/* Вкладка: Звонки и Чат */}
-          {activeTab === 'communications' && order.statusOrder !== 'Ожидает' && (
+          {activeTab === 'communications' && order.status?.name !== 'Ожидает' && (
             <div className="space-y-4">
               {/* Записи звонков */}
               <div className={`rounded-xl shadow-sm ${isDark ? 'bg-[#2a3441]' : 'bg-gray-50'}`}>
@@ -1006,7 +1013,7 @@ function OrderDetailPageContent() {
                               {call.status === 'incoming' ? 'Входящий' : 'Исходящий'}
                             </span>
                             <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                              {new Date(call.dateCreate).toLocaleString('ru-RU')}
+                              {new Date(call.createdAt).toLocaleString('ru-RU')}
                             </span>
                           </div>
                           {recordingUrls[call.id] && (
@@ -1029,7 +1036,7 @@ function OrderDetailPageContent() {
                   <h3 className={`font-medium text-sm ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Чат Авито</h3>
                 </div>
                 <div className="p-4">
-                  {order.avitoChatId && order.avitoName ? (
+                  {order.avitoChatId && order.avito?.name ? (
                     <button
                       onClick={() => router.push(`/orders/${order.id}/avito`)}
                       className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
@@ -1049,7 +1056,7 @@ function OrderDetailPageContent() {
 
         {/* Кнопки действий - десктоп */}
         <div className="hidden md:block px-4 mt-4">
-          {notifications.length > 0 && order?.statusOrder === 'В работе' && (
+          {notifications.length > 0 && order?.status?.name === 'В работе' && (
             <div className={`mb-3 p-3 rounded-lg ${isDark ? 'bg-red-900/40 border border-red-700' : 'bg-red-50 border border-red-200'}`}>
               <p className={`text-sm font-medium text-center ${isDark ? 'text-red-400' : 'text-red-600'}`}>
                 Завершить заказ можно только после прикрепления всех документов
@@ -1071,7 +1078,7 @@ function OrderDetailPageContent() {
       
       {/* Кнопки действий - мобильные */}
       <div className={`md:hidden fixed bottom-0 left-0 right-0 p-4 z-50 ${isDark ? 'bg-[#1e2530]' : 'bg-white'} border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-        {notifications.length > 0 && order?.statusOrder === 'В работе' && (
+        {notifications.length > 0 && order?.status?.name === 'В работе' && (
           <div className={`mb-3 p-2 rounded-lg ${isDark ? 'bg-red-900/40' : 'bg-red-50'}`}>
             <p className={`text-xs font-medium text-center ${isDark ? 'text-red-400' : 'text-red-600'}`}>
               Прикрепите все документы

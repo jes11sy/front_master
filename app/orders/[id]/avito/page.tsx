@@ -43,9 +43,10 @@ interface Message {
 interface Order {
   id: number
   address: string
-  typeEquipment: string
+  equipmentTypeId: number
+  equipmentType?: { id: number; name: string }
   avitoChatId?: string
-  avitoName?: string
+  avito?: { id: number; name: string }
 }
 
 export default function AvitoChat() {
@@ -262,7 +263,7 @@ export default function AvitoChat() {
               </div>
               <div className="flex">
                 <span className="text-gray-600 font-medium min-w-[120px]">Направление:</span>
-                <span className="text-gray-800">{order.typeEquipment || 'Не указано'}</span>
+                <span className="text-gray-800">{order.equipmentType?.name || 'Не указано'}</span>
               </div>
               <div className="flex">
                 <span className="text-gray-600 font-medium min-w-[120px]">Аккаунт авито:</span>

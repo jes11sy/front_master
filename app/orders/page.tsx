@@ -12,21 +12,24 @@ import { sortOrders } from '@/lib/order-sort'
 
 interface Order {
   id: number
-  rk: string
-  city: string
+  rkId: number
+  rk?: { id: number; name: string }
+  cityId: number
+  city?: { id: number; name: string }
   typeOrder: string
   clientName: string
   phone: string
   address: string
   dateMeeting: string
-  statusOrder: string
+  statusId: number
+  status?: { id: number; name: string; code: string }
   result: number | null
-  avitoName: string | null
-  typeEquipment: string
-  problem: string
+  equipmentTypeId: number
+  equipmentType?: { id: number; name: string }
+  comment?: string
   note: string | null
-  createDate: string
-  closingData?: string
+  createdAt: string
+  closingAt?: string
   operator?: {
     id: number
     name: string
@@ -37,6 +40,7 @@ interface Order {
     name: string
     cities: string
   }
+  avito?: { id: number; name: string }
 }
 
 // Ключ для сохранения позиции прокрутки
@@ -674,18 +678,18 @@ function OrdersContent() {
                           {order.typeOrder}
                         </span>
                       </td>
-                      <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.rk}</td>
-                      <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.city}</td>
-                      <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.avitoName || '-'}</td>
+                      <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.rk?.name || '-'}</td>
+                      <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.city?.name || '-'}</td>
+                      <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.avito?.name || '-'}</td>
                       <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.phone}</td>
                       <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.clientName}</td>
                       <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.address}</td>
                       <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{formatDate(order.dateMeeting)}</td>
-                      <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.typeEquipment}</td>
-                      <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.problem}</td>
+                      <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.equipmentType?.name || '-'}</td>
+                      <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.comment || '-'}</td>
                       <td className="py-2 px-2 text-center">
-                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${getStatusStyle(order.statusOrder)}`}>
-                          {order.statusOrder}
+                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${getStatusStyle(order.status?.name || '')}`}>
+                          {order.status?.name || '-'}
                         </span>
                       </td>
                       <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.master?.name || '-'}</td>
@@ -738,11 +742,14 @@ function OrdersContent() {
                     {/* Адрес */}
                     <p className={`text-xs mb-2 line-clamp-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{order.address || '—'}</p>
                     
-                    {/* Проблема */}
                     <div className="flex items-start gap-1.5 mb-2">
-                      <span className={`text-xs shrink-0 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{order.typeEquipment}</span>
-                      <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>·</span>
-                      <span className={`text-xs line-clamp-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{order.problem || '—'}</span>
+                      <span className={`text-xs shrink-0 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{order.equipmentType?.name || '—'}</span>
+                      {order.comment && (
+                        <>
+                          <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>·</span>
+                          <span className={`text-xs line-clamp-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{order.comment}</span>
+                        </>
+                      )}
                     </div>
                   </div>
                   
@@ -752,8 +759,8 @@ function OrdersContent() {
                   }`}>
                     <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{order.master?.name || 'Не назначен'}</span>
                     <div className="flex items-center gap-2">
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusStyle(order.statusOrder)}`}>
-                        {order.statusOrder}
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusStyle(order.status?.name || '')}`}>
+                        {order.status?.name || '-'}
                       </span>
                       {order.result && typeof order.result === 'number' && (
                         <span className={`font-bold text-sm ${isDark ? 'text-teal-400' : 'text-teal-600'}`}>

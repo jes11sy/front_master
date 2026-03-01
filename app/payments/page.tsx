@@ -11,16 +11,19 @@ import { useDesignStore } from '@/store/design.store'
 
 interface Order {
   id: number
-  rk: string
-  city: string
+  rkId: number
+  rk?: { id: number; name: string }
+  cityId: number
+  city?: { id: number; name: string }
   clientName: string
   phone: string
-  statusOrder: string
+  statusId: number
+  status?: { id: number; name: string; code: string }
   result: number
   clean: number
   masterChange: number
-  createDate: string
-  closingData?: string
+  createdAt: string
+  closingAt?: string
   cashSubmissionStatus?: string
   cashSubmissionDate?: string
   cashSubmissionAmount?: number
@@ -38,16 +41,19 @@ interface Order {
 
 interface CashSubmission {
   id: number
-  rk: string
-  city: string
+  rkId: number
+  rk?: { id: number; name: string }
+  cityId: number
+  city?: { id: number; name: string }
   clientName: string
   phone: string
-  statusOrder: string
+  statusId: number
+  status?: { id: number; name: string; code: string }
   result: number
   clean: number
   masterChange: number
-  createDate: string
-  closingData?: string
+  createdAt: string
+  closingAt?: string
   cashSubmissionStatus: string
   cashSubmissionDate: string
   cashSubmissionAmount: number
@@ -402,7 +408,7 @@ function PaymentsContent() {
                         </td>
                         <td className={`py-2 px-3 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>
                           {isOrder 
-                            ? formatDate(item.closingData)
+                            ? formatDate(item.closingAt)
                             : formatDate(item.cashSubmissionDate)
                           }
                         </td>
@@ -449,7 +455,7 @@ function PaymentsContent() {
                       </div>
                       <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                         {isOrder ? 'Закрыт: ' : 'Отправлено: '}
-                        {isOrder ? formatDate(item.closingData) : formatDate(item.cashSubmissionDate)}
+                        {isOrder ? formatDate(item.closingAt) : formatDate(item.cashSubmissionDate)}
                       </div>
                     </div>
                   </div>
