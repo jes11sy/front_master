@@ -39,6 +39,9 @@ jobs:
         if [ "${{ github.ref_name }}" = "main" ]; then
           docker tag mastercrm-frontend:latest ${{ secrets.DOCKER_USERNAME }}/mastercrm-frontend:latest
         fi
+        if [ "${{ github.ref_name }}" = "dev" ]; then
+          docker tag mastercrm-frontend:latest ${{ secrets.DOCKER_USERNAME }}/mastercrm-frontend:dev
+        fi
 
     - name: Push to Docker Hub
       run: |
@@ -46,4 +49,7 @@ jobs:
         docker push ${{ secrets.DOCKER_USERNAME }}/mastercrm-frontend:${{ github.ref_name }}-${{ github.sha }}
         if [ "${{ github.ref_name }}" = "main" ]; then
           docker push ${{ secrets.DOCKER_USERNAME }}/mastercrm-frontend:latest
+        fi
+        if [ "${{ github.ref_name }}" = "dev" ]; then
+          docker push ${{ secrets.DOCKER_USERNAME }}/mastercrm-frontend:dev
         fi
