@@ -19,11 +19,21 @@ jobs:
         dockerfile: Dockerfile
         failure-threshold: warning
 
+    - name: Set build environment
+      run: |
+        if [ "${{ github.ref_name }}" = "dev" ]; then
+          echo "BUILD_API_URL=${{ secrets.DEV_NEXT_PUBLIC_API_URL }}" >> $GITHUB_ENV
+          echo "BUILD_VAPID_KEY=${{ secrets.DEV_NEXT_PUBLIC_VAPID_PUBLIC_KEY }}" >> $GITHUB_ENV
+        else
+          echo "BUILD_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}" >> $GITHUB_ENV
+          echo "BUILD_VAPID_KEY=${{ secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}" >> $GITHUB_ENV
+        fi
+
     - name: Build Docker image
       run: |
         docker build \
-          --build-arg NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }} \
-          --build-arg NEXT_PUBLIC_VAPID_PUBLIC_KEY=${{ secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY }} \
+          --build-arg NEXT_PUBLIC_API_URL=${{ env.BUILD_API_URL }} \
+          --build-arg NEXT_PUBLIC_VAPID_PUBLIC_KEY=${{ env.BUILD_VAPID_KEY }} \
           -t mastercrm-frontend:latest .
 
     - name: Login to Docker Hub
