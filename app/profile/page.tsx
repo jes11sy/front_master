@@ -15,7 +15,7 @@ interface MasterProfile {
   name: string
   login: string
   cityIds: number[]
-  cities?: { id: number; name: string }[]
+  cities?: Array<{ id: number; name: string } | string>
   status: string
   note: string | null
   tgId: string | null
@@ -96,13 +96,13 @@ export default function ProfilePage() {
           name: user?.name || 'Тестовый мастер',
           login: user?.login || 'preview.master',
           cities: user?.cities || ['Москва'],
-          statusWork: 'active',
-          dateCreate: new Date().toISOString(),
+          cityIds: [],
+          status: 'active',
           note: 'Preview режим без API',
           tgId: '@preview_master',
           chatId: null,
-          passportDoc: null,
-          contractDoc: null,
+          passport: null,
+          contract: null,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         })
@@ -235,8 +235,8 @@ export default function ProfilePage() {
               name: formData.name,
               note: formData.note || null,
               tgId: formData.telegramId || null,
-              passportDoc: passportFile ? passportFile.name : prev.passportDoc,
-              contractDoc: contractFile ? contractFile.name : prev.contractDoc,
+              passport: passportFile ? passportFile.name : prev.passport,
+              contract: contractFile ? contractFile.name : prev.contract,
             }
           : prev
       )
@@ -316,7 +316,7 @@ export default function ProfilePage() {
   const formatDate = (dateString: string) =>
     new Date(dateString).toLocaleDateString('ru-RU', { year: 'numeric', month: 'long', day: 'numeric' })
 
-  const cities = profileData?.cities || []
+  const cities = (profileData?.cities || []).map((city) => (typeof city === 'string' ? city : city.name))
   const isAndroid = typeof window !== 'undefined' && /Android/i.test(navigator.userAgent)
 
   if (loading) {
@@ -343,27 +343,21 @@ export default function ProfilePage() {
                 {formData.name ? getInitials(formData.name) : <User className="w-8 h-8" />}
               </div>
               <div>
-<<<<<<< Updated upstream
-                <h1 className={`text-xl ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                  {profileData?.name || 'Мастер'}
-                </h1>
-                <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>{profileData?.login}</p>
-                <span className={`inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded ${
-                  profileData?.status === 'active' 
-                    ? isDark ? 'bg-green-900/40 text-green-400' : 'bg-green-100 text-green-700'
-                    : isDark ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-600'
-                }`}>
-                  {profileData?.status === 'active' ? 'Активен' : profileData?.status === 'inactive' ? 'Уволен' : profileData?.status || 'Мастер'}
-                </span>
-=======
                 {isEditing ? (
                   <input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className={`text-xl bg-transparent border-b focus:outline-none ${isDark ? 'focus:border-gray-600 text-gray-100 border-gray-600' : 'focus:border-[#0a4f42] text-gray-900 border-gray-300'}`} />
                 ) : (
                   <h2 className={`text-[20px] font-semibold tracking-tight ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{formData.name || user?.name || 'Мастер'}</h2>
                 )}
                 <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>{profileData?.login || user?.login}</p>
-                <span className={`inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded-full ${isDark ? 'bg-white/[0.1] text-gray-200' : 'bg-[#0a4f42]/10 text-[#0a4f42]'}`}>Мастер</span>
->>>>>>> Stashed changes
+                <span
+                  className={`inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded-full ${
+                    profileData?.status === 'active'
+                      ? isDark ? 'bg-green-900/40 text-green-400' : 'bg-green-100 text-green-700'
+                      : isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  {profileData?.status === 'active' ? 'Активен' : profileData?.status === 'inactive' ? 'Уволен' : profileData?.status || 'Мастер'}
+                </span>
               </div>
             </div>
             {!isEditing ? (
@@ -378,165 +372,12 @@ export default function ProfilePage() {
             )}
           </div>
 
-<<<<<<< Updated upstream
-          {/* Разделитель */}
-          <div className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`} />
-
-          {/* Информация */}
-          <div className="space-y-4">
-            {/* Города */}
-            <div className={`flex justify-between items-center py-2 border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
-              <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Города</span>
-              <span className={isDark ? 'text-gray-200' : 'text-gray-900'}>
-                {cities.length > 0 ? cities.join(', ') : 'Не указаны'}
-              </span>
-            </div>
-
-            {/* Дата регистрации */}
-            <div className={`flex justify-between items-center py-2 border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
-              <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Дата регистрации</span>
-              <span className={isDark ? 'text-gray-200' : 'text-gray-900'}>
-                {profileData?.createdAt ? formatDate(profileData.createdAt) : 'Не указана'}
-              </span>
-            </div>
-
-            {/* Telegram */}
-            {profileData?.tgId && (
-              <div className={`flex justify-between items-center py-2 border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
-                <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Telegram ID</span>
-                <span className={isDark ? 'text-gray-200' : 'text-gray-900'}>{profileData.tgId}</span>
-              </div>
-            )}
-
-            {/* Примечание */}
-            {profileData?.note && (
-              <div className={`flex justify-between items-start py-2 border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
-                <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Примечание</span>
-                <span className={`text-right max-w-xs ${isDark ? 'text-gray-200' : 'text-gray-900'}`}>{profileData.note}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Разделитель */}
-          <div className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`} />
-
-          {/* Документы */}
-          <div className={`py-2 border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
-            <button
-              onClick={() => setShowDocuments(!showDocuments)}
-              className={`w-full flex justify-between items-center transition-colors ${isDark ? 'text-gray-400 hover:text-teal-400' : 'text-gray-500 hover:text-teal-600'}`}
-            >
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                <span>Документы</span>
-              </div>
-              <svg 
-                className={`w-4 h-4 transition-transform duration-200 ${showDocuments ? 'rotate-90' : ''}`}
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-
-            {showDocuments && (
-              <div className="mt-3 space-y-3 pl-6">
-            
-            <div className="grid grid-cols-2 gap-4">
-              {/* Паспорт */}
-              <div>
-                <p className={`text-sm mb-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Фото паспорта</p>
-                {isEditing ? (
-                  <label className={`flex flex-col items-center justify-center h-24 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-                    isDark ? 'border-gray-600 hover:border-[#0d5c4b]' : 'border-gray-300 hover:border-[#0d5c4b]'
-                  }`}>
-                    <Camera className={`h-6 w-6 mb-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
-                    <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Загрузить</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleFileUpload('passport', e)}
-                      className="hidden"
-                    />
-                  </label>
-                ) : (
-                  <div className={`flex items-center gap-2 py-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                    <FileText className="h-4 w-4" />
-                    <span className="text-sm">{profileData?.passport || 'Не загружен'}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Договор */}
-              <div>
-                <p className={`text-sm mb-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Фото договора</p>
-                {isEditing ? (
-                  <label className={`flex flex-col items-center justify-center h-24 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-                    isDark ? 'border-gray-600 hover:border-[#0d5c4b]' : 'border-gray-300 hover:border-[#0d5c4b]'
-                  }`}>
-                    <Camera className={`h-6 w-6 mb-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
-                    <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Загрузить</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleFileUpload('contract', e)}
-                      className="hidden"
-                    />
-                  </label>
-                ) : (
-                  <div className={`flex items-center gap-2 py-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                    <FileText className="h-4 w-4" />
-                    <span className="text-sm">{profileData?.contract || 'Не загружен'}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-              </div>
-            )}
-          </div>
-
-          {/* Разделитель */}
-          <div className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`} />
-
-          {/* Смена пароля */}
-          <div>
-            <button
-              onClick={() => setIsChangingPassword(!isChangingPassword)}
-              className={`text-sm transition-colors ${isDark ? 'text-gray-400 hover:text-[#0d5c4b]' : 'text-gray-500 hover:text-[#0d5c4b]'}`}
-            >
-              {isChangingPassword ? 'Отмена' : 'Сменить пароль'}
-            </button>
-
-            {isChangingPassword && (
-              <div className="mt-4 space-y-4">
-                {/* Текущий пароль */}
-                <div className="space-y-1">
-                  <label className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Текущий пароль</label>
-                  <div className="relative">
-                    <input
-                      type={showCurrentPassword ? 'text' : 'password'}
-                      value={passwordData.currentPassword}
-                      onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                      className={`w-full px-3 py-2 pr-10 border rounded-lg focus:border-[#0d5c4b] focus:outline-none ${
-                        isDark ? 'bg-[#3a4451] border-gray-600 text-gray-200' : 'border-gray-200 text-gray-900'
-                      }`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                      className={`absolute right-3 top-1/2 -translate-y-1/2 ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}
-                    >
-                      {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-=======
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
             <div className="space-y-4">
               <div className={`rounded-[20px] border p-4 shadow-sm ${isDark ? 'bg-white/[0.02] border-white/10' : 'bg-white border-black/10'}`}>
                 <p className={`mb-3 text-sm font-semibold ${isDark ? 'text-white/80' : 'text-[#111113]'}`}>Контакт и профиль</p>
                 <div className={`flex justify-between items-center py-3 border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}><span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Города</span><span className={isDark ? 'text-gray-200' : 'text-gray-900'}>{cities.length > 0 ? cities.join(', ') : 'Не указаны'}</span></div>
-                <div className={`flex justify-between items-center py-3 border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}><span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Дата регистрации</span><span className={isDark ? 'text-gray-200' : 'text-gray-900'}>{profileData?.createdAt ? formatDate(profileData.createdAt) : profileData?.dateCreate ? formatDate(profileData.dateCreate) : 'Не указана'}</span></div>
+                <div className={`flex justify-between items-center py-3 border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}><span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Дата регистрации</span><span className={isDark ? 'text-gray-200' : 'text-gray-900'}>{profileData?.createdAt ? formatDate(profileData.createdAt) : 'Не указана'}</span></div>
                 <div className={`flex justify-between items-start py-3 border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
                   <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Примечание</span>
                   {isEditing ? <textarea value={formData.note} onChange={(e) => setFormData({ ...formData, note: e.target.value })} className={`w-64 text-right bg-transparent border rounded-lg p-2 focus:outline-none resize-none ${isDark ? 'focus:border-gray-600 text-gray-200 border-gray-600' : 'focus:border-[#0a4f42] text-gray-900 border-gray-200'}`} rows={2} /> : <span className={`text-right max-w-xs ${isDark ? 'text-gray-200' : 'text-gray-900'}`}>{formData.note || 'Не указано'}</span>}
@@ -544,7 +385,7 @@ export default function ProfilePage() {
                 <div className={`flex justify-between items-center py-3 border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
                   <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>Telegram</span>
                   {isEditing ? <input value={formData.telegramId} onChange={(e) => setFormData({ ...formData, telegramId: e.target.value })} className={`w-64 text-right bg-transparent border-b focus:outline-none ${isDark ? 'focus:border-gray-600 text-gray-200 border-gray-600' : 'focus:border-[#0a4f42] text-gray-900 border-gray-300'}`} placeholder="@username" /> : <span className={isDark ? 'text-gray-200' : 'text-gray-900'}>{formData.telegramId || 'Не указан'}</span>}
->>>>>>> Stashed changes
+
                 </div>
 
                 <div className="py-2.5">
@@ -561,7 +402,7 @@ export default function ProfilePage() {
                             <Upload className="h-3 w-3" /><span>{contractFile ? contractFile.name : 'Загрузить'}</span>
                             <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => setContractFile(e.target.files?.[0] || null)} />
                           </label>
-                        ) : <div className={`text-sm mt-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{profileData?.contractDoc || 'Не загружен'}</div>}
+                        ) : <div className={`text-sm mt-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{profileData?.contract || 'Не загружен'}</div>}
                       </div>
                       <div>
                         <label className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Паспорт</label>
@@ -570,7 +411,7 @@ export default function ProfilePage() {
                             <Upload className="h-3 w-3" /><span>{passportFile ? passportFile.name : 'Загрузить'}</span>
                             <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => setPassportFile(e.target.files?.[0] || null)} />
                           </label>
-                        ) : <div className={`text-sm mt-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{profileData?.passportDoc || 'Не загружен'}</div>}
+                        ) : <div className={`text-sm mt-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{profileData?.passport || 'Не загружен'}</div>}
                       </div>
                     </div>
                   )}
