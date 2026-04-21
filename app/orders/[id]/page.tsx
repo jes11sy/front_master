@@ -638,7 +638,7 @@ function OrderDetailPageContent() {
   // === РЕНДЕРИНГ ===
 
   if (loading) {
-    return <LoadingScreen message="Загрузка заказа" />
+    return <LoadingScreen message="Загрузка заказа" embeddedInLayout />
   }
 
   if (error) {

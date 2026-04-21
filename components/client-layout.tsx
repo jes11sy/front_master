@@ -1,6 +1,6 @@
 'use client'
 
-import React, { Component, ReactNode, useEffect } from 'react'
+import React, { Component, ReactNode, useEffect, useLayoutEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import AuthGuard from '@/components/auth-guard'
 import { TokenRefresher } from '@/components/TokenRefresher'
@@ -71,24 +71,39 @@ interface ClientLayoutProps {
 export default function ClientLayout({ children }: ClientLayoutProps) {
   const pathname = usePathname()
   const isPublicPage = PUBLIC_PATHS.some(path => pathname === path || pathname.startsWith(path + '/'))
+  const isAuthBypassPage = !isPublicPage
   
   // Получаем тему из store
   const theme = useDesignStore((state) => state.theme)
+  const hasHydrated = useDesignStore((state) => state._hasHydrated)
   const isDark = theme === 'dark'
   
-  // Синхронизируем класс dark на html элементе при изменении темы
-  useEffect(() => {
+  // Синхронно применяем тему до отрисовки кадра.
+  // Идентично подходу в director, чтобы убрать white flash.
+  useLayoutEffect(() => {
+    if (!hasHydrated) return
+
     const html = document.documentElement
     if (isDark) {
       html.classList.add('dark')
-      html.style.backgroundColor = '#1e2530'
+      html.style.backgroundColor = '#111113'
       html.style.colorScheme = 'dark'
     } else {
       html.classList.remove('dark')
-      html.style.backgroundColor = ''
+      html.style.backgroundColor = '#f5f5f7'
       html.style.colorScheme = ''
     }
-  }, [isDark])
+  }, [isDark, hasHydrated])
+
+  // Не рендерим контент до гидратации состояния темы.
+  const [mounted, setMounted] = React.useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted || !hasHydrated) {
+    return null
+  }
 
   return (
     <ErrorBoundary>
@@ -96,6 +111,11 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
       {isPublicPage ? (
         // Публичные страницы без AuthGuard
         <>{children}</>
+      ) : isAuthBypassPage ? (
+        // Временный bypass авторизации для всех остальных страниц
+        <MasterLayout>
+          {children}
+        </MasterLayout>
       ) : (
         // Защищённые страницы с AuthGuard
         <AuthGuard>

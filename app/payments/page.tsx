@@ -1,13 +1,12 @@
 'use client'
 
 import React, { useState, useEffect, Suspense } from 'react'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { apiClient } from '@/lib/api'
-import { LoadingSpinner } from '@/components/ui/loading-screen'
 import { OptimizedPagination } from '@/components/ui/optimized-pagination'
 import { useDesignStore } from '@/store/design.store'
+import { NetworkError } from '@/components/ui/network-error'
+import { AppLoadingBlock, LoadingScreen } from '@/components/ui/loading-screen'
 
 interface Order {
   id: number
@@ -83,6 +82,7 @@ function PaymentsContent() {
   const [showSubmissionModal, setShowSubmissionModal] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [notifications, setNotifications] = useState<string[]>([])
+  const [loadError, setLoadError] = useState('')
   const [statusTab, setStatusTab] = useState<string>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
@@ -177,6 +177,7 @@ function PaymentsContent() {
   const loadData = async () => {
     try {
       setLoading(true)
+      setLoadError('')
       
       const ordersResponse = await apiClient.getOrders({ status: 'Готово' })
       if (ordersResponse.success) {
@@ -188,8 +189,7 @@ function PaymentsContent() {
         setCashSubmissions(submissionsResponse.data || [])
       }
     } catch (error) {
-      setNotifications(['Ошибка загрузки данных'])
-      setTimeout(() => setNotifications([]), 4000)
+      setLoadError('Ошибка загрузки данных')
     } finally {
       setLoading(false)
     }
@@ -280,9 +280,9 @@ function PaymentsContent() {
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${
-      isDark ? 'bg-[#1e2530]' : 'bg-white'
+      isDark ? 'bg-[#111113]' : 'bg-[#f5f5f7]'
     }`}>
-      <div className="px-4 py-6">
+      <div className={`px-4 ${loading ? 'py-0' : 'py-6'}`}>
         <div className="w-full">
 
           {/* Уведомления */}
@@ -298,9 +298,11 @@ function PaymentsContent() {
             </div>
           )}
 
-          {/* Суммы */}
-          <div className={`rounded-xl p-4 mb-6 border ${
-            isDark ? 'bg-[#2a3441] border-gray-700' : 'bg-gray-50 border-gray-200'
+          {/* Суммы и табы — скрыты на время загрузки */}
+          {!loading && (
+          <>
+          <div className={`rounded-[20px] p-4 mb-6 border ${
+            isDark ? 'bg-white/[0.03] border-white/10' : 'bg-white border-black/[0.08]'
           }`}>
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center">
@@ -313,17 +315,14 @@ function PaymentsContent() {
               </div>
               <div className="text-center">
                 <div className={`text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Всего</div>
-                <div className={`text-lg font-bold ${isDark ? 'text-teal-400' : 'text-teal-600'}`}>{formatNumber(getNotSubmittedSum() + getOnReviewSum())} ₽</div>
+                <div className={`text-lg font-bold ${isDark ? 'text-white' : 'text-[#0a4f42]'}`}>{formatNumber(getNotSubmittedSum() + getOnReviewSum())} ₽</div>
               </div>
             </div>
           </div>
 
-          {/* Табы статусов */}
           <div className="mb-4 animate-slide-in-left">
             <div className="flex-1 min-w-0 overflow-x-auto scrollbar-hide">
-              <div className={`flex gap-1 p-1 rounded-lg w-max ${
-                isDark ? 'bg-[#2a3441]' : 'bg-gray-100'
-              }`}>
+              <div className="flex gap-2 w-max">
                 {[
                   { id: 'all', label: 'Все' },
                   { id: 'Не отправлено', label: 'Не сдано' },
@@ -334,14 +333,10 @@ function PaymentsContent() {
                   <button
                     key={tab.id}
                     onClick={() => setStatusTab(tab.id)}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap ${
+                    className={`min-h-[40px] px-4 text-sm font-medium rounded-2xl transition-all duration-200 whitespace-nowrap ${
                       statusTab === tab.id
-                        ? isDark 
-                          ? 'bg-[#0d5c4b] text-white shadow-sm'
-                          : 'bg-[#0d5c4b] text-white shadow-sm'
-                        : isDark
-                          ? 'text-gray-400 hover:text-gray-200 hover:bg-[#3a4451]'
-                          : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                        ? (isDark ? 'bg-white/[0.08] text-white' : 'bg-[#0a4f42] text-white')
+                        : (isDark ? 'text-white/92 hover:bg-white/[0.04] hover:text-white bg-transparent' : 'text-[#3a3a3c] hover:-translate-y-[1px] hover:bg-black/[0.035] hover:text-[#111113] bg-transparent')
                     }`}
                   >
                     {tab.label}
@@ -350,19 +345,26 @@ function PaymentsContent() {
               </div>
             </div>
           </div>
+          </>
+          )}
 
-          {/* Состояние загрузки */}
           {loading && (
-            <div className="text-center py-8 animate-fade-in">
-              <div className="flex justify-center mb-4">
-                <LoadingSpinner size="lg" />
-              </div>
-              <p className={`font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Загрузка...</p>
+            <div className="flex w-full flex-col items-center justify-center min-h-[max(300px,calc(100dvh-10rem-env(safe-area-inset-bottom,0px)))] md:min-h-[min(560px,calc(100dvh-4rem))]">
+              <AppLoadingBlock className="animate-fade-in" />
             </div>
           )}
 
+          {/* Ошибка */}
+          {!loading && !!loadError && (
+            <NetworkError
+              isDark={isDark}
+              onRetry={loadData}
+              message={loadError}
+            />
+          )}
+
           {/* Пустое состояние */}
-          {!loading && getCurrentPageItems().length === 0 && (
+          {!loading && !loadError && getCurrentPageItems().length === 0 && (
             <div className="text-center py-8 animate-fade-in">
               <p className={`font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Нет записей для отображения</p>
             </div>
@@ -371,11 +373,11 @@ function PaymentsContent() {
           {/* Десктопная таблица */}
           {!loading && getCurrentPageItems().length > 0 && (
             <div className="hidden md:block animate-fade-in">
-              <table className={`w-full border-collapse text-xs rounded-lg shadow-lg ${
-                isDark ? 'bg-[#2a3441]' : 'bg-white'
+              <table className={`w-full border-collapse text-xs rounded-[20px] shadow-lg ${
+                isDark ? 'bg-white/[0.03]' : 'bg-white'
               }`}>
                 <thead>
-                  <tr className={`border-b-2 ${isDark ? 'bg-[#3a4451] border-[#0d5c4b]' : 'bg-gray-50 border-[#0d5c4b]'}`}>
+                  <tr className={`border-b-2 ${isDark ? 'bg-white/[0.04] border-white/20' : 'bg-black/[0.02] border-black/10'}`}>
                     <th className={`text-left py-2 px-3 font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Заказ</th>
                     <th className={`text-left py-2 px-3 font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Клиент</th>
                     <th className={`text-left py-2 px-3 font-semibold ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Сумма</th>
@@ -391,14 +393,14 @@ function PaymentsContent() {
                         key={isOrder ? item.id : `submission-${item.id}`}
                         className={`border-b transition-colors cursor-pointer ${
                           isDark 
-                            ? 'border-gray-700 hover:bg-[#3a4451]'
-                            : 'border-gray-200 hover:bg-teal-50'
+                            ? 'border-white/10 hover:bg-white/[0.04]'
+                            : 'border-black/10 hover:bg-black/[0.02]'
                         }`}
                         onClick={() => isOrder && handleSubmitCash(item)}
                       >
                         <td className={`py-2 px-3 font-medium ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>#{item.id}</td>
                         <td className={`py-2 px-3 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{item.clientName}</td>
-                        <td className={`py-2 px-3 font-semibold ${isDark ? 'text-teal-400' : 'text-gray-800'}`}>
+                        <td className={`py-2 px-3 font-semibold ${isDark ? 'text-white' : 'text-[#111113]'}`}>
                           {item.masterChange?.toLocaleString('ru-RU')} ₽
                         </td>
                         <td className="py-2 px-3 text-center">
@@ -428,16 +430,16 @@ function PaymentsContent() {
                 return (
                   <div 
                     key={isOrder ? item.id : `submission-${item.id}`}
-                    className={`rounded-xl overflow-hidden border cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md ${
+                    className={`rounded-[20px] overflow-hidden border cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md ${
                       isDark 
-                        ? 'bg-[#2a3441] border-gray-700 hover:border-teal-600'
-                        : 'bg-white border-gray-200 hover:border-teal-300'
+                        ? 'bg-white/[0.03] border-white/10 hover:border-white/25'
+                        : 'bg-white border-black/10 hover:border-black/30'
                     }`}
                     onClick={() => isOrder && handleSubmitCash(item)}
                   >
                     {/* Верхняя строка */}
                     <div className={`flex items-center justify-between px-3 py-2 border-b ${
-                      isDark ? 'bg-[#3a4451] border-gray-700' : 'bg-gray-50 border-gray-100'
+                      isDark ? 'bg-white/[0.06] border-white/10' : 'bg-black/[0.02] border-black/10'
                     }`}>
                       <span className={`font-bold text-sm ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>#{item.id}</span>
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${getSubmissionStatusStyle(item.cashSubmissionStatus || 'Не отправлено')}`}>
@@ -449,7 +451,7 @@ function PaymentsContent() {
                     <div className="px-3 py-2.5">
                       <div className="flex items-center justify-between mb-1.5">
                         <span className={`font-medium text-sm ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{item.clientName || 'Без имени'}</span>
-                        <span className={`font-bold text-sm ${isDark ? 'text-teal-400' : 'text-teal-600'}`}>
+                        <span className={`font-bold text-sm ${isDark ? 'text-white' : 'text-[#0a4f42]'}`}>
                           {item.masterChange?.toLocaleString('ru-RU')} ₽
                         </span>
                       </div>
@@ -572,14 +574,7 @@ function PaymentsContent() {
 
 export default function PaymentsPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#1e2530]">
-        <div className="text-center">
-          <LoadingSpinner size="lg" />
-          <p className="mt-4 text-gray-700 dark:text-gray-300">Загрузка...</p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<LoadingScreen embeddedInLayout />}>
       <PaymentsContent />
     </Suspense>
   )

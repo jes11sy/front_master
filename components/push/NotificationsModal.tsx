@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useDesignStore } from '@/store/design.store'
 import { useNotifications } from '@/hooks/useNotifications'
 import { Bell, X, Check, FileText, Info } from 'lucide-react'
+import { AppLoadingBlock } from '@/components/ui/loading-screen'
 
 interface NotificationsModalProps {
   isOpen: boolean
@@ -143,9 +144,8 @@ export function NotificationsModal({ isOpen, onClose }: NotificationsModalProps)
         {/* Notifications List */}
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
-            <div className={`px-6 py-12 text-center ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0d5c4b] mx-auto mb-3"></div>
-              <p className="text-sm">Загрузка...</p>
+            <div className="px-6 py-10">
+              <AppLoadingBlock variant="compact" />
             </div>
           ) : notifications.length > 0 ? (
             notifications.map((notification) => {

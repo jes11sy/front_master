@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { SidebarNavigation } from '@/components/sidebar-navigation'
+import { CustomNavigation } from '@/components/custom-navigation'
 import { useLayout } from '@/components/layout-context'
 import React, { useLayoutEffect, useEffect } from 'react'
 
@@ -55,8 +55,8 @@ const MasterLayout = React.memo<MasterLayoutProps>(({ children }) => {
 
   return (
     <>
-      <SidebarNavigation />
-      <main className="main-content pt-16 md:pt-0 md:ml-56 min-h-screen">{children}</main>
+      <CustomNavigation />
+      <main className="main-content pt-16 pb-[max(12px,env(safe-area-inset-bottom,0px))] md:pb-0 md:pt-0 min-h-screen">{children}</main>
     </>
   )
 })

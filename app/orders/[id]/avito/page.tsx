@@ -214,7 +214,7 @@ export default function AvitoChat() {
   }
 
   if (loading) {
-    return <LoadingScreen message="Загрузка чата" />
+    return <LoadingScreen message="Загрузка чата" embeddedInLayout />
   }
 
   if (error || !chatData) {

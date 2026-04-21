@@ -50,20 +50,20 @@ export default function RootLayout({
                 background-color: white;
               }
               html.dark, html.dark body {
-                background-color: #1e2530 !important;
+                background-color: #111113 !important;
               }
               /* Навигация */
-              nav.nav-main, aside.sidebar-main, header.header-main, main.main-content {
+              nav.nav-main, header.nav-main, aside.sidebar-main, header.header-main, main.main-content {
                 background-color: white !important;
                 transition: none !important;
               }
-              html.dark nav.nav-main, html.dark aside.sidebar-main, html.dark header.header-main, html.dark main.main-content {
-                background-color: #1e2530 !important;
+              html.dark nav.nav-main, html.dark header.nav-main, html.dark aside.sidebar-main, html.dark header.header-main, html.dark main.main-content {
+                background-color: #111113 !important;
               }
-              nav.nav-main, aside.sidebar-main, header.header-main {
+              nav.nav-main, header.nav-main, aside.sidebar-main, header.header-main {
                 border-color: #e5e7eb !important;
               }
-              html.dark nav.nav-main, html.dark aside.sidebar-main, html.dark header.header-main {
+              html.dark nav.nav-main, html.dark header.nav-main, html.dark aside.sidebar-main, html.dark header.header-main {
                 border-color: rgba(255, 255, 255, 0.15) !important;
               }
               /* Скрываем контент пока тема не определена */
@@ -90,9 +90,9 @@ export default function RootLayout({
                   }
                   if (isDark) {
                     document.documentElement.classList.add('dark');
-                    document.documentElement.style.backgroundColor = '#1e2530';
+                    document.documentElement.style.backgroundColor = '#111113';
                     document.documentElement.style.colorScheme = 'dark';
-                    document.body && (document.body.style.backgroundColor = '#1e2530');
+                    document.body && (document.body.style.backgroundColor = '#111113');
                   }
                   // Показываем контент сразу после определения темы
                   document.documentElement.classList.add('theme-ready');

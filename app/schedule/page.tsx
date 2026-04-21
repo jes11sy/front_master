@@ -1,10 +1,11 @@
 'use client'
 
 import React, { useState, useEffect, Suspense } from 'react'
+import { AppLoadingBlock, LoadingScreen } from '@/components/ui/loading-screen'
 import { apiClient } from '@/lib/api'
 import { toast } from '@/components/ui/toast'
-import { LoadingSpinner } from '@/components/ui/loading-screen'
 import { useDesignStore } from '@/store/design.store'
+import { NetworkError } from '@/components/ui/network-error'
 
 function ScheduleContent() {
   const { theme } = useDesignStore()
@@ -14,6 +15,7 @@ function ScheduleContent() {
   const [selectedDays, setSelectedDays] = useState<{[key: string]: boolean}>({})
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [loadError, setLoadError] = useState('')
 
   // Генерируем даты недели
   const getWeekDates = (date: Date) => {
@@ -45,6 +47,7 @@ function ScheduleContent() {
   useEffect(() => {
     const loadSchedule = async () => {
       setIsLoading(true)
+      setLoadError('')
       try {
         const startDate = formatDate(weekDates[0])
         const endDate = formatDate(weekDates[6])
@@ -60,7 +63,7 @@ function ScheduleContent() {
         }
       } catch (error) {
         console.error('Ошибка загрузки расписания:', error)
-        toast.error('Не удалось загрузить расписание')
+        setLoadError('Не удалось загрузить расписание')
       } finally {
         setIsLoading(false)
       }
@@ -128,22 +131,30 @@ function ScheduleContent() {
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${
-      isDark ? 'bg-[#1e2530]' : 'bg-white'
+      isDark ? 'bg-[#111113]' : 'bg-[#f5f5f7]'
     }`}>
-      <div className="px-4 py-6">
-        <div className="max-w-2xl mx-auto">
+      <div className={`px-4 ${isLoading ? 'py-0' : 'py-6'}`}>
+        <div className="max-w-2xl mx-auto w-full">
 
+          {isLoading && (
+            <div className="flex w-full flex-col items-center justify-center min-h-[max(300px,calc(100dvh-10rem-env(safe-area-inset-bottom,0px)))] md:min-h-[min(560px,calc(100dvh-4rem))]">
+              <AppLoadingBlock className="animate-fade-in" />
+            </div>
+          )}
+
+          {!isLoading && (
+          <>
           {/* Навигация по неделям */}
-          <div className={`rounded-xl p-4 mb-4 border ${
-            isDark ? 'bg-[#2a3441] border-gray-700' : 'bg-gray-50 border-gray-200'
+          <div className={`rounded-[20px] p-4 mb-4 border shadow-lg ${
+            isDark ? 'bg-white/[0.03] border-white/10' : 'bg-white border-black/[0.08]'
           }`}>
             <div className="flex items-center justify-between">
               <button
                 onClick={goToPrevWeek}
-                className={`p-2 rounded-lg transition-colors ${
+                className={`min-h-[40px] min-w-[40px] rounded-2xl transition-all duration-200 flex items-center justify-center ${
                   isDark 
-                    ? 'text-gray-400 hover:text-white hover:bg-[#3a4451]'
-                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
+                    ? 'text-white/85 hover:text-white hover:bg-white/[0.08]'
+                    : 'text-[#3a3a3c] hover:text-[#111113] hover:bg-black/[0.035]'
                 }`}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,23 +163,23 @@ function ScheduleContent() {
               </button>
               
               <div className="text-center">
-                <h3 className={`text-lg font-bold ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
+                <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-[#111113]'}`}>
                   {currentWeek.toLocaleDateString('ru-RU', { 
                     month: 'long', 
                     year: 'numeric' 
                   })}
                 </h3>
-                <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                <p className={`text-xs ${isDark ? 'text-white/65' : 'text-[#66666b]'}`}>
                   {weekDates[0].toLocaleDateString('ru-RU')} - {weekDates[6].toLocaleDateString('ru-RU')}
                 </p>
               </div>
               
               <button
                 onClick={goToNextWeek}
-                className={`p-2 rounded-lg transition-colors ${
+                className={`min-h-[40px] min-w-[40px] rounded-2xl transition-all duration-200 flex items-center justify-center ${
                   isDark 
-                    ? 'text-gray-400 hover:text-white hover:bg-[#3a4451]'
-                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
+                    ? 'text-white/85 hover:text-white hover:bg-white/[0.08]'
+                    : 'text-[#3a3a3c] hover:text-[#111113] hover:bg-black/[0.035]'
                 }`}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -179,15 +190,16 @@ function ScheduleContent() {
           </div>
 
           {/* Выбор дней */}
-          <div className={`rounded-xl p-4 border ${
-            isDark ? 'bg-[#2a3441] border-gray-700' : 'bg-gray-50 border-gray-200'
+          <div className={`rounded-[20px] p-4 border shadow-lg ${
+            isDark ? 'bg-white/[0.03] border-white/10' : 'bg-white border-black/[0.08]'
           }`}>
             
-            {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <LoadingSpinner size="lg" />
-                <p className={`mt-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Загрузка...</p>
-              </div>
+            {loadError ? (
+              <NetworkError
+                isDark={isDark}
+                onRetry={() => setCurrentWeek(new Date(currentWeek))}
+                message={loadError}
+              />
             ) : (
               <>
                 {/* Сетка дней */}
@@ -202,22 +214,21 @@ function ScheduleContent() {
                     return (
                       <div key={index} className="text-center">
                         <div className={`text-xs mb-1 font-medium ${
-                          isDark ? 'text-gray-400' : 'text-gray-600'
+                          isDark ? 'text-white/65' : 'text-[#66666b]'
                         }`}>
                           {dayNames[index]}
                         </div>
                         <button
                           onClick={() => handleDayToggle(date)}
-                          className={`w-full aspect-square rounded-xl text-sm font-bold transition-all duration-200 relative ${
+                          className={`w-full aspect-square rounded-2xl text-sm font-bold transition-all duration-200 relative ${
                             isWorkDay 
-                              ? 'bg-[#0d5c4b] text-white shadow-md hover:bg-[#0a4a3c]' 
+                              ? 'bg-[#0a4f42] text-white shadow-md hover:bg-[#083e34]' 
                               : isDayOff
-                              ? 'bg-red-500 text-white shadow-md hover:bg-red-600'
+                              ? 'bg-[#b4232c] text-white shadow-md hover:bg-[#911d24]'
                               : isDark
-                              ? 'bg-[#3a4451] text-gray-300 hover:bg-[#4a5461]'
-                              : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-100'
-                          } ${isToday ? 'ring-2 ring-[#0d5c4b] ring-offset-2' : ''}`}
-                          style={isToday && isDark ? { ringOffsetColor: '#2a3441' } : {}}
+                              ? 'bg-white/[0.06] text-white/85 border border-white/10 hover:bg-white/[0.1]'
+                              : 'bg-white text-[#3a3a3c] border border-black/10 hover:bg-black/[0.03]'
+                          } ${isToday ? (isDark ? 'ring-2 ring-white/50 ring-offset-2 ring-offset-[#111113]' : 'ring-2 ring-[#0a4f42]/45 ring-offset-2 ring-offset-[#f5f5f7]') : ''}`}
                         >
                           {date.getDate()}
                         </button>
@@ -229,16 +240,16 @@ function ScheduleContent() {
                 {/* Легенда */}
                 <div className="flex flex-wrap gap-4 justify-center mb-4">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-[#0d5c4b] rounded"></div>
-                    <span className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Рабочий</span>
+                    <div className="w-3 h-3 bg-[#0a4f42] rounded"></div>
+                    <span className={`text-xs ${isDark ? 'text-white/85' : 'text-[#3a3a3c]'}`}>Рабочий</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-red-500 rounded"></div>
-                    <span className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Выходной</span>
+                    <div className="w-3 h-3 bg-[#b4232c] rounded"></div>
+                    <span className={`text-xs ${isDark ? 'text-white/85' : 'text-[#3a3a3c]'}`}>Выходной</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className={`w-3 h-3 rounded ${isDark ? 'bg-[#3a4451]' : 'bg-gray-100 border border-gray-300'}`}></div>
-                    <span className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Не выбран</span>
+                    <div className={`w-3 h-3 rounded ${isDark ? 'bg-white/[0.1] border border-white/10' : 'bg-black/[0.03] border border-black/15'}`}></div>
+                    <span className={`text-xs ${isDark ? 'text-white/85' : 'text-[#3a3a3c]'}`}>Не выбран</span>
                   </div>
                 </div>
 
@@ -246,7 +257,11 @@ function ScheduleContent() {
                 <button 
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="w-full py-3 bg-[#0d5c4b] hover:bg-[#0a4a3c] text-white rounded-xl transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className={`w-full min-h-[46px] px-4 rounded-2xl transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
+                    isDark
+                      ? 'bg-white text-[#111113] hover:bg-white/90'
+                      : 'bg-[#0a4f42] text-white hover:bg-[#083e34]'
+                  }`}
                 >
                   {isSaving ? (
                     <>
@@ -263,6 +278,8 @@ function ScheduleContent() {
               </>
             )}
           </div>
+          </>
+          )}
         </div>
       </div>
     </div>
@@ -271,14 +288,7 @@ function ScheduleContent() {
 
 export default function SchedulePage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#1e2530]">
-        <div className="text-center">
-          <LoadingSpinner size="lg" />
-          <p className="mt-4 text-gray-700 dark:text-gray-300">Загрузка...</p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<LoadingScreen embeddedInLayout />}>
       <ScheduleContent />
     </Suspense>
   )

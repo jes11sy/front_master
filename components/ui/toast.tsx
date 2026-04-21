@@ -88,30 +88,31 @@ function ToastContainer({ toasts, removeToast }: { toasts: Toast[], removeToast:
 }
 
 function ToastItem({ toast, onClose }: { toast: Toast, onClose: () => void }) {
-  const colors = {
-    success: 'bg-green-500 border-green-600',
-    error: 'bg-red-500 border-red-600',
-    warning: 'bg-yellow-500 border-yellow-600',
-    info: 'bg-blue-500 border-blue-600',
+  const shellStyles = {
+    success: 'border-[#2a2f36] bg-[#15181d] text-white',
+    error: 'border-[#2a2f36] bg-[#15181d] text-white',
+    warning: 'border-[#2a2f36] bg-[#15181d] text-white',
+    info: 'border-[#2a2f36] bg-[#15181d] text-white',
   }
 
-  const icons = {
-    success: '✓',
-    error: '✕',
-    warning: '⚠',
-    info: 'ℹ',
+  const fallbackMessage = {
+    success: 'Операция выполнена',
+    error: 'Произошла ошибка',
+    warning: 'Обратите внимание',
+    info: 'Информационное сообщение',
   }
 
   return (
     <div 
-      className={`${colors[toast.type]} text-white px-4 py-3 rounded-lg shadow-lg border-l-4 flex items-start gap-3 animate-slide-in`}
+      className={`${shellStyles[toast.type]} flex min-w-[280px] items-center gap-3 rounded-2xl border px-4 py-3 shadow-[0_12px_32px_rgba(0,0,0,0.45)] animate-slide-in`}
       role="alert"
     >
-      <span className="text-xl font-bold">{icons[toast.type]}</span>
-      <p className="flex-1 text-sm font-medium">{toast.message}</p>
+      <p className="flex-1 text-sm font-semibold leading-snug text-white">
+        {toast.message || fallbackMessage[toast.type]}
+      </p>
       <button
         onClick={onClose}
-        className="text-white hover:text-gray-200 font-bold text-lg leading-none"
+        className="text-lg leading-none text-white/65 transition-colors hover:text-white"
         aria-label="Close"
       >
         ×

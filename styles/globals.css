@@ -101,12 +101,13 @@ html, body {
 
 /* Тёмная тема - применяется через класс на html */
 html.dark {
-  background-color: #1e2530;
+  background-color: #111113;
   color-scheme: dark;
+  scrollbar-color: #3f3f46 #1a1a1c;
 }
 
 html.dark body {
-  background-color: #1e2530;
+  background-color: #111113;
 }
 
 /* Навигация/Сайдбар - стили для предотвращения мерцания при загрузке */
@@ -120,14 +121,27 @@ html:not(.hydrated) * {
 
 /* Плавные переходы только после гидратации */
 html.hydrated nav.nav-main,
+html.hydrated header.nav-main,
 html.hydrated aside.sidebar-main,
 html.hydrated header.header-main,
 html.hydrated main.main-content {
   transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
+/* Нижний мобильный док: без фона на всю ширину — фон только у «пилюль» внутри */
+nav.mobile-bottom-dock {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+html.dark nav.mobile-bottom-dock {
+  background-color: transparent !important;
+}
+
 /* Светлая тема (по умолчанию) */
 nav.nav-main,
+header.nav-main,
 aside.sidebar-main,
 header.header-main {
   background-color: white !important;
@@ -135,18 +149,21 @@ header.header-main {
 }
 
 nav.nav-main .nav-logo,
+header.nav-main .nav-logo,
 aside.sidebar-main .nav-logo,
 header.header-main .nav-logo {
   color: #1f2937;
 }
 
 nav.nav-main .nav-item,
+header.nav-main .nav-item,
 aside.sidebar-main .nav-item,
 header.header-main .nav-item {
   color: #374151;
 }
 
 nav.nav-main .nav-item-active,
+header.nav-main .nav-item-active,
 aside.sidebar-main .nav-item-active,
 header.header-main .nav-item-active {
   color: white;
@@ -155,25 +172,29 @@ header.header-main .nav-item-active {
 
 /* Тёмная тема навигации/сайдбара */
 html.dark nav.nav-main,
+html.dark header.nav-main,
 html.dark aside.sidebar-main,
 html.dark header.header-main {
-  background-color: #1e2530 !important;
+  background-color: #111113 !important;
   border-color: rgba(255, 255, 255, 0.15) !important;
 }
 
 html.dark nav.nav-main .nav-logo,
+html.dark header.nav-main .nav-logo,
 html.dark aside.sidebar-main .nav-logo,
 html.dark header.header-main .nav-logo {
   color: #f3f4f6;
 }
 
 html.dark nav.nav-main .nav-item,
+html.dark header.nav-main .nav-item,
 html.dark aside.sidebar-main .nav-item,
 html.dark header.header-main .nav-item {
   color: #d1d5db;
 }
 
 html.dark nav.nav-main .nav-item-active,
+html.dark header.nav-main .nav-item-active,
 html.dark aside.sidebar-main .nav-item-active,
 html.dark header.header-main .nav-item-active {
   color: white;
@@ -182,11 +203,43 @@ html.dark header.header-main .nav-item-active {
 
 /* Main content - предотвращение мерцания */
 main.main-content {
-  background-color: white !important;
+  background-color: #f5f5f7 !important;
 }
 
 html.dark main.main-content {
-  background-color: #1e2530 !important;
+  background-color: #111113 !important;
+}
+
+@media (min-width: 768px) {
+  main.main-content {
+    margin-left: 18rem !important;
+    transition: margin-left 0.3s ease;
+  }
+
+  html.sidebar-collapsed main.main-content {
+    margin-left: 8.5rem !important;
+  }
+}
+
+/* Страница заказов: табы + фильтры — фиксация под шапкой (sticky ломается из‑за transform в анимациях) */
+.orders-page-tabs-dock {
+  position: fixed;
+  z-index: 30;
+  left: 0;
+  right: 0;
+  top: 4rem;
+}
+
+@media (min-width: 768px) {
+  .orders-page-tabs-dock {
+    top: 0;
+    left: 18rem;
+    right: 0;
+  }
+
+  html.sidebar-collapsed .orders-page-tabs-dock {
+    left: 8.5rem;
+  }
 }
 
 /* Navigation Icon Hover Effect */
@@ -256,9 +309,9 @@ html.dark main.main-content {
     --accent-foreground: 120 10% 95%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 100%;
-    --border: 120 20% 20%;
-    --input: 120 20% 20%;
-    --ring: 120 60% 35%;
+    --border: 240 6% 24%;
+    --input: 240 6% 24%;
+    --ring: 0 0% 100%;
   }
 }
 
@@ -271,24 +324,41 @@ html.dark main.main-content {
   }
 }
 
-/* Кастомные скроллбары */
+/* Кастомные скроллбары: светлая тема — фирменный зелёный ползунок */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #1e293b;
+  background: #e2e8f0;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2a6b68;
+  background: #0a4f42;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #1a5a57;
+  background: #083a30;
+}
+
+html:not(.dark) {
+  scrollbar-color: #0a4f42 #e2e8f0;
+}
+
+/* Тёмная тема — нейтральный скролл, без бирюзы */
+html.dark ::-webkit-scrollbar-track {
+  background: #1a1a1c;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #52525b;
 }
 
 /* Скрытый скроллбар для горизонтальной прокрутки */
@@ -525,14 +595,6 @@ input[type="text"]:focus,
 input[type="password"]:focus {
   outline: none !important;
   box-shadow: none !important;
-  border: 2px solid #14b8a6 !important;
-}
-
-/* Custom focus styles for login form */
-.login-input:focus {
-  outline: none !important;
-  border-color: #14b8a6 !important;
-  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.2) !important;
 }
 
 /* Nuclear option - remove all browser outlines */
