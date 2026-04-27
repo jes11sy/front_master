@@ -9,14 +9,9 @@ import { useAuthStore } from '@/store/auth.store'
 import { useNotifications } from '@/hooks/useNotifications'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 import {
-  Banknote,
   Bell,
   Check,
-  ChartColumnBig,
-  ClipboardList,
-  FileText,
   GripHorizontal,
-  Info,
   LogOut,
   MoonStar,
   Settings,
@@ -29,77 +24,17 @@ import {
   X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-
-// Ключ для сохранения позиции прокрутки
-const SCROLL_POSITION_KEY = 'orders_scroll_position'
-// Ключ для позиции панели уведомлений
-const NOTIFICATIONS_POSITION_KEY = 'notifications-panel-position-dir'
-const SIDEBAR_COLLAPSED_KEY = 'sidebar-collapsed-dir'
-// Дефолтная позиция
-const DEFAULT_POSITION = { x: 240, y: 100 }
-
-const navigationItems = [
-  { name: 'Заказы', href: '/orders', icon: ClipboardList },
-  { name: 'Статистика', href: '/statistics', icon: ChartColumnBig },
-  { name: 'Платежи', href: '/payments', icon: Banknote },
-  { name: 'График работы', href: '/schedule', icon: Users2 },
-]
-
-/** Порядок вкладок снизу на мобильных: Статистика → Заказы → Платежи */
-const mobileBottomTabs = [
-  { name: 'Статистика', href: '/statistics', icon: ChartColumnBig },
-  { name: 'Заказы', href: '/orders', icon: ClipboardList },
-  { name: 'Платежи', href: '/payments', icon: Banknote },
-] as const
-
-function isRouteActive(pathname: string, href: string) {
-  if (pathname === href) return true
-  if (href === '/orders' && pathname.startsWith('/orders')) return true
-  if (href !== '/orders' && pathname.startsWith(`${href}/`)) return true
-  return false
-}
-
-/** Фамилия И.О. из полного имени; при отсутствии — логин */
-function formatShortFio(fullName: string | undefined, login: string | undefined): string {
-  const fallback = login?.trim() || 'Пользователь'
-  if (!fullName?.trim()) return fallback
-  const parts = fullName.trim().split(/\s+/).filter(Boolean)
-  if (parts.length === 0) return fallback
-  if (parts.length === 1) return parts[0]!
-  const last = parts[0]!
-  const first = parts[1]!
-  const pat = parts[2]
-  const i1 = first[0]!.toUpperCase()
-  if (pat) {
-    const i2 = pat[0]!.toUpperCase()
-    return `${last} ${i1}.${i2}.`
-  }
-  return `${last} ${i1}.`
-}
-
-function formatNotificationTime(dateString: string) {
-  const date = new Date(dateString)
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffMins = Math.floor(diffMs / 60000)
-  const diffHours = Math.floor(diffMs / 3600000)
-  const diffDays = Math.floor(diffMs / 86400000)
-
-  if (diffMins < 1) return 'только что'
-  if (diffMins < 60) return `${diffMins} мин назад`
-  if (diffHours < 24) return `${diffHours} ч назад`
-  return `${diffDays} дн назад`
-}
-
-function getNotificationTypeIcon(type: string) {
-  switch (type) {
-    case 'order_created':
-    case 'order_edited':
-      return FileText
-    default:
-      return Info
-  }
-}
+import { navigationItems, mobileBottomTabs } from './custom-navigation/nav-items'
+import {
+  DEFAULT_POSITION,
+  NOTIFICATIONS_POSITION_KEY,
+  SCROLL_POSITION_KEY,
+  SIDEBAR_COLLAPSED_KEY,
+  formatNotificationTime,
+  formatShortFio,
+  getNotificationTypeIcon,
+  isRouteActive,
+} from './custom-navigation/helpers'
 
 // Удалены моковые уведомления - теперь используем реальные из API
 

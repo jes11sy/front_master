@@ -87,7 +87,7 @@ export const usePushNotifications = () => {
   const [isUnsubscribing, setIsUnsubscribing] = useState(false);
   
   // Ref для доступа к функции подписки в useEffect
-  const subscribeRef = useRef<() => Promise<void>>();
+  const subscribeRef = useRef<(() => Promise<void>) | null>(null);
 
   // Обработка сообщения от SW о смене подписки
   useEffect(() => {
@@ -327,7 +327,7 @@ export const usePushNotifications = () => {
       console.log('[Push Master] Подписываемся на PushManager...');
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
       });
       console.log('[Push Master] Подписка получена:', subscription.endpoint);
 

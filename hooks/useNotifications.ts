@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.lead-schem.ru/api/v1'
+import apiClient from '@/lib/api'
 
 export interface Notification {
   id: string
@@ -24,22 +23,9 @@ export function useNotifications() {
     try {
       setIsLoading(true)
       setError(null)
-      
-      const response = await fetch(`${API_URL}/notifications`, {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Use-Cookies': 'true',
-        },
-      })
 
-      if (!response.ok) {
-        throw new Error(`Failed to load notifications: ${response.status}`)
-      }
+      const result = await apiClient.getNotifications()
 
-      const result = await response.json()
-      
       if (result.success && result.data) {
         setNotifications(result.data.notifications || [])
         setUnreadCount(result.data.unreadCount || 0)
@@ -55,17 +41,8 @@ export function useNotifications() {
   // Отметить уведомление как прочитанное
   const markAsRead = useCallback(async (notificationId: string) => {
     try {
-      const response = await fetch(`${API_URL}/notifications/read`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Use-Cookies': 'true',
-        },
-        body: JSON.stringify({ notificationId }),
-      })
-
-      if (response.ok) {
+      const response = await apiClient.markNotificationAsRead(notificationId)
+      if (response.success) {
         // Обновляем локальный стейт
         setNotifications(prev => 
           prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
@@ -80,17 +57,8 @@ export function useNotifications() {
   // Отметить все как прочитанные
   const markAllAsRead = useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/notifications/read-all`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Use-Cookies': 'true',
-        },
-        body: '{}',
-      })
-
-      if (response.ok) {
+      const response = await apiClient.markAllNotificationsAsRead()
+      if (response.success) {
         setNotifications(prev => prev.map(n => ({ ...n, read: true })))
         setUnreadCount(0)
       }
@@ -102,15 +70,8 @@ export function useNotifications() {
   // Удалить уведомление
   const deleteNotification = useCallback(async (notificationId: string) => {
     try {
-      const response = await fetch(`${API_URL}/notifications/${notificationId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: {
-          'X-Use-Cookies': 'true',
-        },
-      })
-
-      if (response.ok) {
+      const response = await apiClient.deleteNotification(notificationId)
+      if (response.success) {
         setNotifications(prev => prev.filter(n => n.id !== notificationId))
         // Если было непрочитанным - уменьшаем счётчик
         const wasUnread = notifications.find(n => n.id === notificationId && !n.read)

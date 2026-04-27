@@ -2,8 +2,12 @@
 // ✅ FIX #151: Добавлен fetch retry logic
 import { logger } from './logger'
 import { fetchWithRetry, classifyNetworkError, getUserFriendlyErrorMessage, type NetworkError } from './fetch-with-retry'
+import * as notificationsApi from './api/domains/notifications'
+import * as scheduleApi from './api/domains/schedule'
+import * as pushApi from './api/domains/push'
+import { getApiBaseUrl } from './config/env'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.lead-schem.ru/api/v1'
+const API_BASE_URL = getApiBaseUrl()
 
 interface ApiResponse<T> {
   success: boolean
@@ -85,6 +89,15 @@ class ApiClient {
       }
 
       const data = await response.json()
+
+      if (data?.success && data?.data?.refreshToken) {
+        try {
+          const { saveRefreshToken } = await import('./remember-me')
+          await saveRefreshToken(data.data.refreshToken)
+        } catch (error) {
+          logger.warn('[Auth] Failed to persist refresh token after refresh')
+        }
+      }
       
       // Токены обновлены в httpOnly cookies на сервере
       logger.debug('[Auth] Token refresh successful')
@@ -329,6 +342,14 @@ class ApiClient {
   }
 
   /**
+   * Принудительно обновить текущую сессию через refresh token.
+   * Используется компонентами, которым нужен фоновый "silent refresh".
+   */
+  async refreshSession(): Promise<boolean> {
+    return this.refreshAccessToken()
+  }
+
+  /**
    * 🍪 Выход из системы
    * Очищает httpOnly cookies на сервере и локальные данные
    */
@@ -560,6 +581,29 @@ class ApiClient {
   // Пользователи
   async getUsers() {
     return this.request<any[]>('/users')
+  }
+
+  // Уведомления
+  async getNotifications() {
+    return notificationsApi.getNotifications((endpoint, options) => this.request(endpoint, options))
+  }
+
+  async markNotificationAsRead(notificationId: string) {
+    return notificationsApi.markNotificationAsRead(
+      (endpoint, options) => this.request(endpoint, options),
+      notificationId
+    )
+  }
+
+  async markAllNotificationsAsRead() {
+    return notificationsApi.markAllNotificationsAsRead((endpoint, options) => this.request(endpoint, options))
+  }
+
+  async deleteNotification(notificationId: string) {
+    return notificationsApi.deleteNotification(
+      (endpoint, options) => this.request(endpoint, options),
+      notificationId
+    )
   }
 
   // Сдача на проверку (Cash Service - Handover)
@@ -931,52 +975,36 @@ class ApiClient {
    * Получить своё расписание (для мастера)
    */
   async getOwnSchedule(params?: { startDate?: string; endDate?: string }) {
-    const searchParams = new URLSearchParams()
-    if (params?.startDate) searchParams.append('startDate', params.startDate)
-    if (params?.endDate) searchParams.append('endDate', params.endDate)
-
-    const query = searchParams.toString()
-    return this.request<{
-      masterId: number
-      masterName: string
-      schedule: Array<{ date: string; isWorkDay: boolean }>
-    }>(`/masters/profile/schedule${query ? `?${query}` : ''}`)
+    return scheduleApi.getOwnSchedule((endpoint, options) => this.request(endpoint, options), params)
   }
 
   /**
    * Обновить своё расписание (для мастера)
    */
   async updateOwnSchedule(days: Array<{ date: string; isWorkDay: boolean }>) {
-    return this.request<{ masterId: number; updatedDays: number }>('/masters/profile/schedule', {
-      method: 'POST',
-      body: JSON.stringify({ days }),
-    })
+    return scheduleApi.updateOwnSchedule((endpoint, options) => this.request(endpoint, options), days)
   }
 
   /**
    * Получить расписание мастера по ID (для директора/админа)
    */
   async getMasterSchedule(masterId: number, params?: { startDate?: string; endDate?: string }) {
-    const searchParams = new URLSearchParams()
-    if (params?.startDate) searchParams.append('startDate', params.startDate)
-    if (params?.endDate) searchParams.append('endDate', params.endDate)
-
-    const query = searchParams.toString()
-    return this.request<{
-      masterId: number
-      masterName: string
-      schedule: Array<{ date: string; isWorkDay: boolean }>
-    }>(`/masters/${masterId}/schedule${query ? `?${query}` : ''}`)
+    return scheduleApi.getMasterSchedule(
+      (endpoint, options) => this.request(endpoint, options),
+      masterId,
+      params
+    )
   }
 
   /**
    * Обновить расписание мастера по ID (для директора/админа)
    */
   async updateMasterSchedule(masterId: number, days: Array<{ date: string; isWorkDay: boolean }>) {
-    return this.request<{ masterId: number; updatedDays: number }>(`/masters/${masterId}/schedule`, {
-      method: 'POST',
-      body: JSON.stringify({ days }),
-    })
+    return scheduleApi.updateMasterSchedule(
+      (endpoint, options) => this.request(endpoint, options),
+      masterId,
+      days
+    )
   }
 
   // ==================== PUSH NOTIFICATIONS API ====================
@@ -985,30 +1013,21 @@ class ApiClient {
    * Подписаться на push-уведомления (мастер)
    */
   async subscribeToPush(subscription: PushSubscriptionJSON) {
-    return this.request<{ success: boolean }>('/push/master/subscribe', {
-      method: 'POST',
-      body: JSON.stringify({ subscription }),
-    })
+    return pushApi.subscribeToPush((endpoint, options) => this.request(endpoint, options), subscription)
   }
 
   /**
    * Отписаться от push-уведомлений (мастер)
    */
   async unsubscribeFromPush(endpoint: string) {
-    return this.request<{ success: boolean }>('/push/master/unsubscribe', {
-      method: 'POST',
-      body: JSON.stringify({ endpoint }),
-    })
+    return pushApi.unsubscribeFromPush((apiEndpoint, options) => this.request(apiEndpoint, options), endpoint)
   }
 
   /**
    * Отправить тестовое push-уведомление (мастер)
    */
   async sendTestPush() {
-    return this.request<{ success: boolean }>('/push/master/test', {
-      method: 'POST',
-      body: JSON.stringify({}),
-    })
+    return pushApi.sendTestPush((endpoint, options) => this.request(endpoint, options))
   }
 }
 

@@ -8,9 +8,9 @@ const nextConfig = {
     return `build-${Date.now()}`
   },
   
-  // Отключаем TypeScript проверки во время сборки для Docker
+  // Блокируем production-сборку при TypeScript ошибках
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   
   reactStrictMode: true,

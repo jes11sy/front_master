@@ -56,7 +56,7 @@ function ScheduleContent() {
         
         if (response.success && response.data?.schedule) {
           const scheduleMap: {[key: string]: boolean} = {}
-          response.data.schedule.forEach(item => {
+          response.data.schedule.forEach((item: { date: string; isWorkDay: boolean }) => {
             scheduleMap[item.date] = item.isWorkDay
           })
           setSelectedDays(scheduleMap)

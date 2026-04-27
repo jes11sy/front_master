@@ -5,8 +5,6 @@ import { usePathname } from 'next/navigation';
 import apiClient from '@/lib/api';
 import { logger } from '@/lib/logger';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.lead-schem.ru/api/v1';
-
 // 🔄 Silent Refresh - обновляем токен каждые 4 минуты (токен живёт 15 минут)
 const REFRESH_INTERVAL = 4 * 60 * 1000; // 4 минуты
 
@@ -22,42 +20,16 @@ export function TokenRefresher() {
   // 🔄 Функция обновления токена через /auth/refresh
   const refreshToken = useCallback(async (): Promise<boolean> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Use-Cookies': 'true',
-        },
-        credentials: 'include',
-        body: JSON.stringify({}),
-      });
+      const refreshed = await apiClient.refreshSession();
+      if (refreshed) {
+        logger.debug('🔄 Silent refresh successful');
+        return true;
+      }
 
-      if (response.ok) {
-        const data = await response.json();
-        
-        if (data?.success) {
-          logger.debug('🔄 Silent refresh successful');
-          
-          // Обновляем refresh token в IndexedDB если пришёл новый
-          if (data?.data?.refreshToken) {
-            try {
-              const { saveRefreshToken } = await import('@/lib/remember-me');
-              await saveRefreshToken(data.data.refreshToken);
-            } catch {
-              // Ignore IndexedDB errors
-            }
-          }
-          
-          return true;
-        }
-      }
-      
-      // 401/403 - токен невалиден
-      if (response.status === 401 || response.status === 403) {
+      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
         logger.debug('Silent refresh failed - token expired or invalid');
-        return false;
       }
-      
+
       return false;
     } catch (error) {
       // Сетевые ошибки - просто пропускаем, попробуем позже

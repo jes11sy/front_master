@@ -92,7 +92,9 @@ export default function AvitoChat() {
     if (voiceMessages.length === 0) return messages
 
     try {
-      const voiceIds = voiceMessages.map(msg => msg.content?.voice?.voice_id).filter(Boolean)
+      const voiceIds = voiceMessages
+        .map(msg => msg.content?.voice?.voice_id)
+        .filter((voiceId): voiceId is string => Boolean(voiceId))
       const response = await apiClient.getAvitoVoiceUrlsNew(avitoAccountName, voiceIds)
       
       return messages.map(msg => {

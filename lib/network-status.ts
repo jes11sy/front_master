@@ -2,6 +2,7 @@
  * Утилита для проверки реального статуса сети
  * Не полагается на navigator.onLine, который может врать на iOS PWA
  */
+import { getApiBaseUrl } from './config/env'
 
 let lastCheckTime = 0
 let lastCheckResult = true
@@ -30,7 +31,7 @@ export async function isReallyOnline(): Promise<boolean> {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 3000)
     
-    await fetch('https://api.lead-schem.ru/api/auth/profile', {
+    await fetch(`${getApiBaseUrl()}/auth/profile`, {
       method: 'HEAD',
       signal: controller.signal,
       cache: 'no-store',

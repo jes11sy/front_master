@@ -11,6 +11,7 @@ import { NetworkError } from '@/components/ui/network-error'
 import { useDesignStore } from '@/store/design.store'
 import { sortOrders } from '@/lib/order-sort'
 import { cn } from '@/lib/utils'
+import { formatOrderDate, getOrderStatusStyle, getOrderTypeStyle } from './order-presenter'
 import {
   getFormFieldClass,
   getFormSelectContentClass,
@@ -266,7 +267,14 @@ function OrdersContent() {
     try {
       const safeOrders = Array.isArray(orders) ? orders : []
       const sorted = sortOrders(safeOrders)
-      const cities = Array.from(new Set(safeOrders.map(order => order.city || 'Неизвестно')))
+      const cities = Array.from(
+        new Set(
+          safeOrders.map(order => {
+            if (typeof order.city === 'string') return order.city
+            return order.city?.name || 'Неизвестно'
+          })
+        )
+      )
       return { sortedOrders: sorted, uniqueCities: cities }
     } catch {
       return { sortedOrders: [] as Order[], uniqueCities: [] as string[] }
@@ -316,71 +324,6 @@ function OrdersContent() {
     saveScrollPosition()
     updateUrlWithFilters()
     router.push(`/orders/${orderId}`)
-  }
-
-  // Форматирование даты
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString) return '-'
-    try {
-      const date = new Date(dateString)
-      if (isNaN(date.getTime())) return '-'
-      
-      const day = String(date.getUTCDate()).padStart(2, '0')
-      const month = String(date.getUTCMonth() + 1).padStart(2, '0')
-      const year = date.getUTCFullYear()
-      const hours = String(date.getUTCHours()).padStart(2, '0')
-      const minutes = String(date.getUTCMinutes()).padStart(2, '0')
-      
-      return `${day}.${month}.${year} ${hours}:${minutes}`
-    } catch {
-      return '-'
-    }
-  }
-
-  // Стили статуса
-  const getStatusStyle = (status: string) => {
-    if (isDark) {
-      switch (status) {
-        case 'Готово': return 'bg-green-700 text-white'
-        case 'В работе': return 'bg-blue-700 text-white'
-        case 'Ожидает': return 'bg-amber-600 text-white'
-        case 'Отказ': return 'bg-red-700 text-white'
-        case 'Принял': return 'bg-emerald-700 text-white'
-        case 'В пути': return 'bg-violet-700 text-white'
-        case 'Модерн': return 'bg-orange-600 text-white'
-        case 'Незаказ': return 'bg-gray-600 text-white'
-        default: return 'bg-gray-600 text-white'
-      }
-    }
-    switch (status) {
-      case 'Готово': return 'bg-green-600 text-white'
-      case 'В работе': return 'bg-blue-600 text-white'
-      case 'Ожидает': return 'bg-amber-500 text-white'
-      case 'Отказ': return 'bg-red-600 text-white'
-      case 'Принял': return 'bg-emerald-600 text-white'
-      case 'В пути': return 'bg-violet-600 text-white'
-      case 'Модерн': return 'bg-orange-500 text-white'
-      case 'Незаказ': return 'bg-gray-500 text-white'
-      default: return 'bg-gray-500 text-white'
-    }
-  }
-
-  // Стили типа заказа
-  const getTypeStyle = (type: string) => {
-    if (isDark) {
-      switch (type) {
-        case 'Впервые': return 'bg-emerald-700 text-white'
-        case 'Повтор': return 'bg-amber-600 text-white'
-        case 'Гарантия': return 'bg-red-700 text-white'
-        default: return 'bg-gray-600 text-white'
-      }
-    }
-    switch (type) {
-      case 'Впервые': return 'bg-emerald-600 text-white'
-      case 'Повтор': return 'bg-amber-500 text-white'
-      case 'Гарантия': return 'bg-red-600 text-white'
-      default: return 'bg-gray-500 text-white'
-    }
   }
 
   const filterFieldClass = `${getFormFieldClass(isDark, 'lg')} min-h-[44px] px-4`
@@ -656,7 +599,7 @@ function OrdersContent() {
                     >
                       <td className={`py-2 px-2 font-medium ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{order.id}</td>
                       <td className="py-2 px-2">
-                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${getTypeStyle(order.typeOrder)}`}>
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${getOrderTypeStyle(order.typeOrder, isDark)}`}>
                           {order.typeOrder}
                         </span>
                       </td>
@@ -666,11 +609,11 @@ function OrdersContent() {
                       <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.phone}</td>
                       <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.clientName}</td>
                       <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.address}</td>
-                      <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{formatDate(order.dateMeeting)}</td>
+                      <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{formatOrderDate(order.dateMeeting)}</td>
                       <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.equipmentType?.name || '-'}</td>
                       <td className={`py-2 px-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>{order.comment || '-'}</td>
                       <td className="py-2 px-2 text-center">
-                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${getStatusStyle(order.status?.name || '')}`}>
+                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${getOrderStatusStyle(order.status?.name || '', isDark)}`}>
                           {order.status?.name || '-'}
                         </span>
                       </td>
@@ -706,11 +649,11 @@ function OrdersContent() {
                   }`}>
                     <div className="flex items-center gap-2">
                       <span className={`font-bold text-sm ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>#{order.id}</span>
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${getTypeStyle(order.typeOrder)}`}>
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${getOrderTypeStyle(order.typeOrder, isDark)}`}>
                         {order.typeOrder}
                       </span>
                     </div>
-                    <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{formatDate(order.dateMeeting)}</span>
+                    <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{formatOrderDate(order.dateMeeting)}</span>
                   </div>
                   
                   {/* Основной контент */}
@@ -718,7 +661,7 @@ function OrdersContent() {
                     {/* Клиент и город */}
                     <div className="flex items-center justify-between mb-1.5">
                       <span className={`font-medium text-sm ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{order.clientName || 'Без имени'}</span>
-                      <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{order.city}</span>
+                      <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{order.city?.name || 'Неизвестно'}</span>
                     </div>
                     
                     {/* Адрес */}
@@ -741,7 +684,7 @@ function OrdersContent() {
                   }`}>
                     <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{order.master?.name || 'Не назначен'}</span>
                     <div className="flex items-center gap-2">
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusStyle(order.status?.name || '')}`}>
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${getOrderStatusStyle(order.status?.name || '', isDark)}`}>
                         {order.status?.name || '-'}
                       </span>
                       {order.result && typeof order.result === 'number' && (

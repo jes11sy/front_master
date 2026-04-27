@@ -15,6 +15,7 @@ export interface User {
   role?: string
   phone?: string
   email?: string
+  cities?: Array<{ id: number; name: string } | string>
 }
 
 interface AuthState {
@@ -72,9 +73,9 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true })
         try {
           const response = await apiClient.getProfile()
-          if (response && response.id) {
+          if (response.success && response.data?.id) {
             set({
-              user: response,
+              user: response.data,
               isAuthenticated: true,
               isLoading: false,
             })
@@ -95,8 +96,8 @@ export const useAuthStore = create<AuthState>()(
       refreshUser: async () => {
         try {
           const response = await apiClient.getProfile()
-          if (response && response.id) {
-            set({ user: response })
+          if (response.success && response.data?.id) {
+            set({ user: response.data })
           }
         } catch (error) {
           logger.error('Failed to refresh user', error)

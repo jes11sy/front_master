@@ -3,16 +3,17 @@
  * Защита от XSS атак с использованием DOMPurify
  */
 import DOMPurify from 'dompurify';
+import type { Config } from 'dompurify';
 
 // Конфигурация DOMPurify для строгой санитизации
-const STRICT_CONFIG: DOMPurify.Config = {
+const STRICT_CONFIG: Config = {
   ALLOWED_TAGS: [], // Не разрешаем никакие теги
   ALLOWED_ATTR: [], // Не разрешаем никакие атрибуты
   KEEP_CONTENT: true, // Сохраняем текстовое содержимое
 };
 
 // Конфигурация для HTML с ограниченным набором тегов
-const HTML_CONFIG: DOMPurify.Config = {
+const HTML_CONFIG: Config = {
   ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'br', 'p', 'span'],
   ALLOWED_ATTR: ['class'],
 };
@@ -26,7 +27,7 @@ export function sanitizeString(input: string | null | undefined): string {
   if (!input) return '';
   
   // Используем DOMPurify для удаления всех HTML тегов
-  return DOMPurify.sanitize(input, STRICT_CONFIG).trim();
+  return String(DOMPurify.sanitize(input, STRICT_CONFIG)).trim();
 }
 
 /**
@@ -37,7 +38,7 @@ export function sanitizeString(input: string | null | undefined): string {
 export function sanitizeHTML(input: string | null | undefined): string {
   if (!input) return '';
   
-  return DOMPurify.sanitize(input, HTML_CONFIG);
+  return String(DOMPurify.sanitize(input, HTML_CONFIG));
 }
 
 /**
@@ -48,7 +49,7 @@ export function sanitizeHTML(input: string | null | undefined): string {
 export function stripHTML(input: string | null | undefined): string {
   if (!input) return '';
   
-  return DOMPurify.sanitize(input, { ALLOWED_TAGS: [], KEEP_CONTENT: true });
+  return String(DOMPurify.sanitize(input, { ALLOWED_TAGS: [], KEEP_CONTENT: true }));
 }
 
 /**

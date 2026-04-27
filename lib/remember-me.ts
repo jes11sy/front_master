@@ -23,6 +23,14 @@ interface SavedToken {
   expiresAt: number
 }
 
+function toBase64(bytes: Uint8Array): string {
+  let binary = ''
+  for (let i = 0; i < bytes.length; i += 1) {
+    binary += String.fromCharCode(bytes[i]!)
+  }
+  return btoa(binary)
+}
+
 /**
  * Проверяет доступность необходимых API
  */
@@ -101,7 +109,7 @@ async function generateEncryptionKey(salt: Uint8Array): Promise<CryptoKey> {
   return crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
-      salt: salt,
+      salt: new Uint8Array(salt),
       iterations: 100000,
       hash: 'SHA-256',
     },
@@ -128,9 +136,9 @@ async function encryptToken(token: string): Promise<SavedToken> {
   )
 
   return {
-    encryptedData: btoa(String.fromCharCode(...new Uint8Array(encryptedBuffer))),
-    iv: btoa(String.fromCharCode(...iv)),
-    salt: btoa(String.fromCharCode(...salt)),
+    encryptedData: toBase64(new Uint8Array(encryptedBuffer)),
+    iv: toBase64(iv),
+    salt: toBase64(salt),
     expiresAt: Date.now() + EXPIRY_DAYS * 24 * 60 * 60 * 1000,
   }
 }
