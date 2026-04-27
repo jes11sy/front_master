@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { Phone, Loader2, X } from 'lucide-react';
 import apiClient from '@/lib/api';
 import { useDesignStore } from '@/store/design.store';
+import { Input } from '@/components/ui/input';
+import { getFormFieldClass } from '@/components/ui/form-styles';
 
 interface CallButtonProps {
   orderId: number;
@@ -14,6 +16,7 @@ interface CallButtonProps {
 export function CallButton({ orderId, clientPhone, clientName }: CallButtonProps) {
   const { theme } = useDesignStore();
   const isDark = theme === 'dark';
+  const formFieldClass = `${getFormFieldClass(isDark, 'md')} py-2.5`;
   
   const [isOpen, setIsOpen] = useState(false);
   const [masterPhone, setMasterPhone] = useState('');
@@ -127,16 +130,12 @@ export function CallButton({ orderId, clientPhone, clientName }: CallButtonProps
               <label className={`block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 Ваш номер телефона
               </label>
-              <input
+              <Input
                 type="tel"
                 value={masterPhone}
                 onChange={handlePhoneChange}
                 placeholder="+7 (___) ___-__-__"
-                className={`w-full px-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-[#0d5c4b] transition-colors ${
-                  isDark 
-                    ? 'bg-[#3a4451] border-gray-600 text-gray-100 placeholder-gray-500' 
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
-                }`}
+                className={formFieldClass}
                 disabled={isLoading}
                 autoFocus
               />

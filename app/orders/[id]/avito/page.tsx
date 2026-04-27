@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { apiClient } from '@/lib/api'
 import { LoadingScreen } from '@/components/ui/loading-screen'
+import { getFormFieldClass } from '@/components/ui/form-styles'
 
 interface Message {
   id: string
@@ -53,6 +54,7 @@ export default function AvitoChat() {
   const router = useRouter()
   const params = useParams()
   const id = params.id as string
+  const messageFieldClass = getFormFieldClass(false, 'md')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [chatData, setChatData] = useState<any>(null)
@@ -393,7 +395,7 @@ export default function AvitoChat() {
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
                 placeholder="Введите сообщение..."
-                className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                className={`flex-1 ${messageFieldClass}`}
                 disabled={sending}
               />
               <button

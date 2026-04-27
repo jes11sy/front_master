@@ -11,6 +11,12 @@ import { NetworkError } from '@/components/ui/network-error'
 import { useDesignStore } from '@/store/design.store'
 import { sortOrders } from '@/lib/order-sort'
 import { cn } from '@/lib/utils'
+import {
+  getFormFieldClass,
+  getFormSelectContentClass,
+  getFormSelectItemClass,
+  getFormSelectTriggerClass,
+} from '@/components/ui/form-styles'
 
 interface Order {
   id: number
@@ -377,6 +383,11 @@ function OrdersContent() {
     }
   }
 
+  const filterFieldClass = `${getFormFieldClass(isDark, 'lg')} min-h-[44px] px-4`
+  const filterSelectTriggerClass = `${getFormSelectTriggerClass(isDark, 'lg')} min-h-[44px] px-4`
+  const filterSelectContentClass = getFormSelectContentClass(isDark)
+  const filterSelectItemClass = getFormSelectItemClass(isDark)
+
   return (
     <div className={`min-h-screen transition-colors duration-300 ${
       isDark ? 'bg-[#111113]' : 'bg-[#f5f5f7]'
@@ -523,33 +534,21 @@ function OrdersContent() {
                           value={draftSearchId}
                           onChange={(e) => setDraftSearchId(e.target.value)}
                           placeholder="№ заказа..."
-                          className={`w-full min-h-[44px] px-4 py-2 rounded-2xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0a4f42]/18 focus:ring-offset-0 dark:focus:ring-white/20 transition-all shadow-sm ${
-                            isDark 
-                              ? 'bg-white/[0.04] text-white placeholder-white/30'
-                              : 'border border-[#cfd2d8] bg-white text-[#111113] placeholder:text-[#8e8e93] shadow-[0_1px_2px_rgba(15,23,42,0.06)] focus:border-[#0a4f42]/45 focus:ring-[#0a4f42]/18'
-                          }`}
+                          className={filterFieldClass}
                         />
                         <input
                           type="text"
                           value={draftSearchPhone}
                           onChange={(e) => setDraftSearchPhone(e.target.value)}
                           placeholder="Номер телефона..."
-                          className={`w-full min-h-[44px] px-4 py-2 rounded-2xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0a4f42]/18 focus:ring-offset-0 dark:focus:ring-white/20 transition-all shadow-sm ${
-                            isDark 
-                              ? 'bg-white/[0.04] text-white placeholder-white/30'
-                              : 'border border-[#cfd2d8] bg-white text-[#111113] placeholder:text-[#8e8e93] shadow-[0_1px_2px_rgba(15,23,42,0.06)] focus:border-[#0a4f42]/45 focus:ring-[#0a4f42]/18'
-                          }`}
+                          className={filterFieldClass}
                         />
                         <input
                           type="text"
                           value={draftSearchAddress}
                           onChange={(e) => setDraftSearchAddress(e.target.value)}
                           placeholder="Адрес..."
-                          className={`w-full min-h-[44px] px-4 py-2 rounded-2xl text-[15px] focus:outline-none focus:ring-2 focus:ring-[#0a4f42]/18 focus:ring-offset-0 dark:focus:ring-white/20 transition-all shadow-sm ${
-                            isDark 
-                              ? 'bg-white/[0.04] text-white placeholder-white/30'
-                              : 'border border-[#cfd2d8] bg-white text-[#111113] placeholder:text-[#8e8e93] shadow-[0_1px_2px_rgba(15,23,42,0.06)] focus:border-[#0a4f42]/45 focus:ring-[#0a4f42]/18'
-                          }`}
+                          className={filterFieldClass}
                         />
                       </div>
                     </div>
@@ -561,33 +560,25 @@ function OrdersContent() {
                       <h3 className={`text-xs font-bold uppercase tracking-widest ${isDark ? 'text-white/40' : 'text-black/55'}`}>Основные</h3>
                       <div className="space-y-3">
                         <Select value={draftStatusFilter || "all"} onValueChange={(value) => setDraftStatusFilter(value === "all" ? "" : value)}>
-                          <SelectTrigger className={`w-full min-h-[44px] px-4 rounded-2xl text-[15px] shadow-sm focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 data-[state=open]:ring-2 data-[state=open]:ring-offset-0 ${
-                            isDark
-                              ? 'bg-white/[0.04] text-white border-white/15 focus:!border-white/30 focus:!ring-[rgba(255,255,255,0.2)] data-[state=open]:!border-white/30 data-[state=open]:!ring-[rgba(255,255,255,0.2)]'
-                              : 'border border-[#cfd2d8] bg-white text-[#111113] shadow-[0_1px_2px_rgba(15,23,42,0.06)] data-[state=open]:border-[rgba(10,79,66,0.55)] data-[state=open]:ring-[rgba(10,79,66,0.22)] focus:border-[#0a4f42]/45 focus:ring-[#0a4f42]/18'
-                          }`}>
+                          <SelectTrigger className={filterSelectTriggerClass}>
                             <SelectValue placeholder="Все статусы" />
                           </SelectTrigger>
-                          <SelectContent className={`rounded-2xl border-0 shadow-xl ${isDark ? 'bg-[#1e1e20]' : 'bg-white'}`}>
-                            <SelectItem value="all" className={`rounded-xl mx-1 my-0.5 cursor-pointer ${isDark ? 'text-white focus:bg-white/10 focus:text-white' : 'text-[#111113] focus:bg-black/5 focus:text-[#111113]'}`}>Все статусы</SelectItem>
+                          <SelectContent className={filterSelectContentClass}>
+                            <SelectItem value="all" className={filterSelectItemClass}>Все статусы</SelectItem>
                             {allStatuses.map(status => (
-                              <SelectItem key={status} value={status} className={`rounded-xl mx-1 my-0.5 cursor-pointer ${isDark ? 'text-white focus:bg-white/10 focus:text-white' : 'text-[#111113] focus:bg-black/5 focus:text-[#111113]'}`}>{status}</SelectItem>
+                              <SelectItem key={status} value={status} className={filterSelectItemClass}>{status}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
 
                         <Select value={draftCityFilter || "all"} onValueChange={(value) => setDraftCityFilter(value === "all" ? "" : value)}>
-                          <SelectTrigger className={`w-full min-h-[44px] px-4 rounded-2xl text-[15px] shadow-sm focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 data-[state=open]:ring-2 data-[state=open]:ring-offset-0 ${
-                            isDark
-                              ? 'bg-white/[0.04] text-white border-white/15 focus:!border-white/30 focus:!ring-[rgba(255,255,255,0.2)] data-[state=open]:!border-white/30 data-[state=open]:!ring-[rgba(255,255,255,0.2)]'
-                              : 'border border-[#cfd2d8] bg-white text-[#111113] shadow-[0_1px_2px_rgba(15,23,42,0.06)] data-[state=open]:border-[rgba(10,79,66,0.55)] data-[state=open]:ring-[rgba(10,79,66,0.22)] focus:border-[#0a4f42]/45 focus:ring-[#0a4f42]/18'
-                          }`}>
+                          <SelectTrigger className={filterSelectTriggerClass}>
                             <SelectValue placeholder="Все города" />
                           </SelectTrigger>
-                          <SelectContent className={`rounded-2xl border-0 shadow-xl ${isDark ? 'bg-[#1e1e20]' : 'bg-white'}`}>
-                            <SelectItem value="all" className={`rounded-xl mx-1 my-0.5 cursor-pointer ${isDark ? 'text-white focus:bg-white/10 focus:text-white' : 'text-[#111113] focus:bg-black/5 focus:text-[#111113]'}`}>Все города</SelectItem>
+                          <SelectContent className={filterSelectContentClass}>
+                            <SelectItem value="all" className={filterSelectItemClass}>Все города</SelectItem>
                             {uniqueCities.map(city => (
-                              <SelectItem key={city} value={city} className={`rounded-xl mx-1 my-0.5 cursor-pointer ${isDark ? 'text-white focus:bg-white/10 focus:text-white' : 'text-[#111113] focus:bg-black/5 focus:text-[#111113]'}`}>{city}</SelectItem>
+                              <SelectItem key={city} value={city} className={filterSelectItemClass}>{city}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>

@@ -11,6 +11,7 @@ import { useMultipleFileUpload } from '@/hooks/useMultipleFileUpload'
 import { MultipleFileUpload } from '@/components/MultipleFileUpload'
 import { LoadingScreen, LoadingSpinner } from '@/components/ui/loading-screen'
 import { useDesignStore } from '@/store/design.store'
+import { getFormFieldClass } from '@/components/ui/form-styles'
 
 interface Order {
   id: number
@@ -80,6 +81,7 @@ function OrderDetailPageContent() {
   // Тема
   const { theme } = useDesignStore()
   const isDark = theme === 'dark'
+  const formFieldClass = getFormFieldClass(isDark, 'md')
   
   const [order, setOrder] = useState<Order | null>(null)
   const [calls, setCalls] = useState<Call[]>([])
@@ -868,7 +870,7 @@ function OrderDetailPageContent() {
                           placeholder="0"
                           value={prepayment}
                           onChange={(e) => setPrepayment(e.target.value)}
-                          className={`pr-8 ${isDark ? 'bg-[#3a4451] border-gray-600 text-gray-100' : 'bg-white border-gray-300'}`}
+                          className={`${formFieldClass} pr-8`}
                         />
                         <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>₽</span>
                       </div>
@@ -880,7 +882,7 @@ function OrderDetailPageContent() {
                         type="datetime-local"
                         value={dateClosmod}
                         onChange={(e) => setDateClosmod(e.target.value)}
-                        className={`mt-1 w-full max-w-full ${isDark ? 'bg-[#3a4451] border-gray-600 text-gray-100' : 'bg-white border-gray-300'}`}
+                        className={`mt-1 w-full max-w-full ${formFieldClass}`}
                       />
                     </div>
                     
@@ -891,9 +893,7 @@ function OrderDetailPageContent() {
                         placeholder="Введите комментарий..."
                         value={comment}
                         onChange={(e) => setComment(e.target.value)}
-                        className={`w-full mt-1 px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-[#0d5c4b] ${
-                          isDark ? 'bg-[#3a4451] border-gray-600 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-800 placeholder-gray-400'
-                        }`}
+                        className={`w-full mt-1 ${formFieldClass} min-h-24`}
                       />
                     </div>
                   </div>
@@ -913,7 +913,7 @@ function OrderDetailPageContent() {
                           value={totalAmount}
                           onChange={(e) => setTotalAmount(e.target.value)}
                           disabled={isCompleted || order.status?.name === 'Готово'}
-                          className={`pr-8 ${isDark ? 'bg-[#3a4451] border-gray-600 text-gray-100' : 'bg-white border-gray-300'} ${
+                          className={`${formFieldClass} pr-8 ${
                             (isCompleted || order.status?.name === 'Готово') ? 'opacity-50 cursor-not-allowed' : ''
                           }`}
                         />
@@ -930,7 +930,7 @@ function OrderDetailPageContent() {
                           value={expenseAmount}
                           onChange={(e) => setExpenseAmount(e.target.value)}
                           disabled={isCompleted || order.status?.name === 'Готово'}
-                          className={`pr-8 ${isDark ? 'bg-[#3a4451] border-gray-600 text-gray-100' : 'bg-white border-gray-300'} ${
+                          className={`${formFieldClass} pr-8 ${
                             (isCompleted || order.status?.name === 'Готово') ? 'opacity-50 cursor-not-allowed' : ''
                           }`}
                         />
